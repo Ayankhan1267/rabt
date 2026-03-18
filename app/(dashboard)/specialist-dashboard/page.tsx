@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -99,7 +99,7 @@ export default function SpecialistDashboard() {
   const completedCons = consultations.filter(c => c.status === 'completed').length
   const consultationEarnings = completedCons * 30
   const myPatientIds = new Set(consultations.map(c => c.userId).filter(Boolean))
-  const myPatientOrders = orders.filter(o => { const uid = o.userId || o.user; return (uid && myPatientIds.has(uid)) || o.specialistId?.toString() === mongoSpec?._id?.toString() })
+  const myPatientOrders = orders.filter(o => { const uid = o.userId || o.user; const src = (o.source || o.orderSource || "").toLowerCase(); if (src === "partner") return false; return (uid && myPatientIds.has(uid)) || o.specialistId?.toString() === mongoSpec?._id?.toString() })
   const myConsIds = new Set(consultations.map(c => c._id?.toString()).filter(Boolean))
   const mySkinProfiles = skinProfiles.filter(p => 
     (p.specialistId?.toString() === mongoSpec?._id?.toString()) ||
@@ -207,6 +207,10 @@ export default function SpecialistDashboard() {
   .section-title { font-size: 10px; font-weight: 700; color: #D4A853; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #eee; }
   .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 16px; }
   .grid2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 12px; margin-bottom: 16px; }
+        @media (max-width: 768px) {
+          .grid3 { grid-template-columns: 1fr !important; }
+          .grid2 { grid-template-columns: 1fr !important; }
+        }
   .card { background: #f8f8f8; border-radius: 8px; padding: 12px 14px; }
   .card-label { font-size: 9px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
   .card-value { font-size: 13px; font-weight: 700; color: #1a1a2e; }
@@ -523,7 +527,7 @@ ${skinImages.length > 0 ? `
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 12 }}>
                     ?? New Consultation Requests ({unassignedCons.length}) � Website se aaye hain
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : 'repeat(3,1fr)', gap: 10 }}>
                     {unassignedCons.slice(0, 6).map((c: any, i: number) => (
                       <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 14px' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{c.name}</div>
@@ -864,7 +868,7 @@ ${skinImages.length > 0 ? `
               {mySkinProfiles.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 60, color: 'var(--mu)', fontSize: 13 }}>No skin profiles yet</div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
                   {mySkinProfiles.map((p, i) => (
                     <div key={i} className="card">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -911,7 +915,7 @@ ${skinImages.length > 0 ? `
           {tab === 'earnings' && (
             <div>
               {/* Top Stats */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr 1fr' : 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
                 {[
                   { label: 'Total Earned', value: 'Rs.' + totalEarnings.toLocaleString('en-IN'), sub: 'Consultation + Commission', color: 'var(--gold)', big: true },
                   { label: 'Consultation Fee', value: 'Rs.' + consultationEarnings, sub: completedCons + ' � Rs.30', color: 'var(--teal)' },
@@ -1269,10 +1273,10 @@ ${skinImages.length > 0 ? `
 
               {/* Step 5: Products */}
               {posStep === 'products' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, height: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 300px', gap: 16, height: '100%' }}>
                   <div style={{ overflowY: 'auto' }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 12 }}>Products ({products.length})</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : 'repeat(3,1fr)', gap: 10 }}>
                       {products.map((p: any, i: number) => (
                         <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: 10, border: '1px solid var(--b1)' }}>
                           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -98,9 +98,7 @@ export default function EarningsPage() {
 
       // Add order commissions
       const myPatientUserIds = myCons.map((c: any) => c.user?.toString()).filter(Boolean)
-      const myOrders = Array.isArray(ordersRes)
-        ? ordersRes.filter((o: any) => myPatientUserIds.includes(o.userId?.toString() || o.user?.toString()))
-        : []
+      const myOrders = Array.isArray(ordersRes) ? ordersRes.filter((o: any) => { const src = (o.source || o.orderSource || "").toLowerCase(); if (src === "partner") return false; return myPatientUserIds.includes(o.userId?.toString() || o.user?.toString()) }) : []
 
       for (const o of myOrders) {
         const oId = o._id?.toString()

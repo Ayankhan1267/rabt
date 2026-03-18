@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -619,7 +619,7 @@ export default function PartnerPortalPage() {
               </div>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Address</label>
               <input value={customer.address} onChange={e=>setCustomer(p=>({...p,address:e.target.value}))} placeholder="House/Flat, Street, Colony" style={inp} />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 {[{k:'city',l:'City',p:'Indore'},{k:'state',l:'State',p:'MP'},{k:'pincode',l:'Pincode',p:'452001'}].map(f=>(
                   <div key={f.k}>
                     <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>{f.l}</label>
@@ -822,7 +822,7 @@ export default function PartnerPortalPage() {
 
           {/* STEP 3: CHECKOUT */}
           {step === 3 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 400px', gap: 16 }}>
               <div>
                 <div className="card" style={{ marginBottom: 14 }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>📦 Order Summary</div>
