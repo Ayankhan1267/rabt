@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -86,7 +86,8 @@ export default function OrdersPage() {
   }
 
   const allOrders = [
-    ...mongoOrders.filter(o => o.source !== 'hq' && o.source !== 'specialist_offline').map(o => ({ ...o, _source: 'website' })),
+    ...mongoOrders.filter(o => o.source === 'partner' || o.source === 'sales_partner').map(o => ({ ...o, _source: 'partner' })),
+    ...mongoOrders.filter(o => o.source !== 'hq' && o.source !== 'specialist_offline' && o.source !== 'partner').map(o => ({ ...o, _source: 'website' })),
     ...mongoOrders.filter(o => o.source === 'specialist_offline').map(o => ({ ...o, _source: 'specialist' })),
     ...orders.filter(o => o.source !== 'specialist_offline').map(o => ({ ...o, _source: 'hq' }))
   ]
@@ -228,19 +229,19 @@ export default function OrdersPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Order <span style={{ color: 'var(--gold)' }}>Management</span></h1>
-          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{allOrders.length} total � {mongoOrders.length} website � {orders.length} HQ</p>
+          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{allOrders.length} total · {mongoOrders.length} website · {orders.length} HQ</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setShowAnalytics(!showAnalytics)} style={{ padding: '8px 14px', background: showAnalytics ? 'var(--gL)' : 'rgba(255,255,255,0.05)', border: '1px solid ' + (showAnalytics ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), borderRadius: 8, color: showAnalytics ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>?? Analytics</button>
+          <button onClick={() => setShowAnalytics(!showAnalytics)} style={{ padding: '8px 14px', background: showAnalytics ? 'var(--gL)' : 'rgba(255,255,255,0.05)', border: '1px solid ' + (showAnalytics ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), borderRadius: 8, color: showAnalytics ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>📊 Analytics</button>
           <button onClick={loadOrders} style={{ padding: '8px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Refresh</button>
           <button onClick={openPOS} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Order</button>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 10, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 10, marginBottom: 20 }}>
         {[
           { label: 'Total Orders', value: allOrders.length, color: 'var(--blue)' },
           { label: 'Active Revenue', value: 'Rs.' + activeRev.toLocaleString('en-IN'), color: 'var(--gold)' },
@@ -251,7 +252,7 @@ export default function OrdersPage() {
         ].map((s, i) => (
           <div key={i} className="card">
             <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>{s.label}</div>
-            <div style={{ fontFamily: 'Syne', fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, color: s.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.value}</div>
           </div>
         ))}
       </div>
@@ -331,6 +332,7 @@ export default function OrdersPage() {
                   { label: 'Website', count: allOrders.filter(o => o._source === 'website').length, color: 'var(--green)' },
                   { label: 'HQ', count: allOrders.filter(o => o._source === 'hq').length, color: 'var(--blue)' },
                   { label: 'Specialist', count: allOrders.filter(o => o._source === 'specialist').length, color: 'var(--purple)' },
+                  { label: 'Partner', count: allOrders.filter(o => o._source === 'partner').length, color: 'var(--orange)' },
                 ].map((s, i) => {
                   const pct = Math.round(s.count / (allOrders.length || 1) * 100)
                   return (
@@ -388,7 +390,7 @@ export default function OrdersPage() {
           </span>
         ))}
         <span style={{ fontSize: 11, color: 'var(--mu)', marginLeft: 8 }}>Source:</span>
-        {[{id:'all',l:'All'},{id:'website',l:'Website'},{id:'hq',l:'HQ'},{id:'specialist',l:'Specialist'}].map(s => (
+        {[{id:'all',l:'All'},{id:'website',l:'Website'},{id:'hq',l:'HQ'},{id:'specialist',l:'Specialist'},{id:'partner',l:'Partner'}].map(s => (
           <span key={s.id} onClick={() => setSourceFilter(s.id)} style={{ padding: '4px 11px', borderRadius: 20, cursor: 'pointer', fontSize: 11, fontWeight: 600, background: sourceFilter === s.id ? 'rgba(20,184,166,0.15)' : 'rgba(255,255,255,0.05)', color: sourceFilter === s.id ? 'var(--teal)' : 'var(--mu2)', border: '1px solid ' + (sourceFilter === s.id ? 'rgba(20,184,166,0.3)' : 'var(--b1)') }}>{s.l}</span>
         ))}
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inp, marginLeft: 8, width: 200 }} />
@@ -437,7 +439,7 @@ export default function OrdersPage() {
                         <span style={{ padding: '3px 9px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: statusBg, color: statusColor }}>{getStatusDisplay(o)}</span>
                       )}
                     </td>
-                    <td style={{ padding: '11px 12px' }}><span style={{ fontSize: 10, color: o._source === 'website' ? 'var(--green)' : o._source === 'specialist' ? 'var(--purple)' : 'var(--mu)' }}>{o._source === 'website' ? 'Website' : o._source === 'specialist' ? 'Specialist' : 'HQ'}</span></td>
+                    <td style={{ padding: '11px 12px' }}><span style={{ fontSize: 10, color: o._source === 'website' ? 'var(--green)' : o._source === 'specialist' ? 'var(--purple)' : o._source === 'partner' ? 'var(--orange)' : 'var(--mu)' }}>{o._source === 'website' ? 'Website' : o._source === 'specialist' ? 'Specialist' : o._source === 'partner' ? 'Partner' : 'HQ'}</span></td>
                     <td style={{ padding: '11px 12px', fontSize: 11, color: 'var(--mu)', whiteSpace: 'nowrap' }}>{o.createdAt || o.created_at ? new Date(o.createdAt || o.created_at).toLocaleDateString('en-IN') : '�'}</td>
                     <td style={{ padding: '11px 12px' }}>
                       <div style={{ display: 'flex', gap: 4 }}>
@@ -558,7 +560,7 @@ export default function OrdersPage() {
       {showDetail && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowDetail(null)}>
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 540, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>#{(showDetail.orderNumber || showDetail.id || '').toString().slice(-8)}</div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{showDetail.createdAt ? new Date(showDetail.createdAt).toLocaleString('en-IN') : ''}</div>

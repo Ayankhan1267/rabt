@@ -412,7 +412,7 @@ ${skinImages.length > 0 ? `
         created_by: user?.id,
       })
 
-      toast.success('Order created! 12% commission pending. ??')
+      toast.success('Order created! 12% commission pending. 🎉')
       // Auto generate PDF
       generatePDF()
       setShowPOS(false)
@@ -501,7 +501,7 @@ ${skinImages.length > 0 ? `
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--s2)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
         {[
-          { id: 'overview', label: unassignedCons.length > 0 ? `Overview ??${unassignedCons.length}` : 'Overview' },
+          { id: 'overview', label: unassignedCons.length > 0 ? `Overview 🔔${unassignedCons.length}` : 'Overview' },
           { id: 'consultations', label: `Consultations (${consultations.length})` },
           { id: 'crm', label: `Leads (${leads.length})` },
           { id: 'skinprofiles', label: `Skin Profiles (${mySkinProfiles.length})` },
@@ -525,7 +525,7 @@ ${skinImages.length > 0 ? `
               {unassignedCons.length > 0 && (
                 <div style={{ gridColumn: '1/-1', background: 'var(--orL)', borderRadius: 12, padding: '16px 18px', border: '1px solid rgba(251,146,60,0.3)' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 12 }}>
-                    ?? New Consultation Requests ({unassignedCons.length}) � Website se aaye hain
+                    🔔 New Consultation Requests ({unassignedCons.length}) � Website se aaye hain
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : 'repeat(3,1fr)', gap: 10 }}>
                     {unassignedCons.slice(0, 6).map((c: any, i: number) => (
@@ -843,7 +843,7 @@ ${skinImages.length > 0 ? `
                       </td>
                       <td style={{ padding: '11px 12px' }}>
                         {c.phone && (
-                          <a href={'https://wa.me/' + c.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent('Hi ' + c.name + '! Your consultation reminder from Rabt Naturals. Please confirm your appointment. ??')}
+                          <a href={'https://wa.me/' + c.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent('Hi ' + c.name + '! Your consultation reminder from Rabt Naturals. Please confirm your appointment. 🌿')}
                             target="_blank" rel="noopener noreferrer"
                             style={{ padding: '4px 10px', background: 'var(--grL)', border: 'none', borderRadius: 6, color: 'var(--green)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}>
                             WA
@@ -1122,7 +1122,7 @@ ${skinImages.length > 0 ? `
 
                   <div style={{ border: '2px dashed var(--b2)', borderRadius: 12, padding: 30, textAlign: 'center', marginBottom: 16, cursor: 'pointer', background: 'var(--s2)' }}
                     onClick={() => fileInputRef.current?.click()}>
-                    <div style={{ fontSize: 32, marginBottom: 8 }}>??</div>
+                    <div style={{ fontSize: 32, marginBottom: 8 }}>🌿</div>
                     <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Click to upload skin photos</div>
                     <div style={{ fontSize: 11, color: 'var(--mu)' }}>Max 4 photos � Front, sides, close-up</div>
                     <input ref={fileInputRef} type="file" multiple accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
@@ -1143,7 +1143,7 @@ ${skinImages.length > 0 ? `
                     <button onClick={() => setPosStep('customer')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>? Back</button>
                     <button onClick={analyzeSkin} disabled={analyzing || skinImages.length === 0}
                       style={{ flex: 2, padding: '11px', background: skinImages.length > 0 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: skinImages.length > 0 ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: skinImages.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
-                      {analyzing ? 'AI Analyzing... ??' : 'Analyze Skin with AI ?'}
+                      {analyzing ? 'AI Analyzing... ⏳' : 'Analyze Skin with AI 🔬'}
                     </button>
                   </div>
                   <div style={{ marginTop: 12, textAlign: 'center' }}>

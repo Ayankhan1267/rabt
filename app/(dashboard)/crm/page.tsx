@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -272,7 +272,7 @@ export default function CRMPage() {
   }
 
   function sendWhatsApp(phone: string, name: string) {
-    window.open('https://wa.me/' + phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + name + '! Rabt Naturals se ??'), '_blank')
+    window.open('https://wa.me/' + phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + name + '! Rabt Naturals se 🌿'), '_blank')
   }
 
   const isAdmin = profile && ['founder', 'manager', 'specialist_manager', 'ops', 'admin'].includes(profile.role)
@@ -312,7 +312,7 @@ export default function CRMPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           {isAdmin && (
             <button onClick={() => setShowImport(true)} style={{ padding: '8px 14px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
-              ?? Import CSV
+              📥 Import CSV
             </button>
           )}
           {isAdmin && (
@@ -375,7 +375,7 @@ export default function CRMPage() {
                       {isAdmin && (
                         <select value={lead.assigned_to?.id || ''} onChange={e => { const p = profiles.find(pr => pr.id === e.target.value); assignLead(lead.id, e.target.value, p?.name || '') }}
                           style={{ width: '100%', background: lead.assigned_to ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)', border: '1px solid ' + (lead.assigned_to ? 'rgba(34,197,94,0.3)' : 'rgba(249,115,22,0.3)'), borderRadius: 6, padding: '5px 8px', color: lead.assigned_to ? 'var(--green)' : 'var(--orange)', fontSize: 11, fontFamily: 'Outfit', outline: 'none', cursor: 'pointer', marginBottom: 8 }}>
-                          <option value="">{lead.assigned_to ? '� Change �' : '?? Assign karo'}</option>
+                          <option value="">{lead.assigned_to ? '� Change �' : '👆 Assign karo'}</option>
                           <optgroup label="Specialists">{profiles.filter(p => p.role === 'specialist').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
                           <optgroup label="Team">{profiles.filter(p => p.role !== 'specialist').map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</optgroup>
                         </select>
@@ -427,7 +427,7 @@ export default function CRMPage() {
                     <td style={{ padding: '10px 12px' }}>
                       {isAdmin ? (
                         <select value={l.assigned_to?.id || ''} onChange={e => { const p = profiles.find(pr => pr.id === e.target.value); assignLead(l.id, e.target.value, p?.name || '') }} style={{ background: l.assigned_to ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)', border: '1px solid ' + (l.assigned_to ? 'rgba(34,197,94,0.3)' : 'rgba(249,115,22,0.3)'), borderRadius: 6, padding: '4px 8px', color: l.assigned_to ? 'var(--green)' : 'var(--orange)', fontSize: 11, cursor: 'pointer', outline: 'none', fontFamily: 'Outfit', maxWidth: 140 }}>
-                          <option value="">{l.assigned_to ? '� Change �' : '?? Assign'}</option>
+                          <option value="">{l.assigned_to ? '� Change �' : '👆 Assign'}</option>
                           {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                       ) : (
@@ -647,8 +647,8 @@ export default function CRMPage() {
             )}
             {selectedLead.notes && <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px', marginBottom: 14, fontSize: 12, color: 'var(--mu2)' }}>{selectedLead.notes}</div>}
             <div style={{ display: 'flex', gap: 8 }}>
-              {selectedLead.phone && <button onClick={() => sendWhatsApp(selectedLead.phone, selectedLead.name)} style={{ flex: 1, padding: 10, background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: 'var(--green)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>?? WhatsApp</button>}
-              {selectedLead.phone && <a href={'tel:' + selectedLead.phone.replace(/[^0-9+]/g,'')} style={{ flex: 1, padding: 10, background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, color: 'var(--blue)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', textAlign: 'center' }}>?? Call</a>}
+              {selectedLead.phone && <button onClick={() => sendWhatsApp(selectedLead.phone, selectedLead.name)} style={{ flex: 1, padding: 10, background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: 'var(--green)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>💬 WhatsApp</button>}
+              {selectedLead.phone && <a href={'tel:' + selectedLead.phone.replace(/[^0-9+]/g,'')} style={{ flex: 1, padding: 10, background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.2)', borderRadius: 8, color: 'var(--blue)', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', textAlign: 'center' }}>📞 Call</a>}
             </div>
           </div>
         </div>
@@ -750,7 +750,7 @@ export default function CRMPage() {
                 setImporting(false)
                 loadLeads()
               }} style={{ flex: 2, padding: 10, background: importing || !importData ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: importing || !importData ? 'var(--mu)' : '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
-                {importing ? 'Importing...' : '?? Import Leads'}
+                {importing ? 'Importing...' : '📥 Import Leads'}
               </button>
             </div>
           </div>

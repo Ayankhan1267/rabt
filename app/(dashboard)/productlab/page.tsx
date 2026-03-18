@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -10,27 +10,27 @@ const STATUSES = ['Active', 'Development', 'Testing', 'Discontinued', 'Planned']
 // Rabt Naturals — All 18 Products
 const DEFAULT_PRODUCTS = [
   // Moong Magic Range
-  { name: 'Moong Magic Cleanser', range: 'Moong Magic', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'MM-CL-01', description: 'Gentle foaming cleanser with Moong Dal extract', keyIngredients: 'Moong Dal Extract, Niacinamide, Glycerin, Salicylic Acid', benefits: 'Deep cleansing, pore minimizing, oil control', targetConcern: 'Acne, Oily Skin' },
-  { name: 'Moong Magic Toner', range: 'Moong Magic', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'MM-TO-01', description: 'Balancing toner with Alpha Arbutin & Green Tea', keyIngredients: 'Alpha Arbutin, Green Tea Extract, Niacinamide, Centella Asiatica', benefits: 'Pore tightening, brightening, hydrating', targetConcern: 'Uneven tone, Large pores' },
-  { name: 'Moong Magic Serum', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'MM-SR-01', description: 'Brightening & anti-acne serum', keyIngredients: 'Water, Niacinamide, Glycerin, Butylene Glycol, Alpha Arbutin, Beta Arbutin, Carbomer, Caprylyl Glycol, Pentylene Glycol, Moong Dal (Vigna radiata) Extract, Green Tea (Camellia sinensis) Extract, Salicylic Acid, Disodium EDTA, Panthenol (Vitamin B5), Centella Asiatica (CICA) Extract, Vaccinium Angustifolium (Blueberry) Fruit Extract, Rubus Fruticosus (Blackberry) Fruit Extract, Coconut Acid, 1,2-Hexanediol, Proline, Sodium Hyaluronate, Citrullus Lanatus (Watermelon) Fruit Extract', benefits: 'Brightening, acne reduction, hydration', targetConcern: 'Acne, Pigmentation, Dull skin' },
-  { name: 'Moong Magic Moisturizer', range: 'Moong Magic', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'MM-MO-01', description: 'Lightweight gel moisturizer for oily skin', keyIngredients: 'Moong Dal Extract, Hyaluronic Acid, Niacinamide, Aloe Vera', benefits: 'Lightweight hydration, oil control, mattifying', targetConcern: 'Oily skin, Acne' },
-  { name: 'Moong Magic Sunscreen', range: 'Moong Magic', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'MM-SS-01', description: 'SPF 50 PA++++ broad spectrum sunscreen', keyIngredients: 'Zinc Oxide, Titanium Dioxide, Moong Dal Extract, Niacinamide', benefits: 'UV protection, no white cast, lightweight', targetConcern: 'Sun damage, Tanning' },
+  { name: 'Moong Magic Cleanser', range: 'Moong Magic', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'MM-CL-01', description: 'Gentle foaming cleanser with Moong Dal extract', key_ingredients: 'Moong Dal Extract, Niacinamide, Glycerin, Salicylic Acid', benefits: 'Deep cleansing, pore minimizing, oil control', target_concern: 'Acne, Oily Skin' },
+  { name: 'Moong Magic Toner', range: 'Moong Magic', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'MM-TO-01', description: 'Balancing toner with Alpha Arbutin & Green Tea', key_ingredients: 'Alpha Arbutin, Green Tea Extract, Niacinamide, Centella Asiatica', benefits: 'Pore tightening, brightening, hydrating', target_concern: 'Uneven tone, Large pores' },
+  { name: 'Moong Magic Serum', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'MM-SR-01', description: 'Brightening & anti-acne serum', key_ingredients: 'Water, Niacinamide, Glycerin, Butylene Glycol, Alpha Arbutin, Beta Arbutin, Carbomer, Caprylyl Glycol, Pentylene Glycol, Moong Dal (Vigna radiata) Extract, Green Tea (Camellia sinensis) Extract, Salicylic Acid, Disodium EDTA, Panthenol (Vitamin B5), Centella Asiatica (CICA) Extract, Vaccinium Angustifolium (Blueberry) Fruit Extract, Rubus Fruticosus (Blackberry) Fruit Extract, Coconut Acid, 1,2-Hexanediol, Proline, Sodium Hyaluronate, Citrullus Lanatus (Watermelon) Fruit Extract', benefits: 'Brightening, acne reduction, hydration', target_concern: 'Acne, Pigmentation, Dull skin' },
+  { name: 'Moong Magic Moisturizer', range: 'Moong Magic', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'MM-MO-01', description: 'Lightweight gel moisturizer for oily skin', key_ingredients: 'Moong Dal Extract, Hyaluronic Acid, Niacinamide, Aloe Vera', benefits: 'Lightweight hydration, oil control, mattifying', target_concern: 'Oily skin, Acne' },
+  { name: 'Moong Magic Sunscreen', range: 'Moong Magic', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'MM-SS-01', description: 'SPF 50 PA++++ broad spectrum sunscreen', key_ingredients: 'Zinc Oxide, Titanium Dioxide, Moong Dal Extract, Niacinamide', benefits: 'UV protection, no white cast, lightweight', target_concern: 'Sun damage, Tanning' },
   // Masoor Glow Range
-  { name: 'Masoor Glow Cleanser', range: 'Masoor Glow', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'MG-CL-01', description: 'Brightening cleanser with Red Lentil extract', keyIngredients: 'Masoor Dal Extract, Vitamin C, Kojic Acid, Glycerin', benefits: 'Brightening, anti-oxidant, gentle cleanse', targetConcern: 'Dull skin, Pigmentation' },
-  { name: 'Masoor Glow Toner', range: 'Masoor Glow', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'MG-TO-01', description: 'Glow-enhancing toner', keyIngredients: 'Masoor Dal Extract, Vitamin C, Rose Water, Hyaluronic Acid', benefits: 'Instant glow, hydration, brightening', targetConcern: 'Dull skin, Hyperpigmentation' },
-  { name: 'Masoor Glow Serum', range: 'Masoor Glow', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'MG-SR-01', description: 'Vitamin C brightening serum', keyIngredients: 'Masoor Dal Extract, Vitamin C, Alpha Arbutin, Ferulic Acid', benefits: 'Brightening, anti-aging, even tone', targetConcern: 'Dark spots, Pigmentation, Dull skin' },
-  { name: 'Masoor Glow Moisturizer', range: 'Masoor Glow', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'MG-MO-01', description: 'Glow-boosting moisturizer', keyIngredients: 'Masoor Dal Extract, Squalane, Vitamin E, Ceramides', benefits: 'Deep hydration, natural glow, softening', targetConcern: 'Dry skin, Dull complexion' },
-  { name: 'Masoor Glow Sunscreen', range: 'Masoor Glow', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'MG-SS-01', description: 'Glow-finish SPF 50 sunscreen', keyIngredients: 'Zinc Oxide, Masoor Dal Extract, Vitamin C, Hyaluronic Acid', benefits: 'UV protection, glow finish, brightening', targetConcern: 'Sun damage, Dull skin' },
+  { name: 'Masoor Glow Cleanser', range: 'Masoor Glow', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'MG-CL-01', description: 'Brightening cleanser with Red Lentil extract', key_ingredients: 'Masoor Dal Extract, Vitamin C, Kojic Acid, Glycerin', benefits: 'Brightening, anti-oxidant, gentle cleanse', target_concern: 'Dull skin, Pigmentation' },
+  { name: 'Masoor Glow Toner', range: 'Masoor Glow', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'MG-TO-01', description: 'Glow-enhancing toner', key_ingredients: 'Masoor Dal Extract, Vitamin C, Rose Water, Hyaluronic Acid', benefits: 'Instant glow, hydration, brightening', target_concern: 'Dull skin, Hyperpigmentation' },
+  { name: 'Masoor Glow Serum', range: 'Masoor Glow', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'MG-SR-01', description: 'Vitamin C brightening serum', key_ingredients: 'Masoor Dal Extract, Vitamin C, Alpha Arbutin, Ferulic Acid', benefits: 'Brightening, anti-aging, even tone', target_concern: 'Dark spots, Pigmentation, Dull skin' },
+  { name: 'Masoor Glow Moisturizer', range: 'Masoor Glow', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'MG-MO-01', description: 'Glow-boosting moisturizer', key_ingredients: 'Masoor Dal Extract, Squalane, Vitamin E, Ceramides', benefits: 'Deep hydration, natural glow, softening', target_concern: 'Dry skin, Dull complexion' },
+  { name: 'Masoor Glow Sunscreen', range: 'Masoor Glow', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'MG-SS-01', description: 'Glow-finish SPF 50 sunscreen', key_ingredients: 'Zinc Oxide, Masoor Dal Extract, Vitamin C, Hyaluronic Acid', benefits: 'UV protection, glow finish, brightening', target_concern: 'Sun damage, Dull skin' },
   // Oats Care Range
-  { name: 'Oats Care Cleanser', range: 'Oats Care', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'OC-CL-01', description: 'Ultra-gentle oat milk cleanser for sensitive skin', keyIngredients: 'Colloidal Oatmeal, Oat Milk, Ceramides, Panthenol', benefits: 'Gentle cleanse, barrier repair, soothing', targetConcern: 'Sensitive skin, Dryness, Redness' },
-  { name: 'Oats Care Toner', range: 'Oats Care', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'OC-TO-01', description: 'Calming hydrating toner', keyIngredients: 'Colloidal Oatmeal, Aloe Vera, Calendula, Hyaluronic Acid', benefits: 'Calming, deep hydration, barrier support', targetConcern: 'Sensitive skin, Dehydration' },
-  { name: 'Oats Care Serum', range: 'Oats Care', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'OC-SR-01', description: 'Barrier repair serum for sensitive skin', keyIngredients: 'Colloidal Oatmeal, Ceramides, Hyaluronic Acid, Centella Asiatica', benefits: 'Barrier repair, anti-inflammatory, deep hydration', targetConcern: 'Sensitive skin, Compromised barrier' },
-  { name: 'Oats Care Moisturizer', range: 'Oats Care', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'OC-MO-01', description: 'Rich barrier-repair cream', keyIngredients: 'Colloidal Oatmeal, Shea Butter, Ceramides, Squalane', benefits: 'Intense hydration, barrier repair, non-irritating', targetConcern: 'Dry skin, Eczema, Sensitive skin' },
-  { name: 'Oats Care Sunscreen', range: 'Oats Care', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'OC-SS-01', description: 'Mineral SPF 50 for sensitive skin', keyIngredients: 'Zinc Oxide, Colloidal Oatmeal, Ceramides, Aloe Vera', benefits: 'Gentle UV protection, soothing, barrier support', targetConcern: 'Sensitive skin, Sun sensitivity' },
+  { name: 'Oats Care Cleanser', range: 'Oats Care', type: 'Cleanser', price: 0, cost: 0, status: 'Active', sku: 'OC-CL-01', description: 'Ultra-gentle oat milk cleanser for sensitive skin', key_ingredients: 'Colloidal Oatmeal, Oat Milk, Ceramides, Panthenol', benefits: 'Gentle cleanse, barrier repair, soothing', target_concern: 'Sensitive skin, Dryness, Redness' },
+  { name: 'Oats Care Toner', range: 'Oats Care', type: 'Toner', price: 0, cost: 0, status: 'Active', sku: 'OC-TO-01', description: 'Calming hydrating toner', key_ingredients: 'Colloidal Oatmeal, Aloe Vera, Calendula, Hyaluronic Acid', benefits: 'Calming, deep hydration, barrier support', target_concern: 'Sensitive skin, Dehydration' },
+  { name: 'Oats Care Serum', range: 'Oats Care', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'OC-SR-01', description: 'Barrier repair serum for sensitive skin', key_ingredients: 'Colloidal Oatmeal, Ceramides, Hyaluronic Acid, Centella Asiatica', benefits: 'Barrier repair, anti-inflammatory, deep hydration', target_concern: 'Sensitive skin, Compromised barrier' },
+  { name: 'Oats Care Moisturizer', range: 'Oats Care', type: 'Moisturizer', price: 0, cost: 0, status: 'Active', sku: 'OC-MO-01', description: 'Rich barrier-repair cream', key_ingredients: 'Colloidal Oatmeal, Shea Butter, Ceramides, Squalane', benefits: 'Intense hydration, barrier repair, non-irritating', target_concern: 'Dry skin, Eczema, Sensitive skin' },
+  { name: 'Oats Care Sunscreen', range: 'Oats Care', type: 'Sunscreen', price: 0, cost: 0, status: 'Active', sku: 'OC-SS-01', description: 'Mineral SPF 50 for sensitive skin', key_ingredients: 'Zinc Oxide, Colloidal Oatmeal, Ceramides, Aloe Vera', benefits: 'Gentle UV protection, soothing, barrier support', target_concern: 'Sensitive skin, Sun sensitivity' },
   // Standalone
-  { name: 'Eye Pulse', range: 'Standalone', type: 'Under-Eye Cream', price: 0, cost: 0, status: 'Active', sku: 'SA-EP-01', description: 'Advanced under-eye cream for dark circles & puffiness', keyIngredients: 'Caffeine, Peptides, Vitamin K, Hyaluronic Acid, Retinol', benefits: 'Dark circle reduction, depuffing, anti-aging', targetConcern: 'Dark circles, Puffiness, Fine lines' },
-  { name: 'Ratiol Facewash', range: 'Standalone', type: 'Facewash', price: 0, cost: 0, status: 'Active', sku: 'SA-RF-01', description: 'Retinol-powered anti-aging facewash', keyIngredients: 'Retinol, Glycolic Acid, Hyaluronic Acid, Ceramides', benefits: 'Anti-aging, cell renewal, brightening', targetConcern: 'Aging, Fine lines, Dullness' },
-  { name: 'Ratiol Serum', range: 'Standalone', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'SA-RS-01', description: 'Retinol anti-aging serum', keyIngredients: 'Retinol, Peptides, Niacinamide, Hyaluronic Acid, Vitamin E', benefits: 'Anti-aging, wrinkle reduction, skin renewal', targetConcern: 'Fine lines, Wrinkles, Aging' },
+  { name: 'Eye Pulse', range: 'Standalone', type: 'Under-Eye Cream', price: 0, cost: 0, status: 'Active', sku: 'SA-EP-01', description: 'Advanced under-eye cream for dark circles & puffiness', key_ingredients: 'Caffeine, Peptides, Vitamin K, Hyaluronic Acid, Retinol', benefits: 'Dark circle reduction, depuffing, anti-aging', target_concern: 'Dark circles, Puffiness, Fine lines' },
+  { name: 'Ratiol Facewash', range: 'Standalone', type: 'Facewash', price: 0, cost: 0, status: 'Active', sku: 'SA-RF-01', description: 'Retinol-powered anti-aging facewash', key_ingredients: 'Retinol, Glycolic Acid, Hyaluronic Acid, Ceramides', benefits: 'Anti-aging, cell renewal, brightening', target_concern: 'Aging, Fine lines, Dullness' },
+  { name: 'Ratiol Serum', range: 'Standalone', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: 'SA-RS-01', description: 'Retinol anti-aging serum', key_ingredients: 'Retinol, Peptides, Niacinamide, Hyaluronic Acid, Vitamin E', benefits: 'Anti-aging, wrinkle reduction, skin renewal', target_concern: 'Fine lines, Wrinkles, Aging' },
 ]
 
 const RANGE_COLORS: Record<string, string> = {
@@ -56,7 +56,7 @@ export default function ProductLabPage() {
   const [rangeFilter, setRangeFilter] = useState('all')
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [form, setForm] = useState<any>({ name: '', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: '', description: '', keyIngredients: '', benefits: '', targetConcern: '', moq: 0, stock: 0, supplier: '', notes: '' })
+  const [form, setForm] = useState<any>({ name: '', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: '', description: '', key_ingredients: '', benefits: '', target_concern: '', moq: 0, stock: 0, supplier: '', notes: '' })
 
   useEffect(() => { setMounted(true); loadProducts() }, [])
 
@@ -83,12 +83,12 @@ export default function ProductLabPage() {
         if (error) throw error
         toast.success('Updated!')
       } else {
-        const { error } = await supabase.from('product_lab').insert(form)
+        const { id: _id, ...formData } = form; const { error } = await supabase.from('product_lab').insert(formData)
         if (error) throw error
         toast.success('Product added!')
       }
       setShowAdd(false); setEditing(false); setSelected(null)
-      setForm({ name: '', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: '', description: '', keyIngredients: '', benefits: '', targetConcern: '', moq: 0, stock: 0, supplier: '', notes: '' })
+      setForm({ name: '', range: 'Moong Magic', type: 'Serum', price: 0, cost: 0, status: 'Active', sku: '', description: '', key_ingredients: '', benefits: '', target_concern: '', moq: 0, stock: 0, supplier: '', notes: '' })
       loadProducts()
     } catch (e: any) { toast.error(e.message) }
   }
@@ -100,13 +100,16 @@ export default function ProductLabPage() {
   }
 
   async function updateField(id: string, key: string, val: any) {
-    await supabase.from('product_lab').update({ [key]: val }).eq('id', id)
+    const { error } = id && id.length > 20
+      ? await supabase.from('product_lab').update({ [key]: val }).eq('id', id)
+      : await supabase.from('product_lab').update({ [key]: val }).eq('name', id)
+    if (error) { toast.error('Update failed: ' + error.message); return }
     setProducts(prev => prev.map(p => p.id === id ? { ...p, [key]: val } : p))
     if (selected?.id === id) setSelected((s: any) => ({ ...s, [key]: val }))
   }
 
   const filtered = products.filter(p => {
-    const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.keyIngredients?.toLowerCase().includes(search.toLowerCase())
+    const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.key_ingredients?.toLowerCase().includes(search.toLowerCase())
     const matchRange = rangeFilter === 'all' || p.range === rangeFilter
     return matchSearch && matchRange
   })
@@ -275,11 +278,11 @@ export default function ProductLabPage() {
                     </div>
                   )}
 
-                  {selected.keyIngredients && (
+                  {selected.key_ingredients && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 7 }}>Key Ingredients</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                        {selected.keyIngredients.split(',').slice(0, 15).map((ing: string, i: number) => (
+                        {selected.key_ingredients.split(',').slice(0, 15).map((ing: string, i: number) => (
                           <span key={i} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--gL)', color: 'var(--gold)', fontWeight: 600 }}>{ing.trim()}</span>
                         ))}
                       </div>
@@ -293,11 +296,11 @@ export default function ProductLabPage() {
                     </div>
                   )}
 
-                  {selected.targetConcern && (
+                  {selected.target_concern && (
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Target Concerns</div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                        {selected.targetConcern.split(',').map((c: string, i: number) => (
+                        {selected.target_concern.split(',').map((c: string, i: number) => (
                           <span key={i} style={{ fontSize: 10.5, padding: '3px 10px', borderRadius: 20, background: 'var(--orL)', color: 'var(--orange)', fontWeight: 600 }}>{c.trim()}</span>
                         ))}
                       </div>
@@ -490,8 +493,8 @@ export default function ProductLabPage() {
               ))}
             </div>
 
-            {[{k:'description',l:'Description'},{k:'keyIngredients',l:'Key Ingredients (comma separated)'},{k:'benefits',l:'Benefits'},{k:'targetConcern',l:'Target Concerns'},{k:'supplier',l:'Supplier'},{k:'notes',l:'Notes'}].map(f => (
-              <div key={f.k}><label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>{f.l}</label>{f.k === 'keyIngredients' || f.k === 'notes' ? <textarea value={form[f.k] || ''} onChange={e => setForm((p: any) => ({...p, [f.k]: e.target.value}))} rows={3} style={{ ...inp, resize: 'none' }} /> : <input value={form[f.k] || ''} onChange={e => setForm((p: any) => ({...p, [f.k]: e.target.value}))} style={inp} />}</div>
+            {[{k:'description',l:'Description'},{k:'key_ingredients',l:'Key Ingredients (comma separated)'},{k:'benefits',l:'Benefits'},{k:'target_concern',l:'Target Concerns'},{k:'supplier',l:'Supplier'},{k:'notes',l:'Notes'}].map(f => (
+              <div key={f.k}><label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>{f.l}</label>{f.k === 'key_ingredients' || f.k === 'notes' ? <textarea value={form[f.k] || ''} onChange={e => setForm((p: any) => ({...p, [f.k]: e.target.value}))} rows={3} style={{ ...inp, resize: 'none' }} /> : <input value={form[f.k] || ''} onChange={e => setForm((p: any) => ({...p, [f.k]: e.target.value}))} style={inp} />}</div>
             ))}
 
             <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>

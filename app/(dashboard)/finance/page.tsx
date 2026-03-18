@@ -1,10 +1,44 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 const EXPENSE_CATEGORIES = ['Production', 'Packaging', 'Shipping', 'Marketing', 'Salaries', 'Office', 'Software', 'Logistics', 'Returns', 'Miscellaneous']
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+
+// State to Zone mapping (from Indore, MP)
+const STATE_ZONE: Record<string, string> = {
+  // Local
+  'indore': 'local',
+  // Zone A - MP
+  'madhya pradesh': 'zone_a', 'mp': 'zone_a',
+  // Zone B - Nearby states
+  'gujarat': 'zone_b', 'rajasthan': 'zone_b', 'maharashtra': 'zone_b',
+  'uttar pradesh': 'zone_b', 'up': 'zone_b', 'chhattisgarh': 'zone_b',
+  'haryana': 'zone_b', 'punjab': 'zone_b', 'delhi': 'zone_b',
+  // Zone C - Far states
+  'karnataka': 'zone_c', 'tamil nadu': 'zone_c', 'telangana': 'zone_c',
+  'andhra pradesh': 'zone_c', 'kerala': 'zone_c', 'west bengal': 'zone_c',
+  'bihar': 'zone_c', 'jharkhand': 'zone_c', 'odisha': 'zone_c',
+  'goa': 'zone_c', 'uttarakhand': 'zone_c', 'himachal pradesh': 'zone_c',
+  // Zone D - Remote
+  'assam': 'zone_d', 'meghalaya': 'zone_d', 'manipur': 'zone_d',
+  'nagaland': 'zone_d', 'mizoram': 'zone_d', 'tripura': 'zone_d',
+  'arunachal pradesh': 'zone_d', 'sikkim': 'zone_d',
+  'jammu and kashmir': 'zone_d', 'ladakh': 'zone_d',
+}
+
+function getZoneFromOrder(order: any): string {
+  const city = (order.city || order.shippingAddress?.city || '').toLowerCase().trim()
+  const state = (order.state || order.shippingAddress?.state || '').toLowerCase().trim()
+  if (city === 'indore') return 'local'
+  return STATE_ZONE[state] || STATE_ZONE[city] || 'zone_b'
+}
+
+function getWeightFromOrder(order: any, defaultWeight: number): number {
+  const itemCount = order.itemCount || (order.items || []).length || 1
+  return Math.max(0.2, itemCount * defaultWeight)
+}
 
 // Shipping zones (ShipRocket style)
 const ZONES = [
@@ -29,6 +63,7 @@ export default function FinancePage() {
   const [products, setProducts] = useState<any[]>([])
   const [consultations, setConsultations] = useState<any[]>([])
   const [payouts, setPayouts] = useState<any[]>([])
+  const [partnerPayouts, setPartnerPayouts] = useState<any[]>([])
   const [expenses, setExpenses] = useState<any[]>([])
   const [settings, setSettings] = useState({
     gstRate: 18,
@@ -77,6 +112,8 @@ export default function FinancePage() {
         setOrders(Array.isArray(ordRes) ? ordRes : [])
         setConsultations(Array.isArray(consRes) ? consRes : [])
         setPayouts(Array.isArray(payRes) ? payRes : [])
+        const { data: pw } = await supabase.from('partner_withdrawal_requests').select('*').eq('status','approved')
+        setPartnerPayouts(pw || [])
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
@@ -135,16 +172,17 @@ export default function FinancePage() {
   // Smart shipping — per order based on payment type
   const codOrders      = deliveredOrders.filter(o => (o.paymentMethod || o.payment || '').toLowerCase().includes('cod'))
   const prepaidOrders  = deliveredOrders.filter(o => !(o.paymentMethod || o.payment || '').toLowerCase().includes('cod'))
-  const shippingCOD    = codOrders.length * calcShipping(settings.defaultWeight, settings.defaultZone, 'cod', settings.codCharge, settings.fuelSurcharge)
-  const shippingPrepaid = prepaidOrders.length * calcShipping(settings.defaultWeight, settings.defaultZone, 'prepaid', settings.codCharge, settings.fuelSurcharge)
+  const shippingCOD     = codOrders.reduce((s, o) => s + calcShipping(getWeightFromOrder(o, settings.defaultWeight), getZoneFromOrder(o), 'cod', settings.codCharge, settings.fuelSurcharge), 0)
+  const shippingPrepaid = prepaidOrders.reduce((s, o) => s + calcShipping(getWeightFromOrder(o, settings.defaultWeight), getZoneFromOrder(o), 'prepaid', settings.codCharge, settings.fuelSurcharge), 0)
   const totalShipping  = shippingCOD + shippingPrepaid
 
+  const partnerCommissions = partnerPayouts.reduce((s, p) => s + (p.amount || 0), 0)
   const specialistCommissions = payouts.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0)
   const pendingCommissions     = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0)
   const totalExpenses  = expenses.reduce((s, e) => s + (e.amount || 0), 0)
-  const totalCOGS      = productionCost + packagingCost + totalShipping + specialistCommissions
+  const totalCOGS      = productionCost + packagingCost + totalShipping + specialistCommissions + partnerCommissions
   const grossProfit    = revenueExGST - productionCost + consultationRevenue
-  const operatingProfit = grossProfit - packagingCost - totalShipping - specialistCommissions
+  const operatingProfit = grossProfit - packagingCost - totalShipping - specialistCommissions - partnerCommissions
   const netProfit      = operatingProfit - totalExpenses
   const grossMargin    = revenueExGST > 0 ? Math.round(grossProfit / revenueExGST * 100) : 0
   const netMargin      = totalRevenue > 0 ? Math.round(netProfit / totalRevenue * 100) : 0
@@ -309,6 +347,7 @@ export default function FinancePage() {
               { l: 'Shipping — COD (' + codOrders.length + ' orders)', v: shippingCOD, sub: true },
               { l: 'Shipping — Prepaid (' + prepaidOrders.length + ' orders)', v: shippingPrepaid, sub: true },
               { l: 'Specialist Commissions', v: specialistCommissions },
+              { l: 'Partner Commissions', v: partnerCommissions },
               { l: 'TOTAL COGS', v: totalCOGS, bold: true, big: true, color: 'var(--orange)' },
               { l: 'GROSS PROFIT', v: grossProfit, bold: true, big: true, color: grossProfit >= 0 ? 'var(--teal)' : 'var(--red)', highlight: true },
             ].map((row: any, i) => (
