@@ -4,14 +4,17 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 export default function PartnerManagerPage() {
-  const [partners, setPartners]   = useState<any[]>([])
-  const [orders, setOrders]       = useState<any[]>([])
-  const [loading, setLoading]     = useState(true)
-  const [mounted, setMounted]     = useState(false)
-  const [tab, setTab]             = useState<'partners'|'orders'|'payouts'|'analytics'>('partners')
-  const [selected, setSelected]   = useState<any>(null)
-  const [showAdd, setShowAdd]     = useState(false)
-  const [form, setForm]           = useState({ name: '', email: '', phone: '', business_name: '', city: '', commission_pct: 10, notes: '' })
+  const [partners, setPartners]       = useState<any[]>([])
+  const [orders, setOrders]           = useState<any[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [mounted, setMounted]         = useState(false)
+  const [tab, setTab]                 = useState<'partners'|'orders'|'payouts'|'analytics'>('partners')
+  const [selected, setSelected]       = useState<any>(null)
+  const [showAdd, setShowAdd]         = useState(false)
+  const [createdCreds, setCreatedCreds] = useState<any>(null)
+  const [createLoginModal, setCreateLoginModal] = useState<any>(null)
+  const [createLoading, setCreateLoading] = useState(false)
+  const [form, setForm] = useState({ name: '', email: '', phone: '', business_name: '', city: '', commission_pct: 10, notes: '' })
 
   useEffect(() => { setMounted(true); loadAll() }, [])
 
@@ -28,15 +31,35 @@ export default function PartnerManagerPage() {
 
   async function addPartner() {
     if (!form.name || !form.phone) { toast.error('Name and phone required'); return }
-    const { error } = await supabase.from('sales_partners').insert({
+    if (!form.email) { toast.error('Email required for login creation'); return }
+    const { data, error } = await supabase.from('sales_partners').insert({
       ...form,
       status: 'active', total_orders: 0, total_earnings: 0, pending_payout: 0, total_paid: 0,
-    })
+    }).select().single()
     if (error) { toast.error(error.message); return }
-    toast.success('Partner added successfully!')
+    toast.success('Partner added! Creating login...')
     setShowAdd(false)
+    // Auto create login
+    await createPartnerLogin({ ...form, id: data.id })
     setForm({ name: '', email: '', phone: '', business_name: '', city: '', commission_pct: 10, notes: '' })
     loadAll()
+  }
+
+  async function createPartnerLogin(partner: any) {
+    setCreateLoading(true)
+    try {
+      const res = await fetch('/api/create-partner', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: partner.name, email: partner.email, phone: partner.phone, partnerId: partner.id })
+      })
+      const data = await res.json()
+      if (data.error) { toast.error(data.error); setCreateLoading(false); return }
+      setCreatedCreds(data.credentials)
+      setCreateLoginModal(null)
+      toast.success(data.alreadyExisted ? 'Password reset!' : 'Login created!')
+    } catch { toast.error('Login creation failed') }
+    setCreateLoading(false)
   }
 
   async function updateCommission(id: string, pct: number) {
@@ -52,19 +75,17 @@ export default function PartnerManagerPage() {
   }
 
   async function markPaid(id: string, amount: number) {
-    await supabase.from('sales_partners').update({ pending_payout: 0, total_paid: supabase.rpc('increment', { row_id: id, amount }) }).eq('id', id)
+    await supabase.from('sales_partners').update({ pending_payout: 0 }).eq('id', id)
     await supabase.from('partner_payouts').insert({ partner_id: id, amount, status: 'paid', paid_at: new Date() })
     setPartners(prev => prev.map(p => p.id === id ? {...p, pending_payout: 0} : p))
     toast.success(`₹${amount} payout marked as paid!`)
   }
 
-  // Analytics
-  const totalPartners     = partners.length
-  const activePartners    = partners.filter(p => p.status === 'active').length
-  const totalOrdersVal    = orders.reduce((s,o) => s+(o.amount||0), 0)
-  const totalCommission   = orders.reduce((s,o) => s+(o.commission||0), 0)
-  const pendingPayouts    = partners.reduce((s,p) => s+(p.pending_payout||0), 0)
-  const topPartner        = [...partners].sort((a,b) => (b.total_earnings||0)-(a.total_earnings||0))[0]
+  const totalPartners   = partners.length
+  const activePartners  = partners.filter(p => p.status === 'active').length
+  const totalOrdersVal  = orders.reduce((s,o) => s+(o.amount||0), 0)
+  const totalCommission = orders.reduce((s,o) => s+(o.commission||0), 0)
+  const pendingPayouts  = partners.reduce((s,p) => s+(p.pending_payout||0), 0)
 
   const inp: any = { width: '100%', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, padding: '9px 12px', color: 'var(--tx)', fontSize: 13, fontFamily: 'Outfit', outline: 'none', marginBottom: 10 }
 
@@ -92,7 +113,7 @@ export default function PartnerManagerPage() {
           { l: 'Partner Revenue', v: '₹'+totalOrdersVal.toLocaleString('en-IN'), c: 'var(--gold)', icon: '💰' },
           { l: 'Total Commission', v: '₹'+totalCommission.toLocaleString('en-IN'), c: 'var(--orange)', icon: '💸' },
           { l: 'Pending Payouts', v: '₹'+pendingPayouts.toLocaleString('en-IN'), c: pendingPayouts > 0 ? 'var(--red)' : 'var(--mu)', icon: '⏳' },
-        ].map((s,i)=>(
+        ].map((s,i) => (
           <div key={i} className="card" style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <span style={{ fontSize: 20 }}>{s.icon}</span>
             <div>
@@ -105,8 +126,8 @@ export default function PartnerManagerPage() {
 
       {/* TABS */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
-        {[{id:'partners',l:'🤝 Partners'},{id:'orders',l:'📦 Orders'},{id:'payouts',l:'💸 Payouts'},{id:'analytics',l:'📊 Analytics'}].map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id as any)} style={{ padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: tab===t.id?'var(--gL)':'rgba(255,255,255,0.05)', color: tab===t.id?'var(--gold)':'var(--mu2)', border: '1px solid '+(tab===t.id?'rgba(212,168,83,0.3)':'var(--b1)') }}>
+        {[{id:'partners',l:'🤝 Partners'},{id:'orders',l:'📦 Orders'},{id:'payouts',l:'💸 Payouts'},{id:'analytics',l:'📊 Analytics'}].map(t => (
+          <button key={t.id} onClick={() => setTab(t.id as any)} style={{ padding: '7px 16px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: tab===t.id?'var(--gL)':'rgba(255,255,255,0.05)', color: tab===t.id?'var(--gold)':'var(--mu2)', border: '1px solid '+(tab===t.id?'rgba(212,168,83,0.3)':'var(--b1)') }}>
             {t.l}
           </button>
         ))}
@@ -127,6 +148,7 @@ export default function PartnerManagerPage() {
             )}
             {partners.map(p => {
               const pOrders = orders.filter(o => o.partner_id === p.id)
+              const hasLogin = !!p.user_id
               return (
                 <div key={p.id} onClick={() => setSelected(selected?.id === p.id ? null : p)}
                   style={{ background: 'var(--s1)', border: '1px solid '+(selected?.id===p.id?'rgba(212,168,83,.4)':'var(--b1)'), borderRadius: 14, padding: '16px 18px', cursor: 'pointer' }}>
@@ -141,6 +163,7 @@ export default function PartnerManagerPage() {
                         <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 50, background: p.status==='active'?'var(--grL)':'var(--rdL)', color: p.status==='active'?'var(--green)':'var(--red)', fontWeight: 700 }}>{p.status}</span>
                         <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 50, background: 'var(--gL)', color: 'var(--gold)', fontWeight: 700 }}>{p.commission_pct}% commission</span>
                         <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 50, background: 'var(--blL)', color: 'var(--blue)', fontWeight: 700 }}>{pOrders.length} orders</span>
+                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 50, background: hasLogin?'var(--blL)':'var(--rdL)', color: hasLogin?'var(--blue)':'var(--red)', fontWeight: 700 }}>{hasLogin ? '🔐 Login Active' : '⚠️ No Login'}</span>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -156,7 +179,7 @@ export default function PartnerManagerPage() {
 
           {/* Detail Panel */}
           {selected && (
-            <div style={{ position: 'sticky', top: 20, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: 20, maxHeight: 'calc(100vh-120px)', overflowY: 'auto' }}>
+            <div style={{ position: 'sticky', top: 20, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: 20, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>{selected.name}</div>
                 <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
@@ -164,7 +187,12 @@ export default function PartnerManagerPage() {
 
               {/* Stats */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 16 }}>
-                {[['Total Orders',orders.filter(o=>o.partner_id===selected.id).length,'var(--blue)'],['Total Earned','₹'+(selected.total_earnings||0).toLocaleString('en-IN'),'var(--green)'],['Pending Payout','₹'+(selected.pending_payout||0).toLocaleString('en-IN'),selected.pending_payout>0?'var(--orange)':'var(--mu)'],['Commission',selected.commission_pct+'%','var(--gold)']].map(([l,v,c],i)=>(
+                {[
+                  ['Total Orders', orders.filter(o=>o.partner_id===selected.id).length, 'var(--blue)'],
+                  ['Total Earned', '₹'+(selected.total_earnings||0).toLocaleString('en-IN'), 'var(--green)'],
+                  ['Pending Payout', '₹'+(selected.pending_payout||0).toLocaleString('en-IN'), selected.pending_payout>0?'var(--orange)':'var(--mu)'],
+                  ['Commission', selected.commission_pct+'%', 'var(--gold)'],
+                ].map(([l,v,c],i) => (
                   <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 12px' }}>
                     <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 4 }}>{l as string}</div>
                     <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, color: c as string }}>{v as string}</div>
@@ -190,7 +218,7 @@ export default function PartnerManagerPage() {
               <div style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 7 }}>Status</div>
                 <div style={{ display: 'flex', gap: 7 }}>
-                  {['active','suspended','inactive'].map(s=>(
+                  {['active','suspended','inactive'].map(s => (
                     <button key={s} onClick={() => updateStatus(selected.id, s)} style={{ flex: 1, padding: '7px 0', borderRadius: 8, border: '1px solid '+(selected.status===s?'var(--green)':'var(--b2)'), background: selected.status===s?'var(--grL)':'transparent', color: selected.status===s?'var(--green)':'var(--mu)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', textTransform: 'capitalize' }}>
                       {s}
                     </button>
@@ -200,9 +228,22 @@ export default function PartnerManagerPage() {
 
               {/* Contact */}
               <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-                {[['📱',selected.phone],['✉',selected.email],['📍',selected.city],['🏢',selected.business_name]].filter(([,v])=>v).map(([icon,v],i)=>(
+                {[['📱', selected.phone], ['✉️', selected.email], ['📍', selected.city], ['🏢', selected.business_name]].filter(([,v]) => v).map(([icon,v], i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, fontSize: 12.5, padding: '4px 0' }}><span>{icon}</span><span>{v as string}</span></div>
                 ))}
+              </div>
+
+              {/* Login Section */}
+              <div style={{ background: selected.user_id ? 'var(--blL)' : 'var(--orL)', border: `1px solid ${selected.user_id ? 'rgba(59,130,246,.3)' : 'rgba(249,115,22,.3)'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: selected.user_id ? 'var(--blue)' : 'var(--orange)', marginBottom: 4 }}>
+                  {selected.user_id ? '🔐 HQ Login Active' : '⚠️ No Login Created'}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--mu2)', marginBottom: 8 }}>
+                  {selected.user_id ? 'Partner can login to Partner Portal' : 'Create login so partner can access Portal'}
+                </div>
+                <button onClick={() => setCreateLoginModal(selected)} disabled={createLoading} style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                  {selected.user_id ? '🔄 Reset Password' : '🔐 Create Login'}
+                </button>
               </div>
 
               {/* Payout button */}
@@ -228,15 +269,15 @@ export default function PartnerManagerPage() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
               <thead>
-                <tr>{['Date','Partner','Customer','Phone','Amount','Commission','Payment','Status','Skin Score','Specialist'].map(h=>(
+                <tr>{['Date','Partner','Customer','Phone','Amount','Commission','Payment','Status','Skin Score','Specialist'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '8px 14px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}</tr>
               </thead>
               <tbody>
-                {orders.map((o,i)=>{
-                  const partner = partners.find(p=>p.id===o.partner_id)
+                {orders.map((o,i) => {
+                  const partner = partners.find(p => p.id === o.partner_id)
                   return (
-                    <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }} onMouseOver={e=>e.currentTarget.style.background='rgba(255,255,255,.018)'} onMouseOut={e=>e.currentTarget.style.background=''}>
+                    <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }} onMouseOver={e => e.currentTarget.style.background='rgba(255,255,255,.018)'} onMouseOut={e => e.currentTarget.style.background=''}>
                       <td style={{ padding: '9px 14px', fontSize: 11.5 }}>{o.created_at ? new Date(o.created_at).toLocaleDateString('en-IN') : '—'}</td>
                       <td style={{ padding: '9px 14px', fontWeight: 600, fontSize: 12.5 }}>{partner?.name||o.partner_id||'—'}</td>
                       <td style={{ padding: '9px 14px', fontWeight: 600 }}>{o.customer_name||'—'}</td>
@@ -250,7 +291,7 @@ export default function PartnerManagerPage() {
                     </tr>
                   )
                 })}
-                {orders.length===0&&<tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No partner orders yet</td></tr>}
+                {orders.length === 0 && <tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No partner orders yet</td></tr>}
               </tbody>
             </table>
           </div>
@@ -270,7 +311,7 @@ export default function PartnerManagerPage() {
             </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {partners.filter(p=>(p.pending_payout||0)>0).map(p=>(
+            {partners.filter(p => (p.pending_payout||0) > 0).map(p => (
               <div key={p.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#08090C', fontFamily: 'Syne', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>
                   {(p.name||'P').charAt(0).toUpperCase()}
@@ -289,7 +330,7 @@ export default function PartnerManagerPage() {
                 </div>
               </div>
             ))}
-            {partners.filter(p=>(p.pending_payout||0)>0).length===0&&(
+            {partners.filter(p => (p.pending_payout||0) > 0).length === 0 && (
               <div style={{ textAlign: 'center', padding: 60, color: 'var(--mu)' }}>
                 <div style={{ fontSize: 36, marginBottom: 14 }}>✅</div>
                 <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>All payouts up to date!</div>
@@ -305,8 +346,8 @@ export default function PartnerManagerPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
             <div className="card">
               <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 14 }}>🏆 Top Partners by Revenue</div>
-              {[...partners].sort((a,b)=>(b.total_earnings||0)-(a.total_earnings||0)).slice(0,8).map((p,i)=>{
-                const maxE = partners.reduce((m,x)=>Math.max(m,x.total_earnings||0),1)
+              {[...partners].sort((a,b) => (b.total_earnings||0)-(a.total_earnings||0)).slice(0,8).map((p,i) => {
+                const maxE = partners.reduce((m,x) => Math.max(m,x.total_earnings||0), 1)
                 return (
                   <div key={i} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
@@ -322,14 +363,14 @@ export default function PartnerManagerPage() {
                   </div>
                 )
               })}
-              {partners.length===0&&<div style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>No partners</div>}
+              {partners.length === 0 && <div style={{ textAlign: 'center', color: 'var(--mu)', padding: 20 }}>No partners</div>}
             </div>
 
             <div className="card">
               <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 14 }}>📦 Orders by Partner</div>
-              {[...partners].sort((a,b)=>orders.filter(o=>o.partner_id===b.id).length-orders.filter(o=>o.partner_id===a.id).length).slice(0,8).map((p,i)=>{
-                const cnt = orders.filter(o=>o.partner_id===p.id).length
-                const maxC = Math.max(...partners.map(x=>orders.filter(o=>o.partner_id===x.id).length),1)
+              {[...partners].sort((a,b) => orders.filter(o=>o.partner_id===b.id).length - orders.filter(o=>o.partner_id===a.id).length).slice(0,8).map((p,i) => {
+                const cnt = orders.filter(o => o.partner_id===p.id).length
+                const maxC = Math.max(...partners.map(x => orders.filter(o=>o.partner_id===x.id).length), 1)
                 return (
                   <div key={i} style={{ marginBottom: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
@@ -349,9 +390,9 @@ export default function PartnerManagerPage() {
             {[
               { l: 'Avg Commission %', v: partners.length>0?(partners.reduce((s,p)=>s+(p.commission_pct||0),0)/partners.length).toFixed(1)+'%':'—', c: 'var(--gold)' },
               { l: 'Avg Order Value', v: orders.length>0?'₹'+Math.round(totalOrdersVal/orders.length).toLocaleString('en-IN'):'—', c: 'var(--teal)' },
-              { l: 'Total Commissions Paid', v: '₹'+partners.reduce((s,p)=>s+(p.total_paid||0),0).toLocaleString('en-IN'), c: 'var(--green)' },
+              { l: 'Commissions Paid', v: '₹'+partners.reduce((s,p)=>s+(p.total_paid||0),0).toLocaleString('en-IN'), c: 'var(--green)' },
               { l: 'Pending Payouts', v: '₹'+pendingPayouts.toLocaleString('en-IN'), c: pendingPayouts>0?'var(--orange)':'var(--mu)' },
-            ].map((s,i)=>(
+            ].map((s,i) => (
               <div key={i} className="card">
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>{s.l}</div>
                 <div style={{ fontFamily: 'Syne', fontSize: 20, fontWeight: 800, color: s.c }}>{s.v}</div>
@@ -367,26 +408,83 @@ export default function PartnerManagerPage() {
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 28px', width: 520, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, marginBottom: 20 }}>Add Sales Partner</div>
             <div style={{ background: 'var(--blL)', border: '1px solid rgba(59,130,246,.2)', borderRadius: 8, padding: '10px 12px', marginBottom: 16, fontSize: 11.5, color: 'var(--blue)', lineHeight: 1.6 }}>
-              💡 Partner will get login access to the Partner Portal to create customer orders and earn commission.
+              💡 Partner ka login automatically create ho jayega. Email + Password share karo taaki woh Partner Portal use kar sakein.
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              {[{k:'name',l:'Full Name *',p:'Priya Salon'},{k:'phone',l:'Phone * (login username)',p:'+91 9876543210'},{k:'email',l:'Email',p:'partner@salon.com'},{k:'business_name',l:'Business Name',p:'Priya Beauty Parlor'},{k:'city',l:'City',p:'Indore'}].map(f=>(
+              {[
+                {k:'name', l:'Full Name *', p:'Priya Salon'},
+                {k:'phone', l:'Phone *', p:'+91 9876543210'},
+                {k:'email', l:'Email * (login ke liye)', p:'partner@salon.com'},
+                {k:'business_name', l:'Business Name', p:'Priya Beauty Parlor'},
+                {k:'city', l:'City', p:'Indore'},
+              ].map(f => (
                 <div key={f.k}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>{f.l}</label>
-                  <input value={(form as any)[f.k]} onChange={e=>setForm(p=>({...p,[f.k]:e.target.value}))} placeholder={f.p} style={inp} />
+                  <input value={(form as any)[f.k]} onChange={e => setForm(p => ({...p, [f.k]: e.target.value}))} placeholder={f.p} style={inp} />
                 </div>
               ))}
               <div>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Commission % (1-30)</label>
-                <input type="number" min="1" max="30" value={form.commission_pct} onChange={e=>setForm(p=>({...p,commission_pct:Number(e.target.value)}))} style={inp} />
+                <input type="number" min="1" max="30" value={form.commission_pct} onChange={e => setForm(p => ({...p, commission_pct: Number(e.target.value)}))} style={inp} />
               </div>
             </div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Notes</label>
-            <textarea value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))} rows={2} placeholder="Any notes about this partner..." style={{ ...inp, resize: 'none' }} />
+            <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} rows={2} placeholder="Any notes about this partner..." style={{ ...inp, resize: 'none' }} />
             <div style={{ display: 'flex', gap: 9 }}>
-              <button onClick={()=>setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addPartner} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Partner</button>
+              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
+              <button onClick={addPartner} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Partner + Create Login</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE LOGIN CONFIRM MODAL */}
+      {createLoginModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '28px 32px', width: 400, maxWidth: '94vw' }}>
+            <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, marginBottom: 8 }}>Create / Reset Login</div>
+            <div style={{ fontSize: 13, color: 'var(--mu2)', marginBottom: 20 }}><strong>{createLoginModal.name}</strong> ke liye login create ya reset karna chahte ho?</div>
+            <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 20 }}>
+              <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 4 }}>Email</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600 }}>{createLoginModal.email}</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 10, marginBottom: 4 }}>Password</div>
+              <div style={{ fontSize: 13, color: 'var(--teal)' }}>Auto-generated (Name@XXXXXX)</div>
+            </div>
+            <div style={{ display: 'flex', gap: 9 }}>
+              <button onClick={() => setCreateLoginModal(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
+              <button onClick={() => createPartnerLogin(createLoginModal)} disabled={createLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                {createLoading ? 'Creating...' : 'Create Login'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* CREDENTIALS MODAL */}
+      {createdCreds && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '28px 32px', width: 420, maxWidth: '94vw' }}>
+            <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, marginBottom: 6, color: 'var(--green)' }}>✅ Login Created!</div>
+            <div style={{ fontSize: 12.5, color: 'var(--mu)', marginBottom: 20 }}>Partner ko yeh credentials share karo:</div>
+            <div style={{ background: 'var(--s2)', borderRadius: 12, padding: 16, marginBottom: 20 }}>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Login URL</div>
+                <div style={{ fontSize: 13, fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--blue)' }}>manage.rabtnaturals.com</div>
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Email</div>
+                <div style={{ fontSize: 15, fontWeight: 700, fontFamily: 'DM Mono', color: 'var(--teal)' }}>{createdCreds.email}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Password</div>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: 'DM Mono', color: 'var(--gold)', letterSpacing: 2 }}>{createdCreds.password}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 9, marginBottom: 9 }}>
+              <button onClick={() => { navigator.clipboard.writeText(`Rabt Partner Portal Login\nURL: manage.rabtnaturals.com\nEmail: ${createdCreds.email}\nPassword: ${createdCreds.password}`); toast.success('Copied!') }} style={{ flex: 1, padding: 10, background: 'var(--blL)', border: '1px solid rgba(59,130,246,.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>📋 Copy</button>
+              <button onClick={() => { window.open('https://wa.me/?text=' + encodeURIComponent(`🌿 Rabt Partner Portal Login\n\n🔗 URL: manage.rabtnaturals.com\n📧 Email: ${createdCreds.email}\n🔑 Password: ${createdCreds.password}\n\nApna account login karein aur customer orders create karein!`), '_blank') }} style={{ flex: 1, padding: 10, background: 'var(--grL)', border: '1px solid rgba(34,197,94,.2)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>💬 WhatsApp</button>
+            </div>
+            <button onClick={() => { setCreatedCreds(null); loadAll() }} style={{ width: '100%', padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Close</button>
           </div>
         </div>
       )}

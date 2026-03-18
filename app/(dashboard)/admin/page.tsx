@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase, ROLE_CONFIG, UserRole } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-const ROLES: UserRole[] = ['founder', 'manager', 'specialist_manager', 'specialist', 'support', 'ops']
+const ROLES: UserRole[] = ['founder', 'manager', 'specialist_manager', 'specialist', 'support', 'ops', 'partner']
 
 export default function AdminPage() {
   const [profiles, setProfiles] = useState<any[]>([])
@@ -32,7 +32,6 @@ export default function AdminPage() {
     if (!form.name || !form.email) { toast.error('Name aur email required hai'); return }
     setAdding(true)
     toast.loading('Member add ho raha hai...', { id: 'add' })
-
     try {
       const res = await fetch('/api/create-member', {
         method: 'POST',
@@ -40,13 +39,7 @@ export default function AdminPage() {
         body: JSON.stringify(form),
       })
       const data = await res.json()
-
-      if (!res.ok) {
-        toast.error(data.error || 'Error aayi', { id: 'add' })
-        setAdding(false)
-        return
-      }
-
+      if (!res.ok) { toast.error(data.error || 'Error aayi', { id: 'add' }); setAdding(false); return }
       toast.success(form.name + ' add ho gaya!', { id: 'add' })
       setNewCredentials(data.credentials)
       setShowAdd(false)
@@ -73,16 +66,9 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: id }),
       })
-      if (res.ok) {
-        toast.success(name + ' deleted!', { id: 'del' })
-        loadAll()
-      } else {
-        const data = await res.json()
-        toast.error(data.error || 'Error', { id: 'del' })
-      }
-    } catch {
-      toast.error('Delete failed', { id: 'del' })
-    }
+      if (res.ok) { toast.success(name + ' deleted!', { id: 'del' }); loadAll() }
+      else { const data = await res.json(); toast.error(data.error || 'Error', { id: 'del' }) }
+    } catch { toast.error('Delete failed', { id: 'del' }) }
   }
 
   async function assignLead(lid: string, uid: string) {
@@ -98,17 +84,19 @@ export default function AdminPage() {
   }
 
   const PERMS: Record<string, Record<UserRole, boolean>> = {
-    'Dashboard': { founder: true, manager: true, specialist_manager: false, specialist: false, support: false, ops: false },
-    'Admin Panel': { founder: true, manager: false, specialist_manager: false, specialist: false, support: false, ops: false },
-    'CRM / Leads': { founder: true, manager: true, specialist_manager: true, specialist: true, support: true, ops: false },
-    'Orders': { founder: true, manager: true, specialist_manager: false, specialist: false, support: true, ops: true },
-    'Finance': { founder: true, manager: true, specialist_manager: false, specialist: false, support: false, ops: false },
-    'Marketing': { founder: true, manager: true, specialist_manager: false, specialist: false, support: false, ops: false },
-    'Consultations': { founder: true, manager: false, specialist_manager: true, specialist: true, support: false, ops: false },
-    'AI Agents': { founder: true, manager: true, specialist_manager: true, specialist: true, support: true, ops: false },
-    'Knowledge Base': { founder: true, manager: true, specialist_manager: true, specialist: true, support: true, ops: true },
-    'Team': { founder: true, manager: true, specialist_manager: false, specialist: false, support: false, ops: false },
-    'Goals': { founder: true, manager: true, specialist_manager: false, specialist: false, support: false, ops: false },
+    'Dashboard':          { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Admin Panel':        { founder: true,  manager: false, specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'CRM / Leads':        { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false },
+    'Orders':             { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: true,  ops: true,  partner: false },
+    'Finance':            { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Marketing':          { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Consultations':      { founder: true,  manager: false, specialist_manager: true,  specialist: true,  support: false, ops: false, partner: false },
+    'AI Agents':          { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false },
+    'Knowledge Base':     { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: true,  partner: false },
+    'Team':               { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Goals':              { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Partner Portal':     { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: true  },
+    'Partner Manager':    { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
   }
 
   const inputStyle: any = {
@@ -282,7 +270,7 @@ export default function AdminPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addMember} disabled={adding} style={{ flex: 1, padding: 10, background: adding ? 'rgba(212,168,83,0.4)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: adding ? 'not-allowed' : 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={addMember} disabled={adding} style={{ flex: 2, padding: 10, background: adding ? 'rgba(212,168,83,0.4)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: adding ? 'not-allowed' : 'pointer', fontFamily: 'Outfit' }}>
                 {adding ? '⏳ Adding...' : 'Add Member'}
               </button>
             </div>

@@ -1,11 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
-
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-// Server-side client with service role
 export function createServerClient() {
   return createClient(
     supabaseUrl,
@@ -13,7 +10,7 @@ export function createServerClient() {
   )
 }
 
-export type UserRole = 'founder' | 'manager' | 'specialist_manager' | 'specialist' | 'support' | 'ops'
+export type UserRole = 'founder' | 'manager' | 'specialist_manager' | 'specialist' | 'support' | 'ops' | 'partner'
 
 export interface UserProfile {
   id: string
@@ -36,7 +33,7 @@ export const ROLE_CONFIG: Record<UserRole, {
     label: '⚡ Founder',
     color: '#D4A853',
     bg: 'linear-gradient(135deg,#1A3D20,#2D6A35)',
-    permissions: ['*'], // All access
+    permissions: ['*'],
   },
   manager: {
     label: '📊 Manager',
@@ -67,5 +64,11 @@ export const ROLE_CONFIG: Record<UserRole, {
     color: '#F97316',
     bg: 'linear-gradient(135deg,#BF360C,#E64A19)',
     permissions: ['orders','inventory','tasks','support'],
+  },
+  partner: {
+    label: '🤝 Partner',
+    color: '#0097A7',
+    bg: 'linear-gradient(135deg,#005F6A,#0097A7)',
+    permissions: ['partner'],
   },
 }

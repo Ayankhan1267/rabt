@@ -29,8 +29,15 @@ const NAV: NavSection[] = [
       { id: 'patients', label: 'My Patients', icon: '👥', href: '/patients', roles: ['specialist'] },
       { id: 'specialist-manager', label: 'Specialist Manager', icon: '👩‍⚕️', href: '/specialist-manager', roles: ['specialist_manager', 'admin'] },
       { id: 'admin', label: 'Admin Panel', icon: '🛡️', href: '/admin', roles: ['founder'] },
-      { id: 'kanban', label: 'Kanban', icon: '⬜', href: '/kanban' },
-      { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar' },
+      { id: 'kanban', label: 'Kanban', icon: '⬜', href: '/kanban', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
+      { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
+    ]
+  },
+  {
+    label: 'Partner',
+    roles: ['partner'],
+    items: [
+      { id: 'partner', label: 'Partner Portal', icon: '🌿', href: '/partner', roles: ['partner'] },
     ]
   },
   {
@@ -52,9 +59,10 @@ const NAV: NavSection[] = [
   },
   {
     label: 'Support',
+    roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager'],
     items: [
-      { id: 'support', label: 'Support Chat', icon: '💬', href: '/support', badge: '5', badgeColor: 'var(--red)' },
-      { id: 'reminders', label: 'Reminders & Follow-up', icon: '📲', href: '/reminders' },
+      { id: 'support', label: 'Support Chat', icon: '💬', href: '/support', badge: '5', badgeColor: 'var(--red)', roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager'] },
+      { id: 'reminders', label: 'Reminders & Follow-up', icon: '📲', href: '/reminders', roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager'] },
     ]
   },
   {
@@ -65,7 +73,7 @@ const NAV: NavSection[] = [
       { id: 'content', label: 'Content Studio', icon: '🎬', href: '/content' },
       { id: 'ads', label: 'Ads Manager', icon: '📊', href: '/ads' },
       { id: 'website', label: 'Website Analytics', icon: '🌐', href: '/website' },
-      { id: 'partner', label: 'Partner Portal', icon: '🌿', href: '/partner' },
+      { id: 'partner-portal', label: 'Partner Portal', icon: '🌿', href: '/partner' },
       { id: 'partner-manager', label: 'Partner Manager', icon: '🤝', href: '/partner-manager' },
     ]
   },
@@ -77,16 +85,16 @@ const NAV: NavSection[] = [
       { id: 'productlab', label: 'Product Lab', icon: '🧪', href: '/productlab' },
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
-      { id: 'team', label: 'Team', icon: '👥', href: '/team' },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
     ]
   },
   {
     label: 'AI System',
+    roles: ['founder', 'manager', 'ops', 'specialist_manager'],
     items: [
       { id: 'automation', label: 'Automation', icon: '⚙️', href: '/automation', roles: ['founder', 'manager'] },
-      { id: 'aiagents', label: 'AI Agents', icon: '🤖', href: '/aiagents', badge: 'Live', badgeColor: 'var(--green)' },
-      { id: 'knowledge', label: 'Knowledge Base', icon: '📚', href: '/knowledge' },
+      { id: 'aiagents', label: 'AI Agents', icon: '🤖', href: '/aiagents', badge: 'Live', badgeColor: 'var(--green)', roles: ['founder', 'manager', 'ops', 'specialist_manager'] },
+      { id: 'knowledge', label: 'Knowledge Base', icon: '📚', href: '/knowledge', roles: ['founder', 'manager', 'ops', 'specialist_manager'] },
     ]
   },
 ]
@@ -107,20 +115,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   async function loadProfile() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
+
     let { data: prof } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+
     if (!prof) {
+      // ✅ Partner check — sales_partners table mein email dhundho
+      const { data: partnerCheck } = await supabase
+        .from('sales_partners')
+        .select('id')
+        .eq('email', user.email!)
+        .maybeSingle()
+
       const role = user.email === 'ayan@rabtnaturals.com' ? 'founder' :
                    user.email === 'tofik@rabtnaturals.com' ? 'manager' :
                    user.email === 'rahima@rabtnaturals.com' ? 'specialist_manager' :
-                   user.email === 'ops@rabtnaturals.com' ? 'ops' : 'support'
+                   user.email === 'ops@rabtnaturals.com' ? 'ops' :
+                   partnerCheck ? 'partner' : 'support'  // ✅ partner role auto-assign
+
       const name = user.email === 'ayan@rabtnaturals.com' ? 'Ayan Mansuri' :
                    user.email === 'tofik@rabtnaturals.com' ? 'Tofik Khan' :
-                   user.email === 'rahima@rabtnaturals.com' ? 'Rahima Choudhary' : 'Ops User'
+                   user.email === 'rahima@rabtnaturals.com' ? 'Rahima Choudhary' :
+                   user.email === 'ops@rabtnaturals.com' ? 'Ops User' : (user.email?.split('@')[0] || 'User')
+
       await supabase.from('profiles').upsert({ id: user.id, email: user.email, name, role })
       const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       prof = data
     }
+
     setProfile(prof as UserProfile)
+
+    // Partner ko seedha /partner pe redirect karo
+    if (prof?.role === 'partner' && !pathname.startsWith('/partner')) {
+      router.push('/partner')
+    }
+
     loadNotifications(user.id)
   }
 
@@ -199,7 +227,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Brand */}
         <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {/* Rabt Logo */}
             <div style={{
               width: 38, height: 38, borderRadius: 10, overflow: 'hidden',
               background: '#fff', flexShrink: 0,
@@ -372,6 +399,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
-
-
-
