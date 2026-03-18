@@ -153,7 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (notif.type === 'consultation') playNotificationSound()
         setNotifications(prev => [notif, ...prev])
         setUnreadCount(prev => prev + 1)
-        toast(notif.title, { icon: notif.type === 'consultation' ? '??' : notif.type === 'order' ? '??' : '??' })
+        toast(notif.title, { icon: notif.type === 'consultation' ? '🌿' : notif.type === 'order' ? '📦' : '🔔' })
       }).subscribe()
   }
 
@@ -214,7 +214,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ fontSize: 9, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>HQ � AI Business OS</div>
           </div>
           {/* Close button on mobile */}
-          {isMobile && (
+          {isMobile && profile?.role !== 'partner' && (
             <button onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 4 }}>?</button>
           )}
         </div>
@@ -263,7 +263,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg,#0097A7,#005F6A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 12, fontWeight: 800, color: '#fff' }}>{profile?.name?.charAt(0).toUpperCase() || '?'}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.name || 'Loading...'}</div>
-            <div style={{ fontSize: 10, color: 'var(--mu)' }}>{roleConfig?.label || ''}</div>
+            <div style={{ fontSize: 10, color: 'var(--mu)' }}>{roleConfig?.label || '🔔'}</div>
           </div>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)' }} />
         </div>
@@ -301,7 +301,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div style={{ background: 'var(--s1)', backdropFilter: 'blur(18px)', borderBottom: '1px solid var(--b1)', padding: isMobile ? '0 14px' : '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10, position: 'sticky', top: 0, zIndex: 100 }}>
 
           {/* Hamburger on mobile */}
-          {isMobile && (
+          {isMobile && profile?.role !== 'partner' && (
             <button onClick={() => setSidebarOpen(true)} style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}>
               <div style={{ width: 16, height: 2, background: 'var(--teal)', borderRadius: 1 }} />
               <div style={{ width: 16, height: 2, background: 'var(--teal)', borderRadius: 1 }} />
@@ -310,7 +310,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
 
           {/* Logo on mobile topbar */}
-          {isMobile && (
+          {isMobile && profile?.role !== 'partner' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, fontWeight: 900, color: '#0097A7' }}>rabt </span>
               <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
@@ -322,7 +322,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
-              <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>??</button>
+              <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>🔔</button>
               {unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--red)', border: '2px solid var(--bg)', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
@@ -347,7 +347,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
               {notifications.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--mu)' }}>
-                  <div style={{ fontSize: 28, marginBottom: 8 }}>??</div>
+                  <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
                   <div style={{ fontSize: 13 }}>No notifications yet</div>
                 </div>
               ) : notifications.map(n => (
@@ -367,7 +367,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* -- MOBILE BOTTOM NAV -- */}
-        {isMobile && (
+        {isMobile && profile?.role !== 'partner' && (
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, background: 'var(--s1)', borderTop: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 200, paddingBottom: 8 }}>
             {/* Show top 4 relevant nav items */}
             {NAV.flatMap(s => s.items).filter(item => hasAccess(item)).slice(0, 4).map(item => {

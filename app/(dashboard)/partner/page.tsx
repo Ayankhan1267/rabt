@@ -330,7 +330,7 @@ export default function PartnerPortalPage() {
     <div style={{ maxWidth: 980, margin: '0 auto' }}>
 
       {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>🌿 Sales Partner <span style={{ color: 'var(--gold)' }}>Portal</span></h1>
           {partner && <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{partner.name} · {partner.commission_pct}% commission · {specialists.length} specialists</p>}
