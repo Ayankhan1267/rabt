@@ -142,6 +142,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
     setProfile(prof as UserProfile)
     if (prof?.role === 'partner' && !pathname.startsWith('/partner')) router.push('/partner')
+    if (prof?.role === 'specialist' && pathname === '/') router.push('/specialist-dashboard')
+    if (prof?.role === 'specialist_manager' && pathname === '/') router.push('/specialist-dashboard')
+    if (prof?.role === 'ops' && pathname === '/') router.push('/orders')
+    if (prof?.role === 'support' && pathname === '/') router.push('/crm')
     loadNotifications(user.id)
     registerPushNotifications()
   }
