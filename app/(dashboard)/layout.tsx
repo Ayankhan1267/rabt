@@ -144,6 +144,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     registerPushNotifications()
   }
 
+  async function registerPushNotifications() {
+    if (typeof window === 'undefined') return
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js')
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') return
+      const existing = await reg.pushManager.getSubscription()
+      const sub = existing || await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: 'BDTSB1wUmGSUCyejreaI8Clj3DDWPT6QHq4VbA8VmOaEDg3qDX98ftMwWtHyoZJqPMS1xLweLiTfbmonaSIV2z8'
+      })
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        await fetch('/api/push-subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, subscription: sub })
+        })
+      }
+    } catch(e) { console.log('Push reg error:', e) }
+  }
+
   async function loadNotifications(userId: string) {
     const { data } = await supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20)
     setNotifications(data || [])
