@@ -60,7 +60,42 @@ export default function SpecialistDashboard() {
   const [posLoading, setPosLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { setMounted(true); loadAll() }, [])
+  useEffect(() => {
+    setMounted(true)
+    loadAll()
+    // Real-time notifications subscription
+    const channel = supabase.channel('specialist_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
+        const notif = payload.new as any
+        const { data: { user } } = await supabase.auth.getUser()
+        if (notif.user_id !== user?.id) return
+        // Play continuous sound for consultation
+        if (notif.type === 'consultation') {
+          playConsultationAlert()
+        }
+      }).subscribe()
+
+    // Poll for new unassigned consultations every 30 seconds
+    const interval = setInterval(async () => {
+      const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
+      if (!url) return
+      try {
+        const res = await fetch(url + '/api/consultations')
+        if (!res.ok) return
+        const all = await res.json()
+        const unassigned = Array.isArray(all) ? all.filter((c: any) => c.status === 'pending' && !c.assignedSpecialist) : []
+        setUnassignedCons(prev => {
+          if (unassigned.length > prev.length) {
+            playConsultationAlert()
+            toast('🌿 New consultation request!', { duration: 10000 })
+          }
+          return unassigned
+        })
+      } catch {}
+    }, 30000)
+
+    return () => { channel.unsubscribe(); clearInterval(interval) }
+  }, [])
 
   async function loadAll() {
     setLoading(true)
