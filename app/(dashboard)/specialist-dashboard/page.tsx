@@ -1366,8 +1366,8 @@ ${skinImages.length > 0 ? `
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 10 }}>Payment Method</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                       {[
-                        { id: 'prepaid', label: 'Prepaid', sub: 'UPI / Online', icon: '??' },
-                        { id: 'cod', label: 'Cash on Delivery', sub: 'Pay later', icon: '??' },
+                        { id: 'prepaid', label: 'Prepaid', sub: 'UPI / Online', icon: '💳' },
+                        { id: 'cod', label: 'Cash on Delivery', sub: 'Pay later', icon: '💵' },
                       ].map(pm => (
                         <div key={pm.id} onClick={() => setPaymentMethod(pm.id as any)}
                           style={{ padding: 14, borderRadius: 10, cursor: 'pointer', border: '2px solid ' + (paymentMethod === pm.id ? 'var(--gold)' : 'var(--b1)'), background: paymentMethod === pm.id ? 'var(--gL)' : 'var(--s2)', transition: 'all 0.15s' }}>

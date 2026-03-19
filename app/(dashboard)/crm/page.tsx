@@ -345,7 +345,7 @@ export default function CRMPage() {
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, phone..." style={{ ...inp, marginBottom: 0, flex: 1 }} />
-        {[{ id: 'pipeline', label: 'Pipeline' }, { id: 'table', label: 'Table' }, { id: 'analytics', label: '?? Analytics' }, ...(isAdmin ? [{ id: 'unassigned', label: 'Unassigned (' + unassigned.length + ')' }] : [])].map(t => (
+        {[{ id: 'pipeline', label: 'Pipeline' }, { id: 'table', label: 'Table' }, { id: 'analytics', label: '📊 Analytics' }, ...(isAdmin ? [{ id: 'unassigned', label: 'Unassigned (' + unassigned.length + ')' }] : [])].map(t => (
           <button key={t.id} onClick={() => setView(t.id as any)} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap', background: view === t.id ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: view === t.id ? 'var(--gold)' : 'var(--mu2)', border: '1px solid ' + (view === t.id ? 'rgba(212,168,83,0.3)' : 'var(--b1)') }}>
             {t.label}
           </button>
@@ -606,7 +606,7 @@ export default function CRMPage() {
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 500, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>{selectedLead.name}</div>
-              <button onClick={() => setSelectedLead(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>?</button>
+              <button onClick={() => setSelectedLead(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
               {[

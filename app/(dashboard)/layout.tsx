@@ -343,7 +343,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ position: 'fixed', top: 52, right: 0, width: isMobile ? '100vw' : 320, height: 'calc(100vh - 52px)', background: 'var(--s1)', borderLeft: '1px solid var(--b2)', zIndex: 500, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>Notifications</span>
-              <button onClick={() => setShowNotif(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 14 }}>?</button>
+              <button onClick={() => setShowNotif(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
               {notifications.length === 0 ? (
@@ -382,7 +382,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             })}
             {/* Menu button */}
             <button onClick={() => setSidebarOpen(true)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, background: 'none', border: 'none', cursor: 'pointer', padding: '6px 10px', minWidth: 56 }}>
-              <span style={{ fontSize: 20 }}>?</span>
+              <span style={{ fontSize: 20 }}>☰</span>
               <span style={{ fontSize: 9, color: 'var(--mu)', fontWeight: 400 }}>More</span>
             </button>
           </div>
