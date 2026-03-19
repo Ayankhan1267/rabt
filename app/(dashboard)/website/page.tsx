@@ -99,9 +99,9 @@ export default function WebsiteManagerPage() {
     try {
       const ext = file.name.split('.').pop()
       const path = `testimonials/video-${idx}-${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true })
+      const { error } = await supabase.storage.from('landing assets').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: urlData } = supabase.storage.from('landing-assets').getPublicUrl(path)
+      const { data: urlData } = supabase.storage.from('landing assets').getPublicUrl(path)
       const updated = testimonials.map((t, i) => i === idx ? { ...t, video_url: urlData.publicUrl } : t)
       setTestimonials(updated)
       await supabase.from('app_settings').upsert({ key: 'landing_testimonials', value: JSON.stringify(updated) })
@@ -116,9 +116,9 @@ export default function WebsiteManagerPage() {
     try {
       const ext = file.name.split('.').pop()
       const path = `testimonials/img-${idx}-${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('landing-assets').upload(path, file, { upsert: true })
+      const { error } = await supabase.storage.from('landing assets').upload(path, file, { upsert: true })
       if (error) throw error
-      const { data: urlData } = supabase.storage.from('landing-assets').getPublicUrl(path)
+      const { data: urlData } = supabase.storage.from('landing assets').getPublicUrl(path)
       const updated = testimonials.map((t, i) => i === idx ? { ...t, image: urlData.publicUrl } : t)
       setTestimonials(updated)
       await supabase.from('app_settings').upsert({ key: 'landing_testimonials', value: JSON.stringify(updated) })
