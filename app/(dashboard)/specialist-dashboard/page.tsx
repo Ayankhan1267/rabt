@@ -646,7 +646,7 @@ ${skinImages.length > 0 ? `
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>My Patient Orders � Commission Track</div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>{['Patient','Products','Amount','Status','12% Commission'].map(h => (
+                    <tr>{['Patient','Products','Amount','Status','Source','Commission'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)' }}>{h}</th>
                     ))}</tr>
                   </thead>
@@ -665,8 +665,9 @@ ${skinImages.length > 0 ? `
                           <td style={{ padding: '9px 12px' }}>
                             <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize' }}>{status}</span>
                           </td>
+                          <td style={{ padding: '9px 12px' }}>{(() => { const src = (o.source || o.orderSource || '').toLowerCase(); if (src === 'partner' || src === 'sales_partner') return 'Partner'; if (src === 'specialist_offline') return 'Offline'; return 'Website' })()}</td>
                           <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)', fontSize: 12 }}>
-                            {isCancelled ? '�' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12)}
+                            {(() => { const src = (o.source || o.orderSource || '').toLowerCase(); const isPartner = src === 'partner' || src === 'sales_partner'; if (isPartner) return '—'; return isCancelled ? '—' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12) })()}
                           </td>
                         </tr>
                       )
@@ -982,7 +983,7 @@ ${skinImages.length > 0 ? `
                         ))}</tr>
                       </thead>
                       <tbody>
-                        {myPatientOrders.map((o, i) => {
+                        {myPatientOrders.filter(o => { const src = (o.source || o.orderSource || '').toLowerCase(); return src !== 'partner' && src !== 'sales_partner' }).map((o, i) => {
                           const status = (o.orderStatus || o.status || '').toLowerCase()
                           const isDelivered = status === 'delivered'
                           const isCancelled = ['cancelled','canceled'].includes(status)
@@ -995,7 +996,7 @@ ${skinImages.length > 0 ? `
                                 <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)' }}>{status}</span>
                               </td>
                               <td style={{ padding: '8px 12px', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 12, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)' }}>
-                                {isCancelled ? '�' : (isDelivered ? '+' : '? ') + 'Rs.' + commission}
+                                {(() => { const src = (o.source || o.orderSource || '').toLowerCase(); if (src === 'partner' || src === 'sales_partner') return '—'; return isCancelled ? '—' : (isDelivered ? '+' : '⏳ ') + 'Rs.' + commission })()}
                               </td>
                             </tr>
                           )
@@ -1448,4 +1449,3 @@ ${skinImages.length > 0 ? `
     </div>
   )
 }
-
