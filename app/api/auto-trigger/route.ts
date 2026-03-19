@@ -208,6 +208,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(result)
     }
 
+    // Send push notification to all specialists
+    const { data: specialists } = await supabase
+      .from('profiles')
+      .select('id')
+      .in('role', ['specialist', 'specialist_manager', 'founder', 'manager'])
+    
+    if (specialists && specialists.length > 0) {
+      await fetch(baseUrl + '/api/send-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_ids: specialists.map((s: any) => s.id),
+          title: trigger === 'post_purchase' ? '📦 New Order!' : '🌿 New Consultation!',
+          body: message.substring(0, 100),
+          type: trigger,
+          url: trigger.includes('consultation') ? '/specialist-dashboard' : '/orders'
+        })
+      })
+    }
+
     return NextResponse.json({ success: true, message: 'Processed' })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
