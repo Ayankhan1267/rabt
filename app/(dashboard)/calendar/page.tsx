@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -22,6 +22,7 @@ export default function CalendarPage() {
   const [events, setEvents] = useState<any[]>([])
   const [kanbanTasks, setKanbanTasks] = useState<any[]>([])
   const [consultations, setConsultations] = useState<any[]>([])
+  const [teamMeetings, setTeamMeetings] = useState<any[]>([])
   const [profile, setProfile] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -43,11 +44,14 @@ export default function CalendarPage() {
         supabase.from('profiles').select('*').order('name'),
         supabase.from('calendar_events').select('*, created_by(id,name), assigned_to(id,name)').order('event_date'),
         supabase.from('kanban_tasks').select('*, assigned_to(id,name)').not('due_date', 'is', null),
+        supabase.from('team_meetings').select('*').order('scheduled_at'),
       ])
       setProfile(p.data)
       setProfiles(pr.data || [])
       setEvents(ev.data || [])
       setKanbanTasks(kt.data || [])
+      const meetingsRes = await supabase.from('team_meetings').select('*').order('scheduled_at')
+      setTeamMeetings(meetingsRes.data || [])
 
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (url) {

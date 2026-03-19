@@ -81,7 +81,7 @@ const NAV: NavSection[] = [
       { id: 'productlab', label: 'Product Lab', icon: '🧪', href: '/productlab' },
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
-      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub', roles: ['founder', 'manager', 'specialist_manager'] },
+      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub', roles: ['founder', 'manager', 'specialist_manager', 'specialist', 'ops', 'support', 'admin'] },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
     ]
   },
@@ -222,7 +222,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
   const hasAccess = (item: NavItem | NavSection) => {
     if (!profile) return false
-    if (profile.role === 'founder') return !('roles' in item && item.roles?.length === 1 && item.roles[0] === 'specialist')
+    if (profile.role === 'founder' || profile.role === 'admin') return true
     const roles = item.roles
     if (!roles) return true
     return roles.includes(profile.role)
