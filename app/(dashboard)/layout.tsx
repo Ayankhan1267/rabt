@@ -141,6 +141,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setProfile(prof as UserProfile)
     if (prof?.role === 'partner' && !pathname.startsWith('/partner')) router.push('/partner')
     loadNotifications(user.id)
+    requestNotificationPermission()
   }
 
   async function loadNotifications(userId: string) {
