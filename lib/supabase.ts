@@ -10,7 +10,7 @@ export function createServerClient() {
   )
 }
 
-export type UserRole = 'founder' | 'manager' | 'specialist_manager' | 'specialist' | 'support' | 'ops' | 'partner'
+export type UserRole = 'founder' | 'admin' | 'manager' | 'specialist_manager' | 'specialist' | 'support' | 'ops' | 'partner' | 'finance' | 'hr' | 'content_creator' | 'marketing'
 
 export interface UserProfile {
   id: string

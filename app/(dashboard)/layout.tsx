@@ -65,8 +65,8 @@ const NAV: NavSection[] = [
     label: 'Marketing',
     roles: ['founder', 'manager'],
     items: [
-      { id: 'marketing', label: 'Marketing', icon: '📢', href: '/marketing' },
-      { id: 'content', label: 'Content Studio', icon: '🎬', href: '/content' },
+      { id: 'marketing', label: 'Marketing', icon: '📢', href: '/marketing', roles: ['founder','admin','manager','marketing','content_creator'] },
+      { id: 'content', label: 'Content Studio', icon: '🎬', href: '/content', roles: ['founder','admin','manager','content_creator','marketing'] },
       { id: 'ads', label: 'Ads Manager', icon: '📊', href: '/ads' },
 
       { id: 'partner-portal', label: 'Partner Portal', icon: '🌿', href: '/partner' },
@@ -77,7 +77,7 @@ const NAV: NavSection[] = [
     label: 'Business',
     roles: ['founder', 'manager'],
     items: [
-      { id: 'finance', label: 'Finance', icon: '💰', href: '/finance' },
+      { id: 'finance', label: 'Finance', icon: '💰', href: '/finance', roles: ['founder','admin','manager','finance'] },
       { id: 'productlab', label: 'Product Lab', icon: '🧪', href: '/productlab' },
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
@@ -238,7 +238,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
   const hasAccess = (item: NavItem | NavSection) => {
     if (!profile) return false
-    if (profile.role === 'founder' || profile.role === 'admin') return true
+    if (['founder','admin'].includes(profile.role)) return true
     const roles = item.roles
     if (!roles) return true
     return roles.includes(profile.role)
