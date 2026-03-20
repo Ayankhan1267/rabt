@@ -192,23 +192,50 @@ export default function OrdersPage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              // Website format
+              type: 'one_time',
+              source: 'hq',
+              status: form.status || 'processing',
+              shippingAddress: {
+                type: 'home',
+                street: form.address,
+                addressLine1: form.address,
+                city: form.city,
+                state: form.state,
+                pincode: form.pincode,
+                country: 'India',
+                contactName: form.customer_name,
+                contactPhone: form.customer_phone,
+              },
+              items: cart.map((i: any) => ({
+                variant: { size: i.variant?.size || '', sku: i.variant?.sku || '' },
+                quantity: i.qty,
+                price: { original: i.price, discounted: i.price, final: i.price },
+                productSnapshot: {
+                  name: i.name,
+                  image: i.image || '',
+                  category: i.category || '',
+                },
+              })),
+              pricing: {
+                subtotal: totals.subtotal || totals.total,
+                couponDiscount: totals.discount || 0,
+                shippingCharges: 0,
+                taxes: 0,
+                total: totals.total,
+                currency: 'INR',
+              },
+              payment: {
+                method: form.payment_method === 'COD' ? 'cod' : 'prepaid',
+                status: form.payment_method === 'COD' ? 'pending' : 'success',
+              },
+              couponUsed: couponApplied ? { code: couponApplied.code } : null,
+              notes: form.notes,
+              courier: form.courier,
+              // HQ extra fields
               customerName: form.customer_name,
               customerPhone: form.customer_phone,
               customerEmail: form.customer_email,
-              address: form.address,
-              city: form.city,
-              state: form.state,
-              pincode: form.pincode,
-              products: productNames,
-              items: cart.map((i: any) => ({ name: i.name, image: i.image || '', category: i.category || '', variant: i.variant || {}, qty: i.qty, price: i.price })),
-              amount: totals.total,
-              paymentMethod: form.payment_method,
-              status: form.status,
-              notes: form.notes,
-              courier: form.courier,
-              couponCode: couponApplied?.code || '',
-              couponDiscount: totals.discount,
-              source: 'hq'  // <-- DUPLICATE FIX: mark karo yeh HQ se aaya hai
             })
           })
           const mData = await mRes.json()
