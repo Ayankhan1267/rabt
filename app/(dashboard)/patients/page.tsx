@@ -22,7 +22,7 @@ export default function PatientsPage() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       const { data: prof } = await supabase.from('profiles').select('*').eq('id', user?.id).single()
-      const url = process.env.NEXT_PUBLIC_MONGO_API_URL || process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
+      const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (!url) { setLoading(false); return }
       const [specRes, consRes, ordRes, skinRes, userRes] = await Promise.all([
         fetch(url + '/api/specialists').then(r => r.ok ? r.json() : []),
@@ -38,64 +38,121 @@ export default function PatientsPage() {
         const allCons = Array.isArray(consRes) ? consRes : []
         const allOrders = Array.isArray(ordRes) ? ordRes : []
         const allSkins = Array.isArray(skinRes) ? skinRes : []
+        const allUsers = Array.isArray(userRes) ? userRes : []
+        // FIX: use c.user (ObjectId) not c.userId
         const myCons = allCons.filter((c: any) => c.assignedSpecialist?.toString() === mySpec._id?.toString())
         setConsultations(myCons)
-        const myPatientIds = new Set(myCons.map((c: any) => c.userId).filter(Boolean))
+        const myPatientUserIds = new Set(myCons.map((c: any) => c.user?.toString() || c.userId?.toString()).filter(Boolean))
         setOrders(allOrders.filter((o: any) => {
-          const uid = o.userId || o.user
-          return (uid && myPatientIds.has(uid)) || o.specialistId?.toString() === mySpec._id?.toString()
+          const uid = o.userId?.toString() || o.user?.toString()
+          const src = (o.source || '').toLowerCase()
+          return (uid && myPatientUserIds.has(uid)) || 
+                 (src === 'specialist_offline' && o.specialistId?.toString() === mySpec._id?.toString())
         }))
-        // All skin profiles - filter by specialist OR by consultation assigned to specialist
         const myConsIds = new Set(myCons.map((c: any) => c._id?.toString()))
-        setSkinProfiles(allSkins.filter((p: any) => 
+        setSkinProfiles(allSkins.filter((p: any) =>
           p.specialistId?.toString() === mySpec._id?.toString() ||
           (p.consultationId && myConsIds.has(p.consultationId?.toString()))
         ))
-        setUsers(Array.isArray(userRes) ? userRes : [])
+        setUsers(allUsers)
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
   }
 
-  // Build patient map - merge online + offline
-  const patientMap: Record<string, any> = {}
+  // Build patient map using phone as key (more reliable than name)
+  const patientMap = new Map<string, any>()
 
+  // 1. Online patients from consultations
   consultations.forEach(c => {
-    const key = c.name?.toLowerCase().trim() || c._id
-    const user = users.find((u: any) => u._id?.toString() === c.userId?.toString())
-    const phone = c.phone || user?.phone || user?.phoneNumber || ''
-    const email = c.email || user?.email || ''
-    if (!patientMap[key]) patientMap[key] = { name: c.name, phone, email, source: 'online', consultations: [], orders: [], skinProfiles: [], concern: c.concern }
-    else patientMap[key].consultations.push(c)
-    if (patientMap[key].consultations.length === 0) patientMap[key].consultations.push(c)
-    if (phone) patientMap[key].phone = phone
-    if (email) patientMap[key].email = email
+    // FIX: use c.user not c.userId
+    const uid = c.user?.toString() || c.userId?.toString()
+    const mongoUser = users.find((u: any) => u._id?.toString() === uid)
+    // FIX: use c.fullName not c.name
+    const name = c.fullName || c.name || (mongoUser ? ((mongoUser.firstName || '') + ' ' + (mongoUser.lastName || '')).trim() : '') || 'Unknown'
+    const phone = c.phone || mongoUser?.phoneNumber || mongoUser?.phone || ''
+    const email = c.email || mongoUser?.email || ''
+    const key = phone || uid || name.toLowerCase()
+    
+    const skinProfile = skinProfiles.find((sp: any) => 
+      (sp.phone && sp.phone === phone) ||
+      (sp.consultationId && sp.consultationId === c._id?.toString())
+    )
+
+    const patientOrders = orders.filter((o: any) => {
+      const oUid = o.userId?.toString() || o.user?.toString()
+      const oPhone = o.customerPhone || o.customer_phone || ''
+      return (uid && oUid === uid) || (phone && oPhone === phone)
+    })
+
+    const spent = patientOrders.reduce((s: number, o: any) => s + (o.amount || 0), 0)
+
+    if (!patientMap.has(key)) {
+      patientMap.set(key, {
+        key, name, phone, email,
+        age: c.age || mongoUser?.age || '',
+        source: 'online',
+        consultations: [c],
+        orders: patientOrders,
+        skinProfiles: skinProfile ? [skinProfile] : [],
+        spent,
+        userId: uid,
+      })
+    } else {
+      const existing = patientMap.get(key)!
+      // FIX: properly push consultation
+      if (!existing.consultations.find((ec: any) => ec._id === c._id)) {
+        existing.consultations.push(c)
+      }
+      existing.spent = patientOrders.reduce((s: number, o: any) => s + (o.amount || 0), 0)
+      existing.orders = patientOrders
+      if (skinProfile && !existing.skinProfiles.find((sp: any) => sp._id === skinProfile._id)) {
+        existing.skinProfiles.push(skinProfile)
+      }
+      if (phone && !existing.phone) existing.phone = phone
+      if (email && !existing.email) existing.email = email
+    }
   })
 
-  skinProfiles.forEach(sp => {
-    // Match by name first
-    const nameKey = sp.name?.toLowerCase().trim()
-    // Also match by consultationId
-    const consMatch = consultations.find((c: any) => c._id?.toString() === sp.consultationId?.toString())
-    const matchKey = nameKey || (consMatch?.name?.toLowerCase().trim())
-    if (!matchKey) return
-    if (!patientMap[matchKey]) patientMap[matchKey] = { name: sp.name || consMatch?.name, phone: sp.phone || '', email: '', source: sp.source === 'offline' ? 'offline' : 'online', consultations: [], orders: [], skinProfiles: [], concern: '' }
-    if (!patientMap[matchKey].skinProfiles.find((x: any) => x._id === sp._id)) patientMap[matchKey].skinProfiles.push(sp)
-    if (sp.source === 'offline') patientMap[matchKey].source = 'offline'
-    if (sp.phone) patientMap[matchKey].phone = sp.phone
+  // 2. Offline patients from specialist offline orders
+  orders.filter((o: any) => (o.source || '').toLowerCase() === 'specialist_offline').forEach((o: any) => {
+    const phone = o.customerPhone || o.customer_phone || ''
+    const name = o.customerName || o.customer_name || 'Unknown'
+    const email = o.customerEmail || o.customer_email || ''
+    const key = phone || name.toLowerCase()
+
+    const skinProfile = skinProfiles.find((sp: any) => sp.phone && sp.phone === phone)
+    const patientOrders = orders.filter((po: any) => {
+      const poPhone = po.customerPhone || po.customer_phone || ''
+      return phone && poPhone === phone
+    })
+    const spent = patientOrders.reduce((s: number, po: any) => s + (po.amount || 0), 0)
+
+    if (!patientMap.has(key)) {
+      patientMap.set(key, {
+        key, name, phone, email,
+        age: '',
+        source: 'offline',
+        consultations: [],
+        orders: patientOrders,
+        skinProfiles: skinProfile ? [skinProfile] : [],
+        spent,
+        userId: null,
+      })
+    } else {
+      const existing = patientMap.get(key)!
+      existing.source = 'offline'
+      patientOrders.forEach((po: any) => {
+        if (!existing.orders.find((eo: any) => eo._id === po._id)) existing.orders.push(po)
+      })
+      existing.spent = existing.orders.reduce((s: number, o: any) => s + (o.amount || 0), 0)
+      if (skinProfile && !existing.skinProfiles.find((sp: any) => sp._id === skinProfile._id)) {
+        existing.skinProfiles.push(skinProfile)
+      }
+    }
   })
 
-  orders.forEach(o => {
-    const key = o.customerName?.toLowerCase().trim()
-    if (!key) return
-    if (!patientMap[key]) patientMap[key] = { name: o.customerName, phone: o.customerPhone || '', email: o.customerEmail || '', source: o.source === 'specialist_offline' ? 'offline' : 'online', consultations: [], orders: [], skinProfiles: [], concern: '' }
-    if (!patientMap[key].orders.find((x: any) => x._id === o._id)) patientMap[key].orders.push(o)
-    if (o.customerPhone) patientMap[key].phone = o.customerPhone
-    if (o.customerEmail) patientMap[key].email = o.customerEmail
-    if (o.source === 'specialist_offline') patientMap[key].source = 'offline'
-  })
-
-  const allPatients = Object.values(patientMap)
+  const allPatients = Array.from(patientMap.values())
   const filtered = allPatients.filter(p => {
     const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.phone?.includes(search)
     const matchFilter = filter === 'all' || p.source === filter
@@ -112,7 +169,7 @@ export default function PatientsPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>My <span style={{ color: 'var(--gold)' }}>Patients</span></h1>
-          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{filtered.length} patients · Online + Offline</p>
+          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{filtered.length} patients &middot; Online + Offline</p>
         </div>
         <button onClick={loadAll} style={{ padding: '8px 16px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Refresh</button>
       </div>
@@ -123,7 +180,7 @@ export default function PatientsPage() {
           { label: 'Total Patients', value: allPatients.length, color: 'var(--blue)' },
           { label: 'Online', value: allPatients.filter(p => p.source === 'online').length, color: 'var(--teal)' },
           { label: 'Offline', value: allPatients.filter(p => p.source === 'offline').length, color: 'var(--orange)' },
-          { label: 'Total Revenue', value: '₹' + allPatients.reduce((s: number, p: any) => s + p.orders.reduce((os: number, o: any) => os + (o.amount || 0), 0), 0).toLocaleString('en-IN'), color: 'var(--gold)' },
+          { label: 'Total Revenue', value: 'Rs.' + allPatients.reduce((s: number, p: any) => s + p.spent, 0).toLocaleString('en-IN'), color: 'var(--gold)' },
         ].map((s, i) => (
           <div key={i} className="card">
             <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>{s.label}</div>
@@ -161,13 +218,12 @@ export default function PatientsPage() {
 
             {filtered.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 60, color: 'var(--mu)' }}>
-                <div style={{ fontSize: 36, marginBottom: 12 }}>🌿</div>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>\uD83C\uDF3F</div>
                 <div>No patients found</div>
               </div>
             ) : filtered.map((p: any, i: number) => {
               const sp = p.skinProfiles?.[0]
-              const totalSpend = p.orders.reduce((s: number, o: any) => s + (o.amount || 0), 0)
-              const isSelected = selected?.name === p.name
+              const isSelected = selected?.key === p.key
               return (
                 <div key={i} onClick={() => setSelected(isSelected ? null : p)}
                   style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 0.8fr 0.8fr 0.8fr 1fr 120px', gap: 0, padding: '12px 16px', borderBottom: '1px solid var(--b1)', cursor: 'pointer', background: isSelected ? 'var(--gL)' : 'transparent', transition: 'background 0.15s' }}
@@ -181,7 +237,7 @@ export default function PatientsPage() {
                     </div>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--mu)' }}>{p.phone || 'No phone'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono' }}>{p.phone || p.email || '-'}</div>
                     </div>
                   </div>
 
@@ -198,7 +254,7 @@ export default function PatientsPage() {
                       </>
                     ) : (
                       <div style={{ fontSize: 11, color: 'var(--mu)' }}>
-                        {p.concern ? p.concern.slice(0, 40) + '...' : '—'}
+                        {p.consultations?.[0]?.description?.slice(0, 40) || '\u2014'}
                       </div>
                     )}
                   </div>
@@ -215,7 +271,7 @@ export default function PatientsPage() {
 
                   {/* Spent */}
                   <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, color: totalSpend > 0 ? 'var(--gold)' : 'var(--mu)' }}>₹{totalSpend.toLocaleString('en-IN')}</span>
+                    <span style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, color: p.spent > 0 ? 'var(--gold)' : 'var(--mu)' }}>Rs.{p.spent.toLocaleString('en-IN')}</span>
                   </div>
 
                   {/* Source */}
@@ -229,13 +285,23 @@ export default function PatientsPage() {
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                     {p.phone ? (
                       <>
-                        <a href={'tel:' + p.phone.replace(/[^0-9+]/g, '')} title="Call" style={{ width: 30, height: 30, background: 'var(--blL)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: 14 }}>📞</a>
-                        <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! Rabt Naturals ki taraf se. 🌿')} target="_blank" rel="noopener noreferrer" title="WhatsApp" style={{ width: 30, height: 30, background: 'var(--grL)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: 14 }}>💬</a>
+                        <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se. Koi bhi skincare sawaal ho toh hum yahan hain!')}
+                          target="_blank" rel="noopener noreferrer" title="WhatsApp"
+                          style={{ width: 30, height: 30, background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: 13 }}>
+                          WA
+                        </a>
+                        <a href={'tel:' + p.phone.replace(/[^0-9+]/g, '')} title="Call"
+                          style={{ width: 30, height: 30, background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: 13 }}>
+                          Call
+                        </a>
                       </>
                     ) : (
-                      <span style={{ fontSize: 11, color: 'var(--mu)' }}>No phone</span>
+                      <span style={{ fontSize: 10, color: 'var(--mu)' }}>-</span>
                     )}
-                    <button onClick={() => setSelected(isSelected ? null : p)} style={{ width: 30, height: 30, background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>▶</button>
+                    <button onClick={() => setSelected(isSelected ? null : p)}
+                      style={{ width: 30, height: 30, background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>
+                      &#x25B6;
+                    </button>
                   </div>
                 </div>
               )
@@ -248,23 +314,31 @@ export default function PatientsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div>
                   <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800 }}>{selected.name}</div>
-                  <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 3 }}>{selected.phone || 'No phone'}{selected.email ? ' · ' + selected.email : ''}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 3 }}>
+                    {selected.phone || '-'}{selected.email ? ' \u00B7 ' + selected.email : ''}
+                  </div>
                 </div>
-                <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+                <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>&#x2715;</button>
               </div>
 
               {selected.phone && (
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                  <a href={'tel:' + selected.phone.replace(/[^0-9+]/g, '')} style={{ flex: 1, padding: '10px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>📞 Call</a>
-                  <a href={'https://wa.me/' + selected.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + selected.name + '! Rabt Naturals ki taraf se. 🌿')} target="_blank" rel="noopener noreferrer"
-                    style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center' }}>💬 WhatsApp</a>
+                  <a href={'https://wa.me/' + selected.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + selected.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se. Aapki skin ke baare mein baat karein?')}
+                    target="_blank" rel="noopener noreferrer"
+                    style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
+                    WA
+                  </a>
+                  <a href={'tel:' + selected.phone.replace(/[^0-9+]/g, '')}
+                    style={{ flex: 1, padding: '10px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>
+                    Call
+                  </a>
                 </div>
               )}
 
               {/* Skin Profile */}
               {selected.skinProfiles?.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 8 }}>🔬 Skin Profile</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 8 }}>Skin Profile</div>
                   {selected.skinProfiles.map((sp: any, i: number) => (
                     <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 8 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
@@ -278,7 +352,7 @@ export default function PatientsPage() {
                           ))}
                         </div>
                       )}
-                      {sp.skinGoals && <div style={{ fontSize: 11, color: 'var(--mu)' }}>🎯 {sp.skinGoals}</div>}
+                      {sp.notes && <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 4 }}>{sp.notes}</div>}
                     </div>
                   ))}
                 </div>
@@ -287,12 +361,12 @@ export default function PatientsPage() {
               {/* Consultations */}
               {selected.consultations?.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>📋 Consultations ({selected.consultations.length})</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>Consultations ({selected.consultations.length})</div>
                   {selected.consultations.map((c: any, i: number) => (
                     <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.concern?.slice(0, 50) || 'General'}</div>
-                        <div style={{ fontSize: 11, color: 'var(--mu)' }}>{c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '—'} {c.scheduledTime}</div>
+                        <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description?.slice(0, 50) || c.concern?.slice(0, 50) || 'General'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--mu)' }}>{c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '\u2014'} {c.scheduledTime}</div>
                       </div>
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, flexShrink: 0, background: c.status === 'completed' ? 'var(--grL)' : c.status === 'accepted' ? 'rgba(20,184,166,0.15)' : 'var(--orL)', color: c.status === 'completed' ? 'var(--green)' : c.status === 'accepted' ? 'var(--teal)' : 'var(--orange)' }}>{c.status}</span>
                     </div>
@@ -303,14 +377,14 @@ export default function PatientsPage() {
               {/* Orders */}
               {selected.orders?.length > 0 && (
                 <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>🛒 Orders ({selected.orders.length})</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>Orders ({selected.orders.length})</div>
                   {selected.orders.map((o: any, i: number) => (
                     <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px', marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1, minWidth: 0, marginRight: 8 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', marginBottom: 3 }}>₹{o.amount}</div>
-                        <div style={{ fontSize: 11, color: 'var(--mu)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.products || '—'}</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--gold)', marginBottom: 3 }}>Rs.{o.amount}</div>
+                        <div style={{ fontSize: 11, color: 'var(--mu)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.products || o.product || '\u2014'}</div>
                       </div>
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, flexShrink: 0, background: (o.status || '').toLowerCase() === 'delivered' ? 'var(--grL)' : 'var(--gL)', color: (o.status || '').toLowerCase() === 'delivered' ? 'var(--green)' : 'var(--gold)' }}>{o.status || 'new'}</span>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, flexShrink: 0, background: (o.status || '').toLowerCase() === 'delivered' ? 'var(--grL)' : 'var(--gL)', color: (o.status || '').toLowerCase() === 'delivered' ? 'var(--green)' : 'var(--gold)', textTransform: 'capitalize' }}>{o.status || 'new'}</span>
                     </div>
                   ))}
                 </div>
@@ -326,3 +400,4 @@ export default function PatientsPage() {
     </div>
   )
 }
+
