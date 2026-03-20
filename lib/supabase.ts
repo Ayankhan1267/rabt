@@ -64,11 +64,40 @@ export const ROLE_CONFIG: Record<UserRole, {
     color: '#F97316',
     bg: 'linear-gradient(135deg,#BF360C,#E64A19)',
     permissions: ['orders','inventory','tasks','support'],
-  },
-  partner: {
+  },  partner: {
     label: '🤝 Partner',
     color: '#0097A7',
     bg: 'linear-gradient(135deg,#005F6A,#0097A7)',
     permissions: ['partner'],
+  },
+  admin: {
+    label: '🛡️ Admin',
+    color: '#7C3AED',
+    bg: 'linear-gradient(135deg,#4C1D95,#6D28D9)',
+    permissions: ['*'],
+  },
+  finance: {
+    label: '💰 Finance',
+    color: '#22C55E',
+    bg: 'linear-gradient(135deg,#14532D,#166534)',
+    permissions: ['finance','orders','reports','dashboard','goals'],
+  },
+  hr: {
+    label: '👥 HR',
+    color: '#F59E0B',
+    bg: 'linear-gradient(135deg,#78350F,#92400E)',
+    permissions: ['hr','team','team-hub','calendar','dashboard'],
+  },
+  content_creator: {
+    label: '🎬 Content',
+    color: '#06B6D4',
+    bg: 'linear-gradient(135deg,#164E63,#155E75)',
+    permissions: ['content','marketing','ads','calendar','knowledge'],
+  },
+  marketing: {
+    label: '📢 Marketing',
+    color: '#F43F5E',
+    bg: 'linear-gradient(135deg,#881337,#9F1239)',
+    permissions: ['marketing','ads','crm','content','calendar','reports'],
   },
 }
