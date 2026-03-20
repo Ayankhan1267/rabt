@@ -16,11 +16,11 @@ const NAV: NavSection[] = [
   {
     label: 'Command',
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: '⚡', href: '/dashboard', roles: ['founder', 'manager'] },
+      { id: 'dashboard', label: 'Dashboard', icon: '⚡', href: '/dashboard', roles: ['founder', 'admin', 'manager', 'finance', 'hr', 'marketing', 'content_creator'] },
       { id: 'specialist-dashboard', label: 'Specialist Panel', icon: '🌿', href: '/specialist-dashboard', roles: ['specialist'] },
       { id: 'patients', label: 'My Patients', icon: '👥', href: '/patients', roles: ['specialist'] },
       { id: 'specialist-manager', label: 'Specialist Manager', icon: '👩‍⚕️', href: '/specialist-manager', roles: ['specialist_manager', 'admin'] },
-      { id: 'admin', label: 'Admin Panel', icon: '🛡️', href: '/admin', roles: ['founder'] },
+      { id: 'admin', label: 'Admin Panel', icon: '🛡️', href: '/admin', roles: ['founder', 'admin'] },
       { id: 'kanban', label: 'Kanban', icon: '⬜', href: '/kanban', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
       { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
     ]
@@ -81,7 +81,8 @@ const NAV: NavSection[] = [
       { id: 'productlab', label: 'Product Lab', icon: '🧪', href: '/productlab' },
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
-      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub', roles: ['founder', 'manager', 'specialist_manager', 'specialist', 'ops', 'support', 'admin'] },
+      { id: 'hr', label: 'HR', icon: '👥', href: '/hr', roles: ['founder','admin','manager','hr'] },
+      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub', roles: ['founder','admin','manager','specialist_manager','specialist','ops','support','hr'] },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
     ]
   },

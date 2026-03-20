@@ -1,9 +1,9 @@
-﻿'use client'
+'use client'
 import { useEffect, useState } from 'react'
 import { supabase, ROLE_CONFIG, UserRole } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-const ROLES: UserRole[] = ['founder', 'manager', 'specialist_manager', 'specialist', 'support', 'ops', 'partner']
+const ROLES: UserRole[] = ['founder', 'admin', 'manager', 'specialist_manager', 'specialist', 'support', 'ops', 'partner', 'finance', 'hr', 'content_creator', 'marketing']
 
 export default function AdminPage() {
   const [profiles, setProfiles] = useState<any[]>([])
