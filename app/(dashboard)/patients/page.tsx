@@ -47,7 +47,7 @@ export default function PatientsPage() {
           const uid = o.userId?.toString() || o.user?.toString()
           const src = (o.source || '').toLowerCase()
           return (uid && myPatientUserIds.has(uid)) || 
-                 (src === 'specialist_offline' && o.specialistId?.toString() === mySpec._id?.toString())
+                 (src === 'specialist_offline' && (o.specialistId?.toString() === mySpec._id?.toString() || !o.specialistId))
         }))
         const myConsIds = new Set(myCons.map((c: any) => c._id?.toString()))
         setSkinProfiles(allSkins.filter((p: any) =>
@@ -400,4 +400,5 @@ export default function PatientsPage() {
     </div>
   )
 }
+
 

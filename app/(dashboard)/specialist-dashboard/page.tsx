@@ -583,7 +583,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
         items: cart.map((i: any) => ({ name: i.name, image: i.image || '', category: i.category || '', variant: i.variant || {}, qty: i.qty, price: Number(i.price) })),
         amount: totals.total, subtotal: totals.subtotal, couponDiscount: totals.discount,
         couponCode: couponApplied?.code || '', paymentMethod, status: 'new',
-        source: 'specialist_offline', specialistId: mongoSpec?._id || '', shippingCharges: 0, type: 'one_time',
+        source: 'specialist_offline', specialistId: mongoSpec?._id?.toString() || mongoSpec?._id || '', shippingCharges: 0, type: 'one_time',
       }
       let mongoOrderId = ''
       const orderRes = await fetch(url + '/api/orders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderPayload) })
@@ -1630,6 +1630,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
     </div>
   )
 }
+
 
 
 
