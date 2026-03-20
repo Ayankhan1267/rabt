@@ -52,7 +52,13 @@ export default function SkinProfilePage() {
         const myMongoSpec = allSpecs.find((s: any) => s.email === prof.email || s.name?.toLowerCase() === prof.name?.toLowerCase())
         if (myMongoSpec) {
           const myConsIds = new Set(allCons.filter((c: any) => c.assignedSpecialist?.toString() === myMongoSpec._id?.toString()).map((c: any) => c._id?.toString()))
-          setSkinProfiles(allProfiles.filter((p: any) => myConsIds.has(p.consultationId?.toString()) || p.specialistId?.toString() === myMongoSpec._id?.toString()))
+          const myPatientUserIds = new Set(allCons.filter((c: any) => c.assignedSpecialist?.toString() === myMongoSpec._id?.toString()).map((c: any) => c.user?.toString()).filter(Boolean))
+          setSkinProfiles(allProfiles.filter((p: any) =>
+            p.specialistId?.toString() === myMongoSpec._id?.toString() ||
+            myConsIds.has(p.consultation?.toString()) ||
+            myConsIds.has(p.consultationId?.toString()) ||
+            myPatientUserIds.has(p.user?.toString())
+          ))
         } else setSkinProfiles([])
       } else {
         setSkinProfiles(allProfiles)
@@ -61,15 +67,15 @@ export default function SkinProfilePage() {
     setLoading(false)
   }
 
-  function getConsultation(sp: any) { return consultations.find(c => c._id?.toString() === sp.consultationId?.toString() || c._id?.toString() === sp.consultation?.toString()) }
-  function getCustomer(sp: any) { return customers.find(c => c._id === sp.userId || c._id === sp.user) }
+  function getConsultation(sp: any) { return consultations.find(c => c._id?.toString() === sp.consultation?.toString() || c._id?.toString() === sp.consultationId?.toString()) }
+  function getCustomer(sp: any) { return customers.find(c => c._id?.toString() === sp.user?.toString() || c._id?.toString() === sp.userId?.toString()) }
   function getSpecialist(sp: any) {
     if (sp.specialistId) { const d = specialists.find((s: any) => s._id?.toString() === sp.specialistId?.toString()); if (d) return d }
     const cons = getConsultation(sp)
     if (!cons?.assignedSpecialist) return null
     return specialists.find((s: any) => s._id?.toString() === cons.assignedSpecialist?.toString())
   }
-  function getProduct(productId: string) { return products.find(p => p._id === productId) }
+  function getProduct(productId: any) { const id = typeof productId === 'object' ? productId?.$oid || productId?.toString() : productId; return products.find(p => p._id?.toString() === id?.toString() || p._id === id) }
   function getPatientName(sp: any) {
     if (sp.name && sp.name.trim()) return sp.name.trim()
     const cons = getConsultation(sp)
@@ -86,10 +92,10 @@ export default function SkinProfilePage() {
 
   // Analytics computed
   const skinTypeCounts: Record<string, number> = {}
-  skinProfiles.forEach(sp => { const t = sp.skinType || 'Unknown'; skinTypeCounts[t] = (skinTypeCounts[t] || 0) + 1 })
+  skinProfiles.forEach(sp => { const t = sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'; skinTypeCounts[t] = (skinTypeCounts[t] || 0) + 1 })
 
   const concernCounts: Record<string, number> = {}
-  skinProfiles.forEach(sp => { (sp.skinConcerns || []).forEach((c: string) => { concernCounts[c] = (concernCounts[c] || 0) + 1 }) })
+  skinProfiles.forEach(sp => { (sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).forEach((c: string) => { concernCounts[c] = (concernCounts[c] || 0) + 1 }) })
   const topConcerns = Object.entries(concernCounts).sort((a,b) => b[1]-a[1]).slice(0, 10)
 
   const specProfileCounts: Record<string, {name: string, count: number}> = {}
@@ -117,25 +123,135 @@ export default function SkinProfilePage() {
   const filtered = skinProfiles.filter(sp => {
     const name = getPatientName(sp).toLowerCase()
     const matchSearch = !search || name.includes(search.toLowerCase())
-    const matchSkinType = skinTypeFilter === 'all' || sp.skinType === skinTypeFilter
+    const matchSkinType = skinTypeFilter === 'all' || sp.aiExtractedData?.skinType || sp.skinType === skinTypeFilter
     const matchSource = sourceFilter === 'all' || (sourceFilter === 'offline' ? sp.source === 'offline' : sp.source !== 'offline')
     const spec = getSpecialist(sp)
     const matchSpec = specFilterId === 'all' || spec?._id?.toString() === specFilterId
     return matchSearch && matchSkinType && matchSource && matchSpec
   })
 
-  const skinTypes = [...new Set(skinProfiles.map(sp => sp.skinType).filter(Boolean))]
+  const skinTypes = [...new Set(skinProfiles.map(sp => sp.aiExtractedData?.skinType || sp.skinType).filter(Boolean))]
 
   function printProfile(sp: any) {
     const name = getPatientName(sp)
     const cons = getConsultation(sp)
     const spec = getSpecialist(sp)
     const isOffline = sp.source === 'offline'
-    const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => ({ ...getProduct(rp.product || rp.productId), reason: rp.reason })).filter(Boolean)
+    const skinType = sp.aiExtractedData?.skinType || sp.skinType || ''
+    const skinConcerns = sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []
+    const skinGoals = sp.aiExtractedData?.skinGoals || sp.specialistUpdatedData?.skinGoals || sp.skinGoals || ''
+    const stressLevel = sp.aiExtractedData?.stressLevel || sp.specialistUpdatedData?.stressLevel || sp.stressLevel || ''
+    const specialistNotes = sp.specialistUpdatedData || sp.specialistNotes || null
+    const customFields: any[] = specialistNotes?.customFields || []
+    const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => ({ ...getProduct(rp.product || rp.productId), reason: rp.reason })).filter((p: any) => p?._id)
     const consultationLabel = cons?.consultationNumber || (isOffline ? 'Offline Session' : 'N/A')
     const win = window.open('', '_blank')
     if (!win) return
-    win.document.write(`<!DOCTYPE html><html><head><title>Skin Profile - ${name}</title><meta charset="UTF-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a2e;background:#fff}.page{max-width:800px;margin:0 auto;padding:40px}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:24px;border-bottom:3px solid #D4A853}.logo{font-size:28px;font-weight:900;color:#D4A853}.patient-banner{background:linear-gradient(135deg,#1a1a2e,#2d1b4e);color:#fff;border-radius:16px;padding:28px 32px;margin-bottom:28px;display:flex;align-items:center;gap:24px}.patient-avatar{width:64px;height:64px;background:linear-gradient(135deg,#D4A853,#B87C30);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#1a1a2e}.section{margin-bottom:28px}.section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;color:#D4A853;margin-bottom:14px}.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.info-card{background:#f8f9ff;border-radius:12px;padding:14px 16px;border:1px solid #eee}.info-label{font-size:10px;text-transform:uppercase;color:#888;margin-bottom:4px}.info-value{font-size:14px;font-weight:700;color:#1a1a2e}.concern-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;background:#fff3e0;color:#D4A853;border:1px solid #D4A85333;margin:4px}.notes-box{background:#fffbf0;border:1px solid #D4A85333;border-radius:12px;padding:16px 18px;font-size:13px;line-height:1.7;color:#444}.product-card{display:flex;align-items:flex-start;gap:14px;padding:14px;background:#f8f9ff;border-radius:12px;margin-bottom:10px;border:1px solid #eee}.footer{margin-top:40px;padding-top:20px;border-top:2px solid #D4A853;display:flex;justify-content:space-between}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}</style></head><body><div class="page"><div class="header"><div><div class="logo">RABT NATURALS</div><div style="font-size:11px;color:#888;margin-top:4px;text-transform:uppercase;letter-spacing:.1em">Personalized Skin Care Report</div></div><div style="text-align:right;font-size:12px;color:#666;line-height:1.8"><div><strong>Date:</strong> ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}</div><div><strong>Consultation:</strong> ${consultationLabel}</div><div><strong>Specialist:</strong> ${spec?.name||'N/A'}</div></div></div><div class="patient-banner"><div class="patient-avatar">${name.charAt(0)}</div><div><div style="font-size:26px;font-weight:800;margin-bottom:4px">${name}</div><div style="font-size:13px;color:rgba(255,255,255,.6)">${cons?.scheduledDate?new Date(cons.scheduledDate).toLocaleDateString('en-IN'):''}</div><div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">${sp.skinType?`<span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(212,168,83,.2);color:#D4A853;border:1px solid rgba(212,168,83,.3)">${sp.skinType} skin</span>`:''}${(sp.skinConcerns||[]).map((c:string)=>`<span style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(212,168,83,.2);color:#D4A853;border:1px solid rgba(212,168,83,.3)">${c}</span>`).join('')}</div></div></div><div class="section"><div class="section-title">Skin Analysis</div><div class="info-grid"><div class="info-card"><div class="info-label">Skin Type</div><div class="info-value">${sp.skinType||'N/A'}</div></div><div class="info-card"><div class="info-label">Stress Level</div><div class="info-value">${sp.stressLevel||'N/A'}</div></div><div class="info-card"><div class="info-label">Skin Goals</div><div class="info-value" style="font-size:12px">${sp.skinGoals||'N/A'}</div></div></div></div>${(sp.skinConcerns||[]).length>0?`<div class="section"><div class="section-title">Skin Concerns</div><div>${(sp.skinConcerns||[]).map((c:string)=>`<span class="concern-badge">${c}</span>`).join('')}</div></div>`:''}${cons?.concern?`<div class="section"><div class="section-title">Patient Concern</div><div class="notes-box">${cons.concern}</div></div>`:''}${recProducts.length>0?`<div class="section"><div class="section-title">Recommended Products</div>${recProducts.map((p:any)=>`<div class="product-card">${p?.image?`<img src="${p.image}" style="width:56px;height:56px;border-radius:10px;object-fit:cover"/>`:`<div style="width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,#D4A853,#B87C30);display:flex;align-items:center;justify-content:center;font-size:20px">🌿</div>`}<div><div style="font-size:13.5px;font-weight:700">${p?.name||'Product'}</div><div style="font-size:12px;color:#D4A853;font-weight:700">${p?.price?'₹'+p.price:''}</div><div style="font-size:11.5px;color:#555;line-height:1.5">${p?.reason||''}</div></div></div>`).join('')}</div>`:''}${(()=>{const n=sp.specialistNotes;if(!n)return'';if(Array.isArray(n)&&n.length>0)return`<div class="section"><div class="section-title">Specialist Notes</div>${n.map((cf:any)=>`<div style="margin-bottom:10px;background:#f8f9ff;border-radius:10px;padding:12px 14px"><div style="font-size:12px;font-weight:700;color:#D4A853;margin-bottom:5px">${cf.key}</div><div style="font-size:12.5px;color:#444;line-height:1.7">${cf.value}</div></div>`).join('')}</div>`;if(typeof n==='object'&&!Array.isArray(n)){const e=Object.entries(n).filter(([k,v])=>v&&String(v).trim());if(e.length===0)return'';return`<div class="section"><div class="section-title">Specialist Notes</div>${e.map(([k,v])=>`<div style="margin-bottom:10px;background:#f8f9ff;border-radius:10px;padding:12px 14px"><div style="font-size:12px;font-weight:700;color:#D4A853;margin-bottom:5px">${k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())}</div><div style="font-size:12.5px;color:#444;line-height:1.7">${v}</div></div>`).join('')}</div>`}return''})()}<div class="footer"><div><div style="font-size:16px;font-weight:800;color:#D4A853">RABT NATURALS</div><div style="font-size:11px;color:#999;margin-top:2px">rabtnaturals.com</div></div><div style="font-size:11px;color:#999;text-align:right"><div>Confidential — For Patient Use Only</div><div>Generated by Rabt HQ</div></div></div></div></body></html>`)
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+<title>Skin Profile - ${name}</title>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@1,700&family=Inter:wght@400;500;600;700;800&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Inter','Segoe UI',Arial,sans-serif;color:#1a2e2e;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .page{max-width:820px;margin:0 auto;background:#fff}
+  .header{background:#003D40;padding:26px 40px;display:flex;justify-content:space-between;align-items:center}
+  .logo-rabt{font-family:Georgia,serif;font-size:30px;font-weight:900;color:#D4F1F4;letter-spacing:-1px;font-style:italic}
+  .logo-nat{font-size:11px;font-weight:700;color:#0097A7;letter-spacing:5px;text-transform:uppercase;margin-top:2px}
+  .logo-sub{font-size:9px;color:rgba(212,241,244,0.45);letter-spacing:3px;text-transform:uppercase;margin-top:5px}
+  .hdr-info{text-align:right;font-size:12px;color:rgba(212,241,244,0.75);line-height:2}
+  .hdr-info strong{color:#D4F1F4}
+  .divider{height:3px;background:linear-gradient(90deg,#003D40,#0097A7,#D4F1F4)}
+  .banner{background:linear-gradient(135deg,#005F6A 0%,#0097A7 100%);padding:30px 40px;display:flex;align-items:center;gap:22px}
+  .avatar{width:66px;height:66px;background:rgba(212,241,244,0.18);border:2px solid rgba(212,241,244,0.35);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#D4F1F4;flex-shrink:0;font-family:Georgia,serif}
+  .p-name{font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.5px;margin-bottom:3px}
+  .p-sub{font-size:12px;color:rgba(212,241,244,0.65);margin-bottom:10px}
+  .badge{display:inline-block;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;background:rgba(212,241,244,0.14);color:#D4F1F4;border:1px solid rgba(212,241,244,0.22);margin-right:5px;margin-bottom:4px}
+  .content{padding:32px 40px}
+  .section{margin-bottom:28px}
+  .sec-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.14em;color:#0097A7;margin-bottom:14px;padding-bottom:7px;border-bottom:2px solid #D4F1F4;display:flex;align-items:center;gap:7px}
+  .sec-title::before{content:'';display:inline-block;width:3px;height:13px;background:#0097A7;border-radius:2px}
+  .info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+  .info-card{background:#f0fafa;border:1px solid #D4F1F4;border-radius:11px;padding:13px 15px}
+  .info-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#0097A7;margin-bottom:5px;font-weight:700}
+  .info-val{font-size:13px;font-weight:700;color:#003D40;text-transform:capitalize}
+  .concern-wrap{display:flex;flex-wrap:wrap;gap:7px}
+  .c-tag{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;background:#D4F1F4;color:#005F6A;border:1px solid #0097A7}
+  .txt-box{background:#f0fafa;border-left:3px solid #0097A7;border-radius:0 8px 8px 0;padding:13px 15px;font-size:13px;line-height:1.7;color:#2d4a4a}
+  .notes-wrap{background:#f8fefe;border:1px solid #D4F1F4;border-radius:11px;padding:18px 22px}
+  .n-key{font-size:11px;font-weight:700;color:#0097A7;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px}
+  .n-val{font-size:13px;color:#2d4a4a;line-height:1.6;background:#fff;border-radius:6px;padding:8px 11px;border:1px solid #D4F1F4;margin-bottom:12px}
+  .prod-card{display:flex;gap:14px;padding:14px;background:#f8fefe;border:1px solid #D4F1F4;border-radius:11px;margin-bottom:11px}
+  .prod-img{width:58px;height:58px;border-radius:9px;object-fit:cover;flex-shrink:0;background:#D4F1F4}
+  .prod-name{font-size:13.5px;font-weight:700;color:#003D40;margin-bottom:3px}
+  .prod-price{font-size:13px;font-weight:700;color:#0097A7;margin-bottom:5px}
+  .prod-reason{font-size:11.5px;color:#4a6a6a;line-height:1.6}
+  .img-wrap{display:flex;gap:9px;flex-wrap:wrap}
+  .cons-img{width:88px;height:88px;border-radius:9px;object-fit:cover;border:2px solid #D4F1F4}
+  .footer{background:#003D40;padding:18px 40px;display:flex;justify-content:space-between;align-items:center}
+  .f-logo{font-family:Georgia,serif;font-size:15px;color:#D4F1F4;font-style:italic;font-weight:700}
+  .f-txt{font-size:10px;color:rgba(212,241,244,0.45);text-align:right;line-height:1.8}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.page{max-width:100%}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div>
+      <div class="logo-rabt">rabt</div>
+      <div class="logo-nat">Naturals</div>
+      <div class="logo-sub">Personalized Skin Care Report</div>
+    </div>
+    <div class="hdr-info">
+      <div><strong>Date:</strong> ${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'})}</div>
+      <div><strong>Consultation:</strong> ${consultationLabel}</div>
+      <div><strong>Specialist:</strong> ${spec?.name||'N/A'}</div>
+      <div><strong>Status:</strong> ${cons?.status||(isOffline?'Completed':'N/A')}</div>
+    </div>
+  </div>
+  <div class="divider"></div>
+  <div class="banner">
+    <div class="avatar">${name.charAt(0).toUpperCase()}</div>
+    <div>
+      <div class="p-name">${name}</div>
+      <div class="p-sub">${cons?.scheduledDate?'Consultation: '+new Date(cons.scheduledDate).toLocaleDateString('en-IN')+' &middot; '+(cons.scheduledTime||''):(isOffline?'Offline Session':'')}</div>
+      <div>
+        ${skinType?`<span class="badge">${skinType} skin</span>`:''}
+        ${skinConcerns.map((c:string)=>`<span class="badge">${c}</span>`).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="content">
+    <div class="section">
+      <div class="sec-title">Skin Analysis</div>
+      <div class="info-grid">
+        <div class="info-card"><div class="info-lbl">Skin Type</div><div class="info-val">${skinType||'N/A'}</div></div>
+        <div class="info-card"><div class="info-lbl">Stress Level</div><div class="info-val">${stressLevel||'N/A'}</div></div>
+        <div class="info-card"><div class="info-lbl">Skin Goals</div><div class="info-val" style="font-size:12px">${Array.isArray(skinGoals)?skinGoals.join(', '):(skinGoals||'N/A')}</div></div>
+      </div>
+    </div>
+    ${skinConcerns.length>0?`<div class="section"><div class="sec-title">Skin Concerns</div><div class="concern-wrap">${skinConcerns.map((c:string)=>`<span class="c-tag">${c}</span>`).join('')}</div></div>`:''}
+    ${(cons?.description||cons?.concern)?`<div class="section"><div class="sec-title">Patient's Concern</div><div class="txt-box">${cons.description||cons.concern}</div></div>`:''}
+    ${recProducts.length>0?`<div class="section"><div class="sec-title">Recommended Products (${recProducts.length})</div>${recProducts.map((p:any)=>`<div class="prod-card">${p?.images?.[0]?.url||p?.image?`<img class="prod-img" src="${p?.images?.[0]?.url||p?.image}" alt="${p?.name}" onerror="this.style.display='none'">`:`<div class="prod-img" style="display:flex;align-items:center;justify-content:center;font-size:22px">&#127807;</div>`}<div style="flex:1"><div class="prod-name">${p?.name||'Product'}</div><div class="prod-price">Rs.${typeof p?.variants?.[0]?.price==='object'?(p.variants[0].price.discounted||p.variants[0].price.original||''):(p?.variants?.[0]?.price||p?.price||'')}</div>${p?.reason?`<div class="prod-reason">${p.reason}</div>`:''}</div></div>`).join('')}</div>`:''}
+    ${customFields.length>0?`<div class="section"><div class="sec-title">Specialist Recommendations</div><div class="notes-wrap">${customFields.filter((cf:any)=>cf.key&&cf.value&&String(cf.value).trim()!=='None').map((cf:any)=>`<div><div class="n-key">${cf.key}</div><div class="n-val">${String(cf.value).replace(/\n/g,'<br>')}</div></div>`).join('')}</div></div>`:''}
+    ${Array.isArray(cons?.images)&&cons.images.length>0?`<div class="section"><div class="sec-title">Consultation Images</div><div class="img-wrap">${cons.images.slice(0,4).map((img:any)=>`<img class="cons-img" src="${img.url||img}" alt="skin">`).join('')}</div></div>`:''}
+  </div>
+  <div class="footer">
+    <div>
+      <div class="f-logo">rabt naturals</div>
+      <div style="font-size:10px;color:rgba(212,241,244,0.35);margin-top:3px">rabtnaturals.com</div>
+    </div>
+    <div class="f-txt">
+      <div>Confidential &mdash; For Patient Use Only</div>
+      <div>Generated by Rabt HQ &middot; ${new Date().toLocaleString('en-IN')}</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>`
+    win.document.write(html)
     win.document.close()
     setTimeout(() => win.print(), 800)
   }
@@ -145,7 +261,7 @@ export default function SkinProfilePage() {
     const cons = getConsultation(sp)
     const spec = getSpecialist(sp)
     const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => getProduct(rp.product || rp.productId)).filter(Boolean)
-    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(sp.skinConcerns || []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
+    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.aiExtractedData?.skinType || sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
     const phone = toPatient ? getPatientPhone(sp).replace(/[^0-9]/g, '') : ''
     window.open((phone ? `https://wa.me/${phone}?text=` : `https://wa.me/?text=`) + encodeURIComponent(msg), '_blank')
     toast.success(toPatient ? 'WhatsApp opened for patient!' : 'WhatsApp opened!')
@@ -354,14 +470,14 @@ export default function SkinProfilePage() {
                         <div style={{ width: 42, height: 42, borderRadius: 11, background: 'linear-gradient(135deg,#C2185B,#880E4F)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{name.charAt(0)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{sp.skinType || 'Unknown'} skin</div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'} skin</div>
                         </div>
                         <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: sp.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: sp.source === 'offline' ? 'var(--orange)' : 'var(--blue)', flexShrink: 0 }}>
                           {sp.source === 'offline' ? 'Offline' : 'Online'}
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-                        {(sp.skinConcerns || []).slice(0, 3).map((c: string, ci: number) => (
+                        {(sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).slice(0, 3).map((c: string, ci: number) => (
                           <span key={ci} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--gL)', color: 'var(--gold)', fontWeight: 600 }}>{c}</span>
                         ))}
                       </div>
@@ -393,9 +509,9 @@ export default function SkinProfilePage() {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                       {[
-                        { label: 'Skin Type', value: selected.skinType },
+                        { label: 'Skin Type', value: selected.aiExtractedData?.skinType || selected.skinType },
                         { label: 'Specialist', value: spec?.name || 'N/A' },
-                        { label: 'Stress Level', value: selected.stressLevel },
+                        { label: 'Stress Level', value: selected.aiExtractedData?.stressLevel || selected.specialistUpdatedData?.stressLevel || selected.stressLevel },
                         { label: 'Status', value: cons?.status || (selected.source === 'offline' ? 'Completed' : 'N/A') },
                         { label: 'Source', value: selected.source === 'offline' ? 'Offline' : 'Online' },
                         { label: 'Age', value: selected.age || 'N/A' },
@@ -434,20 +550,13 @@ export default function SkinProfilePage() {
                         <div style={{ fontSize: 12.5, color: 'var(--mu2)', background: 'var(--s2)', borderRadius: 8, padding: '10px 12px' }}>{selected.diet}</div>
                       </div>
                     )}
-                    {selected.specialistNotes && (
-                      Array.isArray(selected.specialistNotes) ? selected.specialistNotes.length > 0 : Object.keys(selected.specialistNotes || {}).length > 0
-                    ) && (
+                    {(selected.specialistUpdatedData?.customFields || selected.specialistNotes)  && (
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 7 }}>Specialist Notes</div>
-                        {Array.isArray(selected.specialistNotes) ? selected.specialistNotes.map((cf: any, i: number) => (
+                        {(selected.specialistUpdatedData?.customFields || (Array.isArray(selected.specialistNotes) ? selected.specialistNotes : [])).filter((cf: any) => cf.key && cf.value && String(cf.value).trim() !== 'None').map((cf: any, i: number) => (
                           <div key={i} style={{ marginBottom: 8, background: 'var(--s2)', borderRadius: 10, padding: '10px 12px' }}>
                             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 4 }}>{cf.key}</div>
-                            <div style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.6 }}>{cf.value}</div>
-                          </div>
-                        )) : Object.entries(selected.specialistNotes).filter(([k, v]) => v && String(v).trim()).map(([k, v]: any, i: number) => (
-                          <div key={i} style={{ marginBottom: 8, background: 'var(--s2)', borderRadius: 10, padding: '10px 12px' }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 4 }}>{k.replace(/([A-Z])/g, ' $1').replace(/^./, (s: string) => s.toUpperCase())}</div>
-                            <div style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.6 }}>{String(v)}</div>
+                            <div style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{cf.value}</div>
                           </div>
                         ))}
                       </div>
@@ -457,10 +566,10 @@ export default function SkinProfilePage() {
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 7 }}>Recommended Products ({recProducts.length})</div>
                         {recProducts.map((p: any, i: number) => (
                           <div key={i} style={{ display: 'flex', gap: 10, padding: 10, background: 'var(--s2)', borderRadius: 10, marginBottom: 8 }}>
-                            {p.image ? <img src={p.image} alt={p.name} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--gL)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🌿</div>}
+                            {p?.images?.[0]?.url || p?.image ? <img src={p?.images?.[0]?.url || p?.image} alt={p.name} style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 44, height: 44, borderRadius: 8, background: 'var(--gL)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>🌿</div>}
                             <div style={{ flex: 1 }}>
                               <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 2 }}>{p.name}</div>
-                              <div style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 700, marginBottom: 3 }}>₹{p.price}</div>
+                              <div style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 700, marginBottom: 3 }}>Rs.{typeof p?.variants?.[0]?.price === 'object' ? (p.variants[0].price.discounted || p.variants[0].price.original || '') : (p?.variants?.[0]?.price || p?.price || '')}</div>
                               {p.reason && <div style={{ fontSize: 11, color: 'var(--mu)', lineHeight: 1.4 }}>{p.reason?.slice(0, 80)}...</div>}
                             </div>
                           </div>
@@ -494,3 +603,5 @@ export default function SkinProfilePage() {
     </div>
   )
 }
+
+
