@@ -12,6 +12,29 @@ const STATUS_BG: Record<string, string> = {
   completed: 'var(--grL)', cancelled: 'var(--rdL)', in_progress: 'rgba(139,92,246,0.15)',
 }
 
+// Helper: Get product image
+function getProductImg(p: any) {
+  return p.images?.find((img: any) => img.isPrimary)?.url || p.images?.[0]?.url || p.image || ''
+}
+
+// Helper: Get product price safely
+function getProductPrice(p: any, v?: any) {
+  if (v) {
+    const vp = v.price
+    if (typeof vp === 'object') return vp?.discounted || vp?.original || 0
+    return typeof vp === 'number' ? vp : 0
+  }
+  const vv = p.variants?.[0]
+  if (vv) {
+    const vp = vv.price
+    if (typeof vp === 'object') return vp?.discounted || vp?.original || 0
+    return typeof vp === 'number' ? vp : 0
+  }
+  const pp = p.price
+  if (typeof pp === 'object') return pp?.discounted || pp?.original || 0
+  return typeof pp === 'number' ? pp : 0
+}
+
 export default function SpecialistDashboard() {
   const [profile, setProfile] = useState<any>(null)
   const [mongoSpec, setMongoSpec] = useState<any>(null)
@@ -153,7 +176,7 @@ export default function SpecialistDashboard() {
     const key = product._id + (variant?.sku || '')
     const existing = cart.find((c: any) => c._key === key)
     if (existing) setCart(cart.map((c: any) => c._key === key ? { ...c, qty: c.qty + 1 } : c))
-    else setCart([...cart, { ...product, _key: key, variant, qty: 1, price: variant?.price || product.price || 0 }])
+    else setCart([...cart, { ...product, _key: key, variant, qty: 1, price: variant?.price?.discounted || variant?.price?.original || (typeof variant?.price === 'number' ? variant?.price : 0) || product?.price?.discounted || product?.price?.original || (typeof product?.price === 'number' ? product?.price : 0) || 0 }])
   }
 
   function getCartTotal() {
@@ -208,7 +231,7 @@ export default function SpecialistDashboard() {
       const matchedProducts = products.filter(p => suggestedNames.some(name => p.name?.toLowerCase().includes(name.toLowerCase().split(' ')[0])))
       if (matchedProducts.length > 0) {
         const newCart = matchedProducts.slice(0, 6).map((p: any) => ({
-          ...p, _key: p._id, variant: p.variants?.[0] || {}, qty: 1, price: p.variants?.[0]?.price || p.price || 0
+          ...p, _key: p._id, variant: p.variants?.[0] || {}, qty: 1, price: p.variants?.[0]?.price?.discounted || p.variants?.[0]?.price?.original || (typeof p.variants?.[0]?.price === 'number' ? p.variants?.[0]?.price : 0) || p?.price?.discounted || p?.price?.original || (typeof p?.price === 'number' ? p?.price : 0) || 0
         }))
         setCart(newCart)
       }
@@ -1318,17 +1341,17 @@ ${skinImages.length > 0 ? `
                       {products.map((p: any, i: number) => (
                         <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: 10, border: '1px solid var(--b1)' }}>
                           <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                            {p.image && <img src={p.image} alt={p.name} style={{ width: 38, height: 38, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />}
+                            {getProductImg(p) && <img src={getProductImg(p)} alt={p.name} style={{ width: 38, height: 38, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.name}</div>
-                              <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>Rs.{p.price?.discounted || p.price?.original || p.price || 0}</div>
+                              <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>Rs.{getProductPrice(p)}</div>
                             </div>
                           </div>
                           {p.variants && p.variants.length > 1 ? (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {p.variants.map((v: any, vi: number) => (
                                 <button key={vi} onClick={() => addToCart(p, v)} style={{ padding: '3px 7px', background: 'var(--gL)', border: 'none', borderRadius: 5, color: 'var(--gold)', fontSize: 10, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
-                                  {v.size} Rs.{v.price?.discounted || v.price?.original || v.price || 0}
+                                  {v.size} Rs.{getProductPrice(p, v)}
                                 </button>
                               ))}
                             </div>
@@ -1347,7 +1370,7 @@ ${skinImages.length > 0 ? `
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 0', borderBottom: '1px solid var(--b1)' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 11, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
-                          <div style={{ fontSize: 10, color: 'var(--mu)' }}>Rs.{item.price}</div>
+                          <div style={{ fontSize: 10, color: 'var(--mu)' }}>Rs.{typeof item.price === 'object' ? (item.price?.discounted || item.price?.original || 0) : (item.price || 0)}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                           <button onClick={() => setCart(cart.map((c: any, ci: number) => ci === i ? { ...c, qty: Math.max(1, c.qty-1) } : c))} style={{ width: 20, height: 20, background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 4, cursor: 'pointer', color: 'var(--tx)' }}>-</button>
@@ -1355,7 +1378,7 @@ ${skinImages.length > 0 ? `
                           <button onClick={() => setCart(cart.map((c: any, ci: number) => ci === i ? { ...c, qty: c.qty+1 } : c))} style={{ width: 20, height: 20, background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 4, cursor: 'pointer', color: 'var(--tx)' }}>+</button>
                           <button onClick={() => setCart(cart.filter((_: any, ci: number) => ci !== i))} style={{ width: 20, height: 20, background: 'var(--rdL)', border: 'none', borderRadius: 4, cursor: 'pointer', color: 'var(--red)' }}>x</button>
                         </div>
-                        <div style={{ fontSize: 11, fontWeight: 700, minWidth: 50, textAlign: 'right' }}>Rs.{(Number(item.price) * item.qty).toFixed(0)}</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, minWidth: 50, textAlign: 'right' }}>Rs.{((typeof item.price === 'object' ? (item.price?.discounted || item.price?.original || 0) : Number(item.price || 0)) * item.qty).toFixed(0)}</div>
                       </div>
                     ))}
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -1390,7 +1413,7 @@ ${skinImages.length > 0 ? `
                     {cart.map((item: any, i: number) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 5 }}>
                         <span>{item.name} � {item.qty}</span>
-                        <span style={{ fontFamily: 'DM Mono', fontWeight: 700 }}>Rs.{(Number(item.price) * item.qty).toFixed(0)}</span>
+                        <span style={{ fontFamily: 'DM Mono', fontWeight: 700 }}>Rs.{((typeof item.price === 'object' ? (item.price?.discounted || item.price?.original || 0) : Number(item.price || 0)) * item.qty).toFixed(0)}</span>
                       </div>
                     ))}
                     {totals.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--green)', marginTop: 6 }}><span>Discount</span><span>-Rs.{totals.discount}</span></div>}
