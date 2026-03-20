@@ -1321,14 +1321,14 @@ ${skinImages.length > 0 ? `
                             {p.image && <img src={p.image} alt={p.name} style={{ width: 38, height: 38, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} />}
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.name}</div>
-                              <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>Rs.{p.price}</div>
+                              <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700 }}>Rs.{p.price?.discounted || p.price?.original || p.price || 0}</div>
                             </div>
                           </div>
                           {p.variants && p.variants.length > 1 ? (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {p.variants.map((v: any, vi: number) => (
                                 <button key={vi} onClick={() => addToCart(p, v)} style={{ padding: '3px 7px', background: 'var(--gL)', border: 'none', borderRadius: 5, color: 'var(--gold)', fontSize: 10, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
-                                  {v.size} Rs.{v.price}
+                                  {v.size} Rs.{v.price?.discounted || v.price?.original || v.price || 0}
                                 </button>
                               ))}
                             </div>
