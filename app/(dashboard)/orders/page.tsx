@@ -513,7 +513,7 @@ export default function OrdersPage() {
                           {HQ_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
                       ) : (
-                        <span style={{ padding: '3px 9px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: statusBg, color: statusColor }}>{getStatusDisplay(o)}</span>
+                        <select value={getRealStatus(o)} onChange={e => { const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url'); if (url && o._id) fetch(url + '/api/orders/' + o._id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: e.target.value, orderStatus: e.target.value }) }).then(() => { toast.success('Updated!'); loadOrders(); }) }} style={{ background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 6, padding: '4px 8px', color: STATUS_COLORS[e] || 'var(--mu2)', fontSize: 11, cursor: 'pointer', outline: 'none', fontFamily: 'Outfit' }}>{HQ_STATUSES.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}</select>
                       )}
                     </td>
                     <td style={{ padding: '11px 12px' }}><span style={{ fontSize: 10, color: o._source === 'website' ? 'var(--green)' : o._source === 'specialist' ? 'var(--purple)' : o._source === 'partner' ? 'var(--orange)' : 'var(--mu)' }}>{o._source === 'website' ? 'Website' : o._source === 'specialist' ? 'Specialist' : o._source === 'partner' ? 'Partner' : 'HQ'}</span></td>
