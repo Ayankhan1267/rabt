@@ -601,6 +601,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
       const orderPayload = {
         customerName: offlineCustomer.name, customerPhone: offlineCustomer.phone, customerEmail: offlineCustomer.email,
         address: offlineCustomer.address, city: offlineCustomer.city, state: offlineCustomer.state, pincode: offlineCustomer.pincode,
+        shippingAddress: { contactName: offlineCustomer.name, contactPhone: offlineCustomer.phone, street: offlineCustomer.address, city: offlineCustomer.city, state: offlineCustomer.state, pincode: offlineCustomer.pincode, country: 'India' },
         products: productNames,
         items: cart.map((i: any) => ({ name: i.name, image: i.image || '', category: i.category || '', variant: i.variant || {}, qty: i.qty, price: Number(i.price) })),
         amount: totals.total, subtotal: totals.subtotal, couponDiscount: totals.discount,
@@ -1568,6 +1569,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
     </div>
   )
 }
+
 
 
 
