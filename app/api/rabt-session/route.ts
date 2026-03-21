@@ -2,6 +2,14 @@
 import jwt from 'jsonwebtoken'
 import { StreamClient } from '@stream-io/node-sdk'
 
+const RABT_API = 'https://rabtnaturals.com/hq-api'
+const JWT_SECRET = process.env.RABT_JWT_SECRET || ''
+
+function makeToken(userId: string) {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '2h' })
+}
+
+// POST â€” Accept consultation + create session
 export async function POST(req: NextRequest) {
   try {
     const { consultationId, specialistMongoId } = await req.json()
@@ -19,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET — Stream.io token generate karo specialist ke liye
+// GET â€” Stream.io token generate karo specialist ke liye
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -49,3 +57,43 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
+// PATCH â€” Skin profile update (skin-data ya routine)
+export async function PATCH(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const type = searchParams.get('type') // 'skin-data' or 'routine'
+    const skinProfileId = searchParams.get('skinProfileId')
+    const specialistUserId = searchParams.get('specialistUserId')
+
+    if (!skinProfileId || !specialistUserId || !type) {
+      return NextResponse.json({ error: 'skinProfileId, specialistUserId, type required' }, { status: 400 })
+    }
+    if (!JWT_SECRET) {
+      return NextResponse.json({ error: 'JWT secret missing' }, { status: 500 })
+    }
+
+    const body = await req.json()
+    const token = makeToken(specialistUserId)
+
+    const url = RABT_API + '/skin-profiles/' + skinProfileId + '/' + type
+
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body)
+    })
+
+    const data = await res.json()
+    if (!res.ok) return NextResponse.json({ error: data.message || 'Failed' }, { status: res.status })
+    return NextResponse.json({ success: true, data })
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+
+

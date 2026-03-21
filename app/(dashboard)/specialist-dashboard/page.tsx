@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
+import SkinProfileModal from './SkinProfileModal'
 
 const STATUS_COLORS: Record<string, string> = {
   pending: 'var(--orange)', accepted: 'var(--teal)', scheduled: 'var(--blue)',
@@ -81,6 +82,8 @@ export default function SpecialistDashboard() {
   const [editSkinProfile, setEditSkinProfile] = useState<any>(null)
   const [skinProfileForm, setSkinProfileForm] = useState<any>({})
   const [skinProfileLoading, setSkinProfileLoading] = useState(false)
+  const [showSkinProfileModal, setShowSkinProfileModal] = useState(false)
+  const [selectedSkinProfile, setSelectedSkinProfile] = useState<any>(null)
 
   // Payout
   const [payoutModal, setPayoutModal] = useState(false)
@@ -964,22 +967,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       <button
                         onClick={() => {
                           const sp = getSkinProfileForCons(selectedCons)
-                          if (sp) {
-                            setEditSkinProfile(sp)
-                            setSkinProfileForm({
-                              skinType: sp.skinType || '',
-                              skinConcerns: Array.isArray(sp.skinConcerns) ? sp.skinConcerns.join(', ') : sp.skinConcerns || '',
-                              notes: sp.notes || '',
-                            })
-                          } else {
-                            setEditSkinProfile({
-                              _id: null,
-                              consultationId: selectedCons._id,
-                              name: selectedCons.fullName || selectedCons.name,
-                              phone: selectedCons.phone || getUserForCons(selectedCons)?.phoneNumber || '',
-                            })
-                            setSkinProfileForm({ skinType: '', skinConcerns: '', notes: '' })
-                          }
+                          setSelectedSkinProfile(sp || { name: selectedCons.fullName || selectedCons.name, consultation: selectedCons._id })
+                          setShowSkinProfileModal(true)
                         }}
                         style={{ padding: '9px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                         {getSkinProfileForCons(selectedCons) ? 'Update Skin Profile' : 'Create Skin Profile'}
@@ -1535,6 +1524,17 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
         </div>
       )}
 
+      {/* Skin Profile Full Modal */}
+      {showSkinProfileModal && selectedSkinProfile && (
+        <SkinProfileModal
+          skinProfile={selectedSkinProfile}
+          products={products}
+          mongoSpec={mongoSpec}
+          onClose={() => { setShowSkinProfileModal(false); setSelectedSkinProfile(null) }}
+          onSaved={() => { setShowSkinProfileModal(false); setSelectedSkinProfile(null); loadAll() }}
+        />
+      )}
+
       {/* Payout Modal */}
       {payoutModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -1568,5 +1568,11 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
     </div>
   )
 }
+
+
+
+
+
+
 
 
