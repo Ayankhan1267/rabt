@@ -42,7 +42,8 @@ function getProductPrice(p: any) {
 }
 
 export default function SkinProfileModal({ skinProfile, products, mongoSpec, onClose, onSaved }: SkinProfileModalProps) {
-  const rawExisting = skinProfile?.specialistUpdatedData || skinProfile?.aiExtractedData || {}
+  console.log('skinProfile:', JSON.stringify(skinProfile, null, 2))
+  const rawExisting = skinProfile?.specialistUpdatedData?.updatedAt ? skinProfile.specialistUpdatedData : (skinProfile?.aiExtractedData || {})
   const existing = {
     ...rawExisting,
     skinConcerns: Array.isArray(rawExisting.skinConcerns) ? rawExisting.skinConcerns : []
@@ -464,4 +465,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     </div>
   )
 }
+
+
+
 
