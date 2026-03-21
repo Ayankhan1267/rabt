@@ -63,6 +63,7 @@ export default function SpecialistDashboard() {
   const [products, setProducts] = useState<any[]>([])
   const [coupons, setCoupons] = useState<any[]>([])
   const [payouts, setPayouts] = useState<any[]>([])
+  const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [tab, setTab] = useState<'overview' | 'consultations' | 'crm' | 'skinprofiles' | 'earnings'>('overview')
@@ -151,7 +152,7 @@ export default function SpecialistDashboard() {
       setProfile(prof)
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (!url) { setLoading(false); return }
-      const [specRes, consRes, ordRes, prodRes, couponRes, skinRes, payoutRes, userRes] = await Promise.all([
+      const [specRes, consRes, ordRes, prodRes, couponRes, skinRes, payoutRes, userRes, sessionRes] = await Promise.all([
         fetch(url + '/api/specialists').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/consultations').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/orders').then(r => r.ok ? r.json() : []),
@@ -160,6 +161,7 @@ export default function SpecialistDashboard() {
         fetch(url + '/api/skinprofiles').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/payouts').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/users').then(r => r.ok ? r.json() : []),
+        fetch(url + '/api/sessions').then(r => r.ok ? r.json() : []),
       ])
       const allSpecs = Array.isArray(specRes) ? specRes : []
       const mySpec = allSpecs.find((s: any) => s.email?.toLowerCase() === prof?.email?.toLowerCase())
@@ -175,11 +177,24 @@ export default function SpecialistDashboard() {
       setCoupons(Array.isArray(couponRes) ? couponRes : [])
       setSkinProfiles(Array.isArray(skinRes) ? skinRes : [])
       setPayouts(Array.isArray(payoutRes) ? payoutRes : [])
+      setSessions(Array.isArray(sessionRes) ? sessionRes : [])
     } catch { toast.error('Failed to load') }
     setLoading(false)
   }
 
-  // Helper: get user info from consultation
+  function getSessionForCons(c: any) {
+    return sessions.find((s: any) => s.consultation?.toString() === c._id?.toString())
+  }
+
+  function getSkinProfileForCons(c: any) {
+    const uid = c.user?.toString() || c.userId?.toString()
+    return skinProfiles.find((sp: any) =>
+      sp.consultation?.toString() === c._id?.toString() ||
+      sp.consultationId?.toString() === c._id?.toString() ||
+      (uid && sp.user?.toString() === uid)
+    )
+  }
+
   function getUserForCons(c: any) {
     const uid = (typeof c.user === "object" ? c.user?._id?.toString() : c.user?.toString()) || c.userId?.toString()
     if (!uid) return null
@@ -207,10 +222,7 @@ export default function SpecialistDashboard() {
   const pendingCommission = Math.round(pendingCommissionOrders.reduce((s, o) => s + (o.amount || 0) * 0.12, 0))
   const totalEarnings = consultationEarnings + commissionEarned
 
-  // Build unique patient list from consultations + offline orders
   const patientMap = new Map<string, any>()
-
-  // Online patients — from accepted consultations
   consultations.forEach(c => {
     const user = getUserForCons(c)
     const uid = c.user?.toString() || c.userId?.toString() || c._id?.toString()
@@ -236,19 +248,14 @@ export default function SpecialistDashboard() {
         age: c.age || '',
         skinType: skinProfile?.skinType || '',
         skinConcerns: skinProfile?.skinConcerns || [],
-        consults: 1,
-        orders: patientOrders.length,
-        spent,
-        source: 'online',
-        lastConsultation: c,
-        userId: uid,
+        consults: 1, orders: patientOrders.length, spent,
+        source: 'online', lastConsultation: c, userId: uid,
       })
     } else {
       patientMap.set(key, { ...existing, consults: existing.consults + 1, orders: patientOrders.length, spent })
     }
   })
 
-  // Offline patients — from specialist offline orders
   orders.filter((o: any) => {
     const src = (o.source || o.orderSource || '').toLowerCase()
     return src === 'specialist_offline' && o.specialistId?.toString() === mongoSpec?._id?.toString()
@@ -272,18 +279,13 @@ export default function SpecialistDashboard() {
         age: '',
         skinType: skinProfile?.skinType || '',
         skinConcerns: skinProfile?.skinConcerns || [],
-        consults: 0,
-        orders: patientOrders.length,
-        spent,
-        source: 'offline',
-        lastConsultation: null,
-        userId: null,
+        consults: 0, orders: patientOrders.length, spent,
+        source: 'offline', lastConsultation: null, userId: null,
       })
     }
   })
 
   const allMyPatients = Array.from(patientMap.values())
-
   const filteredPatients = allMyPatients.filter(p => {
     if (patientFilter !== 'all' && p.source !== patientFilter) return false
     if (patientSearch) {
@@ -293,7 +295,6 @@ export default function SpecialistDashboard() {
     return true
   })
 
-  // Cart
   function addToCart(product: any, variant: any) {
     const key = product._id + (variant?.sku || '')
     const existing = cart.find((c: any) => c._key === key)
@@ -364,18 +365,16 @@ export default function SpecialistDashboard() {
     setAnalyzing(false)
   }
 
-  // Accept consultation with assignedSpecialist
   async function acceptConsultation(c: any) {
-    const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
-    if (!url) return
     try {
-      const res = await fetch(url + '/api/consultations/' + c._id, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'accepted', assignedSpecialist: mongoSpec?._id?.toString(), acceptedAt: new Date() })
+      const res = await fetch('/api/rabt-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consultationId: c._id?.toString(), specialistMongoId: mongoSpec?._id?.toString() })
       })
+      const data = await res.json()
       if (res.ok) {
-        toast.success('Consultation accepted! \u2705')
-        // Notify in HQ via Supabase
+        toast.success('Consultation accepted! Session created! \u2705')
         const { data: { user } } = await supabase.auth.getUser()
         await supabase.from('notifications').insert({
           user_id: user?.id,
@@ -385,11 +384,12 @@ export default function SpecialistDashboard() {
           is_read: false,
         })
         loadAll()
-      } else toast.error('Failed to accept')
+      } else {
+        toast.error(data.error || 'Failed to accept')
+      }
     } catch { toast.error('Error') }
   }
 
-  // Reject consultation â€” save to MongoDB too
   async function rejectConsultation(c: any) {
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
     setRejectedIds(r => [...r, c._id?.toString()])
@@ -407,7 +407,6 @@ export default function SpecialistDashboard() {
     loadAll()
   }
 
-  // Reschedule â€” actually save to MongoDB
   async function confirmReschedule() {
     if (!rescheduleDate || !rescheduleTime) { toast.error('Date aur time required'); return }
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
@@ -425,16 +424,13 @@ export default function SpecialistDashboard() {
       })
       if (res.ok) {
         toast.success('Rescheduled successfully! \uD83D\uDCC5')
-        setRescheduleModal(null)
-        setRescheduleDate('')
-        setRescheduleTime('')
+        setRescheduleModal(null); setRescheduleDate(''); setRescheduleTime('')
         loadAll()
       } else toast.error('Failed to reschedule')
     } catch { toast.error('Error') }
     setRescheduleLoading(false)
   }
 
-  // Complete consultation
   async function completeConsultation(c: any) {
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
     if (!url) return
@@ -448,7 +444,6 @@ export default function SpecialistDashboard() {
     } catch { toast.error('Error') }
   }
 
-  // Cancel consultation
   async function cancelConsultation(c: any) {
     if (!confirm('Cancel karna chahte ho?')) return
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
@@ -463,18 +458,42 @@ export default function SpecialistDashboard() {
     } catch { toast.error('Error') }
   }
 
-  // Update skin profile
+  // âœ… UPDATED: Create or Update skin profile
   async function updateSkinProfile() {
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
     if (!url || !editSkinProfile) return
     setSkinProfileLoading(true)
     try {
-      const res = await fetch(url + '/api/skinprofiles/' + editSkinProfile._id, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...skinProfileForm, updatedAt: new Date(), updatedBy: mongoSpec?._id })
-      })
-      if (res.ok) { toast.success('Skin profile updated! \u2705'); setEditSkinProfile(null); loadAll() }
-      else toast.error('Failed to update')
+      let res
+      if (editSkinProfile._id) {
+        // Update existing
+        res = await fetch(url + '/api/skinprofiles/' + editSkinProfile._id, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...skinProfileForm, updatedAt: new Date(), updatedBy: mongoSpec?._id })
+        })
+      } else {
+        // Create new
+        res = await fetch(url + '/api/skinprofiles', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...skinProfileForm,
+            skinConcerns: typeof skinProfileForm.skinConcerns === 'string'
+              ? skinProfileForm.skinConcerns.split(',').map((s: string) => s.trim()).filter(Boolean)
+              : skinProfileForm.skinConcerns,
+            consultationId: editSkinProfile.consultationId,
+            name: editSkinProfile.name,
+            phone: editSkinProfile.phone || '',
+            specialistId: mongoSpec?._id,
+            source: 'online',
+            createdAt: new Date(),
+          })
+        })
+      }
+      if (res.ok) {
+        toast.success(editSkinProfile._id ? 'Skin profile updated! \u2705' : 'Skin profile created! \u2705')
+        setEditSkinProfile(null)
+        loadAll()
+      } else toast.error('Failed to save')
     } catch { toast.error('Error') }
     setSkinProfileLoading(false)
   }
@@ -696,8 +715,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           {/* OVERVIEW */}
           {tab === 'overview' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-
-              {/* New Unassigned Consultations */}
               {unassignedCons.length > 0 && (
                 <div style={{ gridColumn: '1/-1', background: 'var(--orL)', borderRadius: 12, padding: '16px 18px', border: '1px solid rgba(251,146,60,0.3)' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 12 }}>
@@ -727,7 +744,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </div>
               )}
 
-              {/* Pending Consultations */}
               <div className="card">
                 <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>Pending Consultations</div>
                 {consultations.filter(c => c.status === 'pending' || c.status === 'accepted').slice(0, 5).map((c, i) => (
@@ -736,15 +752,12 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{c.fullName || c.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{c.description || c.concern} &middot; {c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '-'} {c.scheduledTime}</div>
                     </div>
-                    <div style={{ display: 'flex', gap: 5 }}>
-                      <button onClick={() => setSelectedCons(c)} style={{ padding: '4px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit' }}>View</button>
-                    </div>
+                    <button onClick={() => { setTab('consultations'); setSelectedCons(c) }} style={{ padding: '4px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit' }}>View</button>
                   </div>
                 ))}
                 {consultations.filter(c => c.status === 'pending' || c.status === 'accepted').length === 0 && <div style={{ textAlign: 'center', color: 'var(--mu)', padding: 20, fontSize: 12 }}>No pending consultations</div>}
               </div>
 
-              {/* Earnings Breakdown */}
               <div className="card">
                 <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 16 }}>Earnings Breakdown</div>
                 {[
@@ -769,7 +782,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </button>
               </div>
 
-              {/* Status Overview */}
               <div className="card" style={{ gridColumn: '1/-1' }}>
                 <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 16 }}>Consultation Status Overview</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 12 }}>
@@ -788,7 +800,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </div>
               </div>
 
-              {/* My Patient Orders */}
               <div className="card" style={{ gridColumn: '1/-1', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>My Patient Orders &mdash; Commission Track</div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -826,7 +837,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             </div>
           )}
 
-          {/* CONSULTATIONS */}
+          {/* CONSULTATIONS TAB */}
           {tab === 'consultations' && (
             <div style={{ display: 'grid', gridTemplateColumns: selectedCons ? '1fr 380px' : '1fr', gap: 14 }}>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -874,13 +885,14 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </table>
               </div>
 
-              {/* Detail Panel */}
+              {/* âœ… Detail Panel with new buttons */}
               {selectedCons && (
                 <div style={{ position: 'sticky', top: 20, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>{selectedCons.fullName || selectedCons.name}</div>
                     <button onClick={() => setSelectedCons(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>&#x2715;</button>
                   </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                     {[
                       { l: 'Age', v: selectedCons.age || '-' },
@@ -916,6 +928,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+                    {/* Accept / Reject â€” only for pending */}
                     {selectedCons.status === 'pending' && (
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button style={{ flex: 1, padding: '9px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}
@@ -929,6 +943,50 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       </div>
                     )}
 
+                    {/* âœ… START CONSULTATION â€” accepted or scheduled */}
+                    {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (
+                      <button
+                        onClick={() => {
+                          const session = getSessionForCons(selectedCons)
+                          if (session?.sessionUrl) {
+                            window.open('/video-call?sessionId=' + session._id + '&specialistUserId=' + (mongoSpec?.user?.toString() || '') + '&specialistName=' + encodeURIComponent(mongoSpec?.name || 'Specialist') + '&consultationId=' + selectedCons._id, '_blank')
+                          } else {
+                            toast.error('Session URL nahi mila. Pehle consultation accept karo.')
+                          }
+                        }}
+                        style={{ padding: '9px', background: 'linear-gradient(135deg,#14B8A6,#0F6E56)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                        Start Consultation
+                      </button>
+                    )}
+
+                    {/* âœ… UPDATE / CREATE SKIN PROFILE â€” accepted, scheduled, or completed */}
+                    {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled' || selectedCons.status === 'completed') && (
+                      <button
+                        onClick={() => {
+                          const sp = getSkinProfileForCons(selectedCons)
+                          if (sp) {
+                            setEditSkinProfile(sp)
+                            setSkinProfileForm({
+                              skinType: sp.skinType || '',
+                              skinConcerns: Array.isArray(sp.skinConcerns) ? sp.skinConcerns.join(', ') : sp.skinConcerns || '',
+                              notes: sp.notes || '',
+                            })
+                          } else {
+                            setEditSkinProfile({
+                              _id: null,
+                              consultationId: selectedCons._id,
+                              name: selectedCons.fullName || selectedCons.name,
+                              phone: selectedCons.phone || getUserForCons(selectedCons)?.phoneNumber || '',
+                            })
+                            setSkinProfileForm({ skinType: '', skinConcerns: '', notes: '' })
+                          }
+                        }}
+                        style={{ padding: '9px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                        {getSkinProfileForCons(selectedCons) ? 'Update Skin Profile' : 'Create Skin Profile'}
+                      </button>
+                    )}
+
+                    {/* Mark as Completed */}
                     {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (
                       <button onClick={() => completeConsultation(selectedCons)}
                         style={{ padding: '9px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
@@ -964,7 +1022,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           {/* CRM / MY PATIENTS */}
           {tab === 'crm' && (
             <div>
-              {/* Stats */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
                 {[
                   { label: 'Total Patients', value: allMyPatients.length, color: 'var(--blue)' },
@@ -978,8 +1035,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                 ))}
               </div>
-
-              {/* Filters */}
               <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
                 <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, flex: 1, minWidth: 200 }} />
                 {(['all', 'online', 'offline'] as const).map(f => (
@@ -989,8 +1044,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </button>
                 ))}
               </div>
-
-              {/* Table */}
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
@@ -1001,7 +1054,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   <tbody>
                     {filteredPatients.map((p, i) => (
                       <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
-                        {/* Patient */}
                         <td style={{ padding: '11px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#08090C', flexShrink: 0 }}>
@@ -1013,7 +1065,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                             </div>
                           </div>
                         </td>
-                        {/* Skin Type / Concerns */}
                         <td style={{ padding: '11px 12px', maxWidth: 160 }}>
                           {p.skinType ? (
                             <div>
@@ -1026,27 +1077,22 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                             </div>
                           ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>&mdash;</span>}
                         </td>
-                        {/* Consults */}
                         <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{p.consults}</td>
-                        {/* Orders */}
                         <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--blue)' }}>{p.orders}</td>
-                        {/* Spent */}
                         <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>
                           {p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : <span style={{ color: 'var(--mu)' }}>Rs.0</span>}
                         </td>
-                        {/* Source */}
                         <td style={{ padding: '11px 12px' }}>
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)' }}>
                             {p.source === 'offline' ? 'Offline' : 'Online'}
                           </span>
                         </td>
-                        {/* Actions */}
                         <td style={{ padding: '11px 12px' }}>
                           <div style={{ display: 'flex', gap: 5 }}>
                             {p.phone && (
-                              <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain. Koi bhi skincare sawaal ho toh hum yahan hain!')}
+                              <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
                                 target="_blank" rel="noopener noreferrer"
-                                style={{ padding: '5px 10px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                style={{ padding: '5px 10px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
                                 WA
                               </a>
                             )}
@@ -1086,7 +1132,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name || 'Patient'}</div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{p.phone || '-'} {p.age ? '&middot; Age ' + p.age : ''}</div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{p.phone || '-'}</div>
                         </div>
                         <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)' }}>
                           {p.source === 'offline' ? 'Offline' : 'Online'}
@@ -1105,10 +1151,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                           ))}
                         </div>
                       )}
-                      {p.recommendedProducts?.length > 0 && (
-                        <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 8 }}>{p.recommendedProducts.length} products recommended</div>
-                      )}
-                      {/* Consultation images */}
                       {p.images?.length > 0 && (
                         <div style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
                           {p.images.slice(0, 3).map((img: string, ii: number) => (
@@ -1120,7 +1162,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                         <div style={{ fontSize: 10.5, color: 'var(--mu)' }}>
                           {p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                         </div>
-                        <button onClick={() => { setEditSkinProfile(p); setSkinProfileForm({ skinType: p.skinType, skinConcerns: p.skinConcerns?.join(', ') || '', notes: p.notes || '', recommendedProducts: p.recommendedProducts }) }}
+                        <button onClick={() => { setEditSkinProfile(p); setSkinProfileForm({ skinType: p.skinType || '', skinConcerns: Array.isArray(p.skinConcerns) ? p.skinConcerns.join(', ') : p.skinConcerns || '', notes: p.notes || '' }) }}
                           style={{ padding: '4px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
                           Edit
                         </button>
@@ -1149,83 +1191,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                 ))}
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div className="card">
-                  <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 16 }}>Monthly Earnings</div>
-                  {(() => {
-                    const months: Record<string, { cons: number; commission: number }> = {}
-                    consultations.filter(c => c.status === 'completed').forEach(c => {
-                      const d = new Date(c.createdAt || c.acceptedAt || Date.now())
-                      const key = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
-                      if (!months[key]) months[key] = { cons: 0, commission: 0 }
-                      months[key].cons += 30
-                    })
-                    myPatientOrders.filter(o => (o.orderStatus || o.status || '').toLowerCase() === 'delivered').forEach(o => {
-                      const d = new Date(o.createdAt || Date.now())
-                      const key = d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' })
-                      if (!months[key]) months[key] = { cons: 0, commission: 0 }
-                      months[key].commission += Math.round((o.amount || 0) * 0.12)
-                    })
-                    const entries = Object.entries(months).slice(-6)
-                    const maxVal = Math.max(...entries.map(([, v]) => v.cons + v.commission), 1)
-                    return entries.length === 0 ? (
-                      <div style={{ textAlign: 'center', color: 'var(--mu)', padding: 20, fontSize: 12 }}>No earnings yet</div>
-                    ) : entries.map(([month, val], i) => (
-                      <div key={i} style={{ marginBottom: 12 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
-                          <span style={{ fontWeight: 600 }}>{month}</span>
-                          <span style={{ fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--gold)' }}>Rs.{(val.cons + val.commission).toLocaleString('en-IN')}</span>
-                        </div>
-                        <div style={{ height: 8, background: 'var(--s2)', borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
-                          <div style={{ width: Math.round(val.cons / maxVal * 100) + '%', background: 'var(--teal)', borderRadius: '4px 0 0 4px' }} />
-                          <div style={{ width: Math.round(val.commission / maxVal * 100) + '%', background: 'var(--green)' }} />
-                        </div>
-                        <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-                          <span style={{ fontSize: 10, color: 'var(--teal)' }}>Consultation Rs.{val.cons}</span>
-                          <span style={{ fontSize: 10, color: 'var(--green)' }}>Commission Rs.{val.commission}</span>
-                        </div>
-                      </div>
-                    ))
-                  })()}
-                </div>
-
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Order-wise Commission</div>
-                  <div style={{ maxHeight: 300, overflowY: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead>
-                        <tr>{['Patient', 'Amount', 'Status', 'Commission'].map(h => (
-                          <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)', background: 'var(--s1)' }}>{h}</th>
-                        ))}</tr>
-                      </thead>
-                      <tbody>
-                        {myPatientOrders.map((o, i) => {
-                          const status = (o.orderStatus || o.status || '').toLowerCase()
-                          const isDelivered = status === 'delivered'
-                          const isCancelled = ['cancelled', 'canceled'].includes(status)
-                          const commission = Math.round((o.amount || 0) * 0.12)
-                          return (
-                            <tr key={i} style={{ opacity: isCancelled ? 0.5 : 1 }}>
-                              <td style={{ padding: '8px 12px', fontSize: 12 }}>{o.customerName || o.customer_name || '-'}</td>
-                              <td style={{ padding: '8px 12px', fontFamily: 'DM Mono', fontSize: 12, fontWeight: 700 }}>Rs.{o.amount}</td>
-                              <td style={{ padding: '8px 12px' }}>
-                                <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)' }}>{status}</span>
-                              </td>
-                              <td style={{ padding: '8px 12px', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 12, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)' }}>
-                                {isCancelled ? '-' : (isDelivered ? '+' : '\u23F3 ') + 'Rs.' + commission}
-                              </td>
-                            </tr>
-                          )
-                        })}
-                        {myPatientOrders.length === 0 && <tr><td colSpan={4} style={{ padding: 20, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No orders yet</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payout History */}
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Payout History</div>
@@ -1286,9 +1251,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               </div>
               <button onClick={() => { setShowPOS(false); resetPOS() }} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20 }}>&#x2715;</button>
             </div>
-
             <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
-
               {posStep === 'customer' && (
                 <div style={{ maxWidth: 520, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>Customer Details</div>
@@ -1311,7 +1274,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </button>
                 </div>
               )}
-
               {posStep === 'skin' && (
                 <div style={{ maxWidth: 540, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 6 }}>Skin Analysis</div>
@@ -1349,46 +1311,27 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       style={{ flex: 2, padding: '11px', background: skinImages.length > 0 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: skinImages.length > 0 ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: skinImages.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
                       {analyzing ? 'Analyzing...' : 'Analyze Skin with AI \u2728'}
                     </button>
-                    <button onClick={() => setPosStep('notes')}
-                      style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
-                      Skip &#x2192;
-                    </button>
+                    <button onClick={() => setPosStep('notes')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>Skip &#x2192;</button>
                   </div>
                 </div>
               )}
-
               {posStep === 'analysis' && aiAnalysis && (
                 <div style={{ maxWidth: 600, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>AI Skin Analysis Results</div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
-                    {[
-                      { l: 'Skin Type', v: aiAnalysis.skinType },
-                      { l: 'Skin Tone', v: aiAnalysis.skinTone },
-                      { l: 'Condition', v: aiAnalysis.skinCondition },
-                    ].map((item, i) => (
+                    {[{ l: 'Skin Type', v: aiAnalysis.skinType }, { l: 'Skin Tone', v: aiAnalysis.skinTone }, { l: 'Condition', v: aiAnalysis.skinCondition }].map((item, i) => (
                       <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 6 }}>{item.l}</div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize' }}>{item.v || '-'}</div>
                       </div>
                     ))}
                   </div>
-                  {aiAnalysis.skinConcerns?.length > 0 && (
-                    <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>Skin Concerns</div>
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        {aiAnalysis.skinConcerns.map((c: string, i: number) => (
-                          <span key={i} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 20, background: 'var(--orL)', color: 'var(--orange)', fontWeight: 600 }}>{c}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => setPosStep('skin')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>&#x2190; Back</button>
                     <button onClick={() => setPosStep('notes')} style={{ flex: 2, padding: '11px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>Next: Add Notes &#x2192;</button>
                   </div>
                 </div>
               )}
-
               {posStep === 'notes' && (
                 <div style={{ maxWidth: 520, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>Specialist Notes</div>
@@ -1421,7 +1364,6 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                 </div>
               )}
-
               {posStep === 'products' && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, height: '100%' }}>
                   <div>
@@ -1484,15 +1426,13 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                         <div style={{ fontSize: 11, color: 'var(--orange)', marginTop: 6, textAlign: 'center' }}>Your 12% commission: Rs.{Math.round(totals.total * 0.12)}</div>
                       </div>
                     )}
-                    <button onClick={() => { if (cart.length === 0) { toast.error('Cart empty'); return } setPosStep('payment') }}
-                      disabled={cart.length === 0}
+                    <button onClick={() => { if (cart.length === 0) { toast.error('Cart empty'); return } setPosStep('payment') }} disabled={cart.length === 0}
                       style={{ padding: '11px', background: cart.length > 0 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: cart.length > 0 ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: cart.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
                       Next: Payment &#x2192;
                     </button>
                   </div>
                 </div>
               )}
-
               {posStep === 'payment' && (
                 <div style={{ maxWidth: 480, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>Payment</div>
@@ -1504,21 +1444,16 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                         <span style={{ fontFamily: 'DM Mono', fontWeight: 700 }}>Rs.{(Number(item.price) * item.qty).toFixed(0)}</span>
                       </div>
                     ))}
-                    {totals.discount > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--green)', marginTop: 6 }}><span>Discount</span><span>-Rs.{totals.discount}</span></div>}
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 16, fontWeight: 800, fontFamily: 'Syne', borderTop: '1px solid var(--b1)', paddingTop: 10, marginTop: 8 }}>
                       <span>Total</span><span style={{ color: 'var(--gold)' }}>Rs.{totals.total}</span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--orange)', marginTop: 8, textAlign: 'center', fontWeight: 600 }}>Your commission: Rs.{Math.round(totals.total * 0.12)}</div>
                   </div>
                   <div style={{ marginBottom: 20 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 10 }}>Payment Method</div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      {[
-                        { id: 'prepaid', label: 'Prepaid', sub: 'UPI / Online', icon: '\uD83D\uDCB3' },
-                        { id: 'cod', label: 'Cash on Delivery', sub: 'Pay later', icon: '\uD83D\uDCB5' },
-                      ].map(pm => (
+                      {[{ id: 'prepaid', label: 'Prepaid', sub: 'UPI / Online', icon: '\uD83D\uDCB3' }, { id: 'cod', label: 'Cash on Delivery', sub: 'Pay later', icon: '\uD83D\uDCB5' }].map(pm => (
                         <div key={pm.id} onClick={() => setPaymentMethod(pm.id as any)}
-                          style={{ padding: 14, borderRadius: 10, cursor: 'pointer', border: '2px solid ' + (paymentMethod === pm.id ? 'var(--gold)' : 'var(--b1)'), background: paymentMethod === pm.id ? 'var(--gL)' : 'var(--s2)', transition: 'all 0.15s' }}>
+                          style={{ padding: 14, borderRadius: 10, cursor: 'pointer', border: '2px solid ' + (paymentMethod === pm.id ? 'var(--gold)' : 'var(--b1)'), background: paymentMethod === pm.id ? 'var(--gL)' : 'var(--s2)' }}>
                           <div style={{ fontSize: 20, marginBottom: 6 }}>{pm.icon}</div>
                           <div style={{ fontSize: 13, fontWeight: 700, color: paymentMethod === pm.id ? 'var(--gold)' : 'var(--tx)' }}>{pm.label}</div>
                           <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{pm.sub}</div>
@@ -1564,11 +1499,14 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
         </div>
       )}
 
-      {/* Skin Profile Edit Modal */}
+      {/* âœ… Skin Profile Edit/Create Modal */}
       {editSkinProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 460, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 18 }}>Edit Skin Profile &mdash; {editSkinProfile.name}</div>
+            <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 4 }}>
+              {editSkinProfile._id ? 'Edit' : 'Create'} Skin Profile
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 18 }}>{editSkinProfile.name}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Skin Type</label>
@@ -1579,7 +1517,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               </div>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Skin Concerns (comma separated)</label>
-                <input value={skinProfileForm.skinConcerns || ''} onChange={e => setSkinProfileForm((p: any) => ({ ...p, skinConcerns: e.target.value.split(',').map((s: string) => s.trim()) }))} placeholder="acne, pigmentation, dryness" style={inp} />
+                <input value={typeof skinProfileForm.skinConcerns === 'string' ? skinProfileForm.skinConcerns : (skinProfileForm.skinConcerns || []).join(', ')} onChange={e => setSkinProfileForm((p: any) => ({ ...p, skinConcerns: e.target.value }))} placeholder="acne, pigmentation, dryness" style={inp} />
               </div>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Specialist Notes</label>
@@ -1590,7 +1528,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               <button onClick={() => setEditSkinProfile(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={updateSkinProfile} disabled={skinProfileLoading}
                 style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
-                {skinProfileLoading ? 'Saving...' : 'Save Changes'}
+                {skinProfileLoading ? 'Saving...' : (editSkinProfile._id ? 'Save Changes' : 'Create Profile')}
               </button>
             </div>
           </div>
@@ -1630,9 +1568,5 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
     </div>
   )
 }
-
-
-
-
 
 
