@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 import { useState } from 'react'
 import toast from 'react-hot-toast'
 
@@ -42,7 +42,11 @@ function getProductPrice(p: any) {
 }
 
 export default function SkinProfileModal({ skinProfile, products, mongoSpec, onClose, onSaved }: SkinProfileModalProps) {
-  const existing = skinProfile?.specialistUpdatedData || skinProfile?.aiExtractedData || {}
+  const rawExisting = skinProfile?.specialistUpdatedData || skinProfile?.aiExtractedData || {}
+  const existing = {
+    ...rawExisting,
+    skinConcerns: Array.isArray(rawExisting.skinConcerns) ? rawExisting.skinConcerns : []
+  }
   const existingRoutine = skinProfile?.skinRoutine || {}
 
   const [activeTab, setActiveTab] = useState<'skin-data' | 'routine'>('skin-data')
@@ -146,7 +150,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
       })
       const data = await res.json()
       if (res.ok) {
-        toast.success('Skin data saved! ✅')
+        toast.success('Skin data saved! âœ…')
         onSaved()
       } else {
         toast.error(data.error || 'Failed to save')
@@ -189,7 +193,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
       })
       const data = await res.json()
       if (res.ok) {
-        toast.success('Routine saved! ✅ Customer ke saved routines mein dikhe ga')
+        toast.success('Routine saved! âœ… Customer ke saved routines mein dikhe ga')
         onSaved()
       } else {
         toast.error(data.error || 'Failed to save routine')
@@ -210,20 +214,20 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>
-              Skin Profile — {skinProfile?.name || skinProfile?.user?.firstName || 'Patient'}
+              Skin Profile â€” {skinProfile?.name || skinProfile?.user?.firstName || 'Patient'}
             </div>
             <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 3 }}>
-              Update skin data aur routine — customer ke rabtnaturals.com pe reflect hoga
+              Update skin data aur routine â€” customer ke rabtnaturals.com pe reflect hoga
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20 }}>✕</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20 }}>âœ•</button>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
           {[
-            { id: 'skin-data', label: '🧬 Skin Data' },
-            { id: 'routine', label: '🌿 Routines' },
+            { id: 'skin-data', label: 'ðŸ§¬ Skin Data' },
+            { id: 'routine', label: 'ðŸŒ¿ Routines' },
           ].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id as any)}
               style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === t.id ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
@@ -316,15 +320,15 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                     <input value={f.key} onChange={e => updateCustomField(i, 'key', e.target.value)} placeholder="Field name (e.g. Primary Concern)" style={{ ...inp, flex: 1 }} />
                     <input value={f.value} onChange={e => updateCustomField(i, 'value', e.target.value)} placeholder="Value" style={{ ...inp, flex: 2 }} />
-                    <button onClick={() => removeCustomField(i)} style={{ padding: '0 10px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>✕</button>
+                    <button onClick={() => removeCustomField(i)} style={{ padding: '0 10px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>âœ•</button>
                   </div>
                 ))}
-                {customFields.length === 0 && <div style={{ fontSize: 12, color: 'var(--mu)', padding: '8px 0' }}>Koi custom field nahi — "+ Add" se add karo</div>}
+                {customFields.length === 0 && <div style={{ fontSize: 12, color: 'var(--mu)', padding: '8px 0' }}>Koi custom field nahi â€” "+ Add" se add karo</div>}
               </div>
 
               <button onClick={saveSkinData} disabled={saving}
                 style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Saving...' : 'Save Skin Data ✓'}
+                {saving ? 'Saving...' : 'Save Skin Data âœ“'}
               </button>
             </div>
           )}
@@ -341,7 +345,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 {ROUTINE_TIMES.map(t => (
                   <button key={t} onClick={() => setActiveRoutineTab(t)}
                     style={{ padding: '8px 20px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: activeRoutineTab === t ? (t === 'morning' ? 'rgba(251,191,36,0.15)' : t === 'evening' ? 'rgba(139,92,246,0.15)' : 'rgba(30,41,59,0.5)') : 'var(--s2)', color: activeRoutineTab === t ? (t === 'morning' ? '#F59E0B' : t === 'evening' ? '#8B5CF6' : '#94A3B8') : 'var(--mu)', border: '1px solid ' + (activeRoutineTab === t ? (t === 'morning' ? 'rgba(245,158,11,0.4)' : t === 'evening' ? 'rgba(139,92,246,0.4)' : 'rgba(148,163,184,0.3)') : 'var(--b1)'), textTransform: 'capitalize' }}>
-                    {t === 'morning' ? '☀️' : t === 'evening' ? '🌅' : '🌙'} {t.charAt(0).toUpperCase() + t.slice(1)} ({routine[t].length})
+                    {t === 'morning' ? 'â˜€ï¸' : t === 'evening' ? 'ðŸŒ…' : 'ðŸŒ™'} {t.charAt(0).toUpperCase() + t.slice(1)} ({routine[t].length})
                   </button>
                 ))}
               </div>
@@ -359,8 +363,8 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
 
                   {routine[activeRoutineTab].length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 40, background: 'var(--s2)', borderRadius: 12, border: '1px dashed var(--b2)' }}>
-                      <div style={{ fontSize: 28, marginBottom: 8 }}>🌿</div>
-                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>Koi step nahi — "+ Add Step" se shuru karo</div>
+                      <div style={{ fontSize: 28, marginBottom: 8 }}>ðŸŒ¿</div>
+                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>Koi step nahi â€” "+ Add Step" se shuru karo</div>
                     </div>
                   ) : (
                     routine[activeRoutineTab].map((step, i) => (
@@ -435,10 +439,10 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                               }, 50)
                             }
                           }}>
-                          {img ? <img src={img} alt={p.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>🌿</div>}
+                          {img ? <img src={img} alt={p.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>ðŸŒ¿</div>}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                            <div style={{ fontSize: 10.5, color: isInRoutine ? 'var(--gold)' : 'var(--mu)', fontWeight: 600 }}>{isInRoutine ? 'Added ✓' : 'Rs.' + price}</div>
+                            <div style={{ fontSize: 10.5, color: isInRoutine ? 'var(--gold)' : 'var(--mu)', fontWeight: 600 }}>{isInRoutine ? 'Added âœ“' : 'Rs.' + price}</div>
                           </div>
                         </div>
                       )
@@ -450,7 +454,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
               <div style={{ marginTop: 20 }}>
                 <button onClick={saveRoutine} disabled={saving}
                   style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
-                  {saving ? 'Saving...' : 'Save Routine — Customer ke Saved Routines mein jayega ✓'}
+                  {saving ? 'Saving...' : 'Save Routine â€” Customer ke Saved Routines mein jayega âœ“'}
                 </button>
               </div>
             </div>
@@ -460,3 +464,4 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     </div>
   )
 }
+

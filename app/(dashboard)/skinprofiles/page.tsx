@@ -95,7 +95,7 @@ export default function SkinProfilePage() {
   skinProfiles.forEach(sp => { const t = sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'; skinTypeCounts[t] = (skinTypeCounts[t] || 0) + 1 })
 
   const concernCounts: Record<string, number> = {}
-  skinProfiles.forEach(sp => { (sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).forEach((c: string) => { concernCounts[c] = (concernCounts[c] || 0) + 1 }) })
+  skinProfiles.forEach(sp => { (Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).forEach((c: string) => { concernCounts[c] = (concernCounts[c] || 0) + 1 }) })
   const topConcerns = Object.entries(concernCounts).sort((a,b) => b[1]-a[1]).slice(0, 10)
 
   const specProfileCounts: Record<string, {name: string, count: number}> = {}
@@ -261,7 +261,7 @@ export default function SkinProfilePage() {
     const cons = getConsultation(sp)
     const spec = getSpecialist(sp)
     const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => getProduct(rp.product || rp.productId)).filter(Boolean)
-    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.aiExtractedData?.skinType || sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
+    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.aiExtractedData?.skinType || sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
     const phone = toPatient ? getPatientPhone(sp).replace(/[^0-9]/g, '') : ''
     window.open((phone ? `https://wa.me/${phone}?text=` : `https://wa.me/?text=`) + encodeURIComponent(msg), '_blank')
     toast.success(toPatient ? 'WhatsApp opened for patient!' : 'WhatsApp opened!')
@@ -477,7 +477,7 @@ export default function SkinProfilePage() {
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
-                        {(sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []).slice(0, 3).map((c: string, ci: number) => (
+                        {(Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).slice(0, 3).map((c: string, ci: number) => (
                           <span key={ci} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--gL)', color: 'var(--gold)', fontWeight: 600 }}>{c}</span>
                         ))}
                       </div>
@@ -526,7 +526,7 @@ export default function SkinProfilePage() {
                       <div style={{ marginBottom: 14 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 7 }}>Skin Concerns</div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {(selected.skinConcerns || []).map((c: string, i: number) => (
+                          {(Array.isArray(selected.skinConcerns) ? selected.skinConcerns : []).map((c: string, i: number) => (
                             <span key={i} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{c}</span>
                           ))}
                         </div>
@@ -603,5 +603,7 @@ export default function SkinProfilePage() {
     </div>
   )
 }
+
+
 
 
