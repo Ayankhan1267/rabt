@@ -92,7 +92,7 @@ export default function SkinProfilePage() {
 
   // Analytics computed
   const skinTypeCounts: Record<string, number> = {}
-  skinProfiles.forEach(sp => { const t = sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'; skinTypeCounts[t] = (skinTypeCounts[t] || 0) + 1 })
+  skinProfiles.forEach(sp => { const t = sp.specialistUpdatedData?.skinType || sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'; skinTypeCounts[t] = (skinTypeCounts[t] || 0) + 1 })
 
   const concernCounts: Record<string, number> = {}
   skinProfiles.forEach(sp => { (Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).forEach((c: string) => { concernCounts[c] = (concernCounts[c] || 0) + 1 }) })
@@ -137,10 +137,10 @@ export default function SkinProfilePage() {
     const cons = getConsultation(sp)
     const spec = getSpecialist(sp)
     const isOffline = sp.source === 'offline'
-    const skinType = sp.aiExtractedData?.skinType || sp.skinType || ''
-    const skinConcerns = sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []
-    const skinGoals = sp.aiExtractedData?.skinGoals || sp.specialistUpdatedData?.skinGoals || sp.skinGoals || ''
-    const stressLevel = sp.aiExtractedData?.stressLevel || sp.specialistUpdatedData?.stressLevel || sp.stressLevel || ''
+    const skinType = sp.specialistUpdatedData?.skinType || sp.aiExtractedData?.skinType || sp.skinType || ''
+    const skinConcerns = sp.specialistUpdatedData?.skinConcerns || sp.aiExtractedData?.skinConcerns || sp.skinConcerns || []
+    const skinGoals = sp.specialistUpdatedData?.skinGoals || sp.aiExtractedData?.skinGoals || sp.skinGoals || ''
+    const stressLevel = sp.specialistUpdatedData?.stressLevel || sp.aiExtractedData?.stressLevel || sp.stressLevel || ''
     const specialistNotes = sp.specialistUpdatedData || sp.specialistNotes || null
     const customFields: any[] = specialistNotes?.customFields || []
     const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => ({ ...getProduct(rp.product || rp.productId), reason: rp.reason })).filter((p: any) => p?._id)
@@ -261,7 +261,7 @@ export default function SkinProfilePage() {
     const cons = getConsultation(sp)
     const spec = getSpecialist(sp)
     const recProducts = (sp.aiRecommendations || sp.recommendedProducts || []).map((rp: any) => getProduct(rp.product || rp.productId)).filter(Boolean)
-    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.aiExtractedData?.skinType || sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
+    const msg = `🌿 *RABT NATURALS — Skin Profile*\n━━━━━━━━━━━━━━━━━━\n\n👤 *Patient:* ${name}\n👩‍⚕️ *Specialist:* ${spec?.name || 'N/A'}\n🔬 *Skin Type:* ${sp.specialistUpdatedData?.skinType || sp.aiExtractedData?.skinType || sp.skinType || 'N/A'}\n\n*Skin Concerns:*\n${(Array.isArray(sp.aiExtractedData?.skinConcerns || sp.skinConcerns) ? (sp.aiExtractedData?.skinConcerns || sp.skinConcerns) : []).map((c: string) => `• ${c}`).join('\n') || '—'}\n\n*Recommended Products:*\n${recProducts.slice(0, 5).map((p: any, i: number) => `${i+1}. ${p.name} — ₹${p.price}`).join('\n') || '—'}\n\n━━━━━━━━━━━━━━━━━━\n🌿 *Rabt Naturals* | rabtnaturals.com`
     const phone = toPatient ? getPatientPhone(sp).replace(/[^0-9]/g, '') : ''
     window.open((phone ? `https://wa.me/${phone}?text=` : `https://wa.me/?text=`) + encodeURIComponent(msg), '_blank')
     toast.success(toPatient ? 'WhatsApp opened for patient!' : 'WhatsApp opened!')
@@ -470,7 +470,7 @@ export default function SkinProfilePage() {
                         <div style={{ width: 42, height: 42, borderRadius: 11, background: 'linear-gradient(135deg,#C2185B,#880E4F)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 17, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{name.charAt(0)}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'} skin</div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>{sp.specialistUpdatedData?.skinType || sp.aiExtractedData?.skinType || sp.skinType || 'Unknown'} skin</div>
                         </div>
                         <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: sp.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: sp.source === 'offline' ? 'var(--orange)' : 'var(--blue)', flexShrink: 0 }}>
                           {sp.source === 'offline' ? 'Offline' : 'Online'}
@@ -509,7 +509,7 @@ export default function SkinProfilePage() {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
                       {[
-                        { label: 'Skin Type', value: selected.aiExtractedData?.skinType || selected.skinType },
+                        { label: 'Skin Type', value: selected.specialistUpdatedData?.skinType || selected.aiExtractedData?.skinType || selected.skinType },
                         { label: 'Specialist', value: spec?.name || 'N/A' },
                         { label: 'Stress Level', value: selected.aiExtractedData?.stressLevel || selected.specialistUpdatedData?.stressLevel || selected.stressLevel },
                         { label: 'Status', value: cons?.status || (selected.source === 'offline' ? 'Completed' : 'N/A') },
@@ -603,6 +603,8 @@ export default function SkinProfilePage() {
     </div>
   )
 }
+
+
 
 
 
