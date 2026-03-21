@@ -1,5 +1,5 @@
 ﻿'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 
 const SKIN_TYPES = ['oily', 'dry', 'combination', 'sensitive', 'normal', 'acne-prone', 'mature']
@@ -42,38 +42,52 @@ function getProductPrice(p: any) {
 }
 
 export default function SkinProfileModal({ skinProfile, products, mongoSpec, onClose, onSaved }: SkinProfileModalProps) {
-  console.log('skinProfile:', JSON.stringify(skinProfile, null, 2))
-  const rawExisting = skinProfile?.specialistUpdatedData?.updatedAt ? skinProfile.specialistUpdatedData : (skinProfile?.aiExtractedData || {})
-  const existing = {
-    ...rawExisting,
-    skinConcerns: Array.isArray(rawExisting.skinConcerns) ? rawExisting.skinConcerns : []
-  }
-  const existingRoutine = skinProfile?.skinRoutine || {}
-
   const [activeTab, setActiveTab] = useState<'skin-data' | 'routine'>('skin-data')
   const [saving, setSaving] = useState(false)
 
-  // Skin data form
-  const [skinType, setSkinType] = useState(existing.skinType || '')
-  const [skinConcerns, setSkinConcerns] = useState<string[]>(existing.skinConcerns || [])
-  const [skinGoals, setSkinGoals] = useState(existing.skinGoals || '')
-  const [currentSkincare, setCurrentSkincare] = useState(existing.currentSkincare || '')
-  const [allergies, setAllergies] = useState(existing.allergies || '')
-  const [diet, setDiet] = useState(existing.diet || '')
-  const [waterIntake, setWaterIntake] = useState(existing.waterIntake || '')
-  const [stressLevel, setStressLevel] = useState(existing.stressLevel || '')
-  const [junkIntake, setJunkIntake] = useState(existing.junkIntake || '')
-  const [sugarIntake, setSugarIntake] = useState(existing.sugarIntake || '')
-  const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>(existing.customFields || [])
-
-  // Routine form
-  const [routine, setRoutine] = useState<Record<RoutineTime, RoutineStep[]>>({
-    morning: existingRoutine.morning || [],
-    evening: existingRoutine.evening || [],
-    night: existingRoutine.night || [],
-  })
+  const [skinType, setSkinType] = useState('')
+  const [skinConcerns, setSkinConcerns] = useState<string[]>([])
+  const [skinGoals, setSkinGoals] = useState('')
+  const [currentSkincare, setCurrentSkincare] = useState('')
+  const [allergies, setAllergies] = useState('')
+  const [diet, setDiet] = useState('')
+  const [waterIntake, setWaterIntake] = useState('')
+  const [stressLevel, setStressLevel] = useState('')
+  const [junkIntake, setJunkIntake] = useState('')
+  const [sugarIntake, setSugarIntake] = useState('')
+  const [customFields, setCustomFields] = useState<{ key: string; value: string }[]>([])
+  const [routine, setRoutine] = useState<Record<RoutineTime, RoutineStep[]>>({ morning: [], evening: [], night: [] })
   const [activeRoutineTab, setActiveRoutineTab] = useState<RoutineTime>('morning')
   const [productSearch, setProductSearch] = useState('')
+
+  useEffect(() => {
+    if (!skinProfile) return
+    const d = skinProfile.specialistUpdatedData?.updatedAt
+      ? skinProfile.specialistUpdatedData
+      : (skinProfile.aiExtractedData || {})
+
+    setSkinType(d.skinType || '')
+    setSkinConcerns(Array.isArray(d.skinConcerns) ? d.skinConcerns : [])
+    setSkinGoals(d.skinGoals || '')
+    setCurrentSkincare(d.currentSkincare || '')
+    setAllergies(d.allergies || '')
+    setDiet(d.diet || '')
+    setWaterIntake(d.waterIntake || '')
+    setStressLevel(d.stressLevel || '')
+    setJunkIntake(d.junkIntake || '')
+    setSugarIntake(d.sugarIntake || '')
+    setCustomFields(
+      Array.isArray(d.customFields)
+        ? d.customFields.map((f: any) => ({ key: f.key || '', value: f.value || '' }))
+        : []
+    )
+    const r = skinProfile.skinRoutine || {}
+    setRoutine({
+      morning: Array.isArray(r.morning) ? r.morning.map((s: any) => ({ step: s.step, productType: s.productType || '', description: s.description || '', recommendedProduct: s.recommendedProduct || '' })) : [],
+      evening: Array.isArray(r.evening) ? r.evening.map((s: any) => ({ step: s.step, productType: s.productType || '', description: s.description || '', recommendedProduct: s.recommendedProduct || '' })) : [],
+      night: Array.isArray(r.night) ? r.night.map((s: any) => ({ step: s.step, productType: s.productType || '', description: s.description || '', recommendedProduct: s.recommendedProduct || '' })) : [],
+    })
+  }, [skinProfile])
 
   const inp: any = {
     width: '100%', background: 'var(--s2)', border: '1px solid var(--b2)',
@@ -97,16 +111,10 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     setCustomFields(prev => prev.filter((_, idx) => idx !== i))
   }
 
-  // Routine functions
   function addRoutineStep(time: RoutineTime) {
     setRoutine(prev => ({
       ...prev,
-      [time]: [...prev[time], {
-        step: prev[time].length + 1,
-        productType: '',
-        description: '',
-        recommendedProduct: ''
-      }]
+      [time]: [...prev[time], { step: prev[time].length + 1, productType: '', description: '', recommendedProduct: '' }]
     }))
   }
 
@@ -129,7 +137,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     try {
       const specialistUserId = mongoSpec?.user?.toString()
       if (!specialistUserId) { toast.error('Specialist user ID missing'); setSaving(false); return }
-
       const body = {
         skinType: skinType || undefined,
         skinConcerns: skinConcerns.length > 0 ? skinConcerns : undefined,
@@ -143,19 +150,12 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
         sugarIntake: sugarIntake || undefined,
         customFields: customFields.filter(f => f.key && f.value),
       }
-
       const res = await fetch('/api/rabt-session?type=skin-data&skinProfileId=' + skinProfile._id + '&specialistUserId=' + specialistUserId, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
       })
       const data = await res.json()
-      if (res.ok) {
-        toast.success('Skin data saved! âœ…')
-        onSaved()
-      } else {
-        toast.error(data.error || 'Failed to save')
-      }
+      if (res.ok) { toast.success('Skin data saved!'); onSaved() }
+      else toast.error(data.error || 'Failed to save')
     } catch { toast.error('Error saving') }
     setSaving(false)
   }
@@ -165,40 +165,17 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     try {
       const specialistUserId = mongoSpec?.user?.toString()
       if (!specialistUserId) { toast.error('Specialist user ID missing'); setSaving(false); return }
-
       const routineBody = {
-        morning: routine.morning.filter(s => s.productType).map(s => ({
-          step: s.step,
-          productType: s.productType,
-          description: s.description || undefined,
-          recommendedProduct: s.recommendedProduct || undefined,
-        })),
-        evening: routine.evening.filter(s => s.productType).map(s => ({
-          step: s.step,
-          productType: s.productType,
-          description: s.description || undefined,
-          recommendedProduct: s.recommendedProduct || undefined,
-        })),
-        night: routine.night.filter(s => s.productType).map(s => ({
-          step: s.step,
-          productType: s.productType,
-          description: s.description || undefined,
-          recommendedProduct: s.recommendedProduct || undefined,
-        })),
+        morning: routine.morning.filter(s => s.productType).map(s => ({ step: s.step, productType: s.productType, description: s.description || undefined, recommendedProduct: s.recommendedProduct || undefined })),
+        evening: routine.evening.filter(s => s.productType).map(s => ({ step: s.step, productType: s.productType, description: s.description || undefined, recommendedProduct: s.recommendedProduct || undefined })),
+        night: routine.night.filter(s => s.productType).map(s => ({ step: s.step, productType: s.productType, description: s.description || undefined, recommendedProduct: s.recommendedProduct || undefined })),
       }
-
       const res = await fetch('/api/rabt-session?type=routine&skinProfileId=' + skinProfile._id + '&specialistUserId=' + specialistUserId, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routineBody)
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(routineBody)
       })
       const data = await res.json()
-      if (res.ok) {
-        toast.success('Routine saved! âœ… Customer ke saved routines mein dikhe ga')
-        onSaved()
-      } else {
-        toast.error(data.error || 'Failed to save routine')
-      }
+      if (res.ok) { toast.success('Routine saved! Customer ke Saved Routines mein jayega'); onSaved() }
+      else toast.error(data.error || 'Failed to save routine')
     } catch { toast.error('Error saving routine') }
     setSaving(false)
   }
@@ -215,21 +192,18 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>
-              Skin Profile â€” {skinProfile?.name || skinProfile?.user?.firstName || 'Patient'}
+              Skin Profile
             </div>
             <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 3 }}>
-              Update skin data aur routine â€” customer ke rabtnaturals.com pe reflect hoga
+              Update skin data aur routine — customer ke rabtnaturals.com pe reflect hoga
             </div>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20 }}>âœ•</button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20 }}>x</button>
         </div>
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
-          {[
-            { id: 'skin-data', label: 'ðŸ§¬ Skin Data' },
-            { id: 'routine', label: 'ðŸŒ¿ Routines' },
-          ].map(t => (
+          {[{ id: 'skin-data', label: 'Skin Data' }, { id: 'routine', label: 'Routines' }].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id as any)}
               style={{ padding: '12px 24px', background: 'none', border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--gold)' : '2px solid transparent', color: activeTab === t.id ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
               {t.label}
@@ -240,11 +214,9 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
         {/* Content */}
         <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px' }}>
 
-          {/* SKIN DATA TAB */}
           {activeTab === 'skin-data' && (
             <div style={{ maxWidth: 640, margin: '0 auto' }}>
 
-              {/* Skin Type */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 10 }}>Skin Type</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -257,7 +229,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 </div>
               </div>
 
-              {/* Skin Concerns */}
               <div style={{ marginBottom: 20 }}>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 10 }}>Skin Concerns</label>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -270,7 +241,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 </div>
               </div>
 
-              {/* Text fields */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
                 {[
                   { label: 'Skin Goals', val: skinGoals, set: setSkinGoals, placeholder: 'e.g. Clear skin, Glow' },
@@ -286,7 +256,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 ))}
               </div>
 
-              {/* Dropdowns */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 20 }}>
                 <div>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 6 }}>Stress Level</label>
@@ -311,7 +280,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 </div>
               </div>
 
-              {/* Custom Fields */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Specialist Notes (Custom Fields)</label>
@@ -319,40 +287,37 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                 </div>
                 {customFields.map((f, i) => (
                   <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <input value={f.key} onChange={e => updateCustomField(i, 'key', e.target.value)} placeholder="Field name (e.g. Primary Concern)" style={{ ...inp, flex: 1 }} />
+                    <input value={f.key} onChange={e => updateCustomField(i, 'key', e.target.value)} placeholder="Field name" style={{ ...inp, flex: 1 }} />
                     <input value={f.value} onChange={e => updateCustomField(i, 'value', e.target.value)} placeholder="Value" style={{ ...inp, flex: 2 }} />
-                    <button onClick={() => removeCustomField(i)} style={{ padding: '0 10px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>âœ•</button>
+                    <button onClick={() => removeCustomField(i)} style={{ padding: '0 10px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', cursor: 'pointer', fontSize: 14 }}>x</button>
                   </div>
                 ))}
-                {customFields.length === 0 && <div style={{ fontSize: 12, color: 'var(--mu)', padding: '8px 0' }}>Koi custom field nahi â€” "+ Add" se add karo</div>}
+                {customFields.length === 0 && <div style={{ fontSize: 12, color: 'var(--mu)', padding: '8px 0' }}>Koi custom field nahi — "+ Add" se add karo</div>}
               </div>
 
               <button onClick={saveSkinData} disabled={saving}
                 style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Saving...' : 'Save Skin Data âœ“'}
+                {saving ? 'Saving...' : 'Save Skin Data'}
               </button>
             </div>
           )}
 
-          {/* ROUTINE TAB */}
           {activeTab === 'routine' && (
             <div>
               <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 16, background: 'var(--blL)', padding: '10px 14px', borderRadius: 8, border: '1px solid rgba(59,130,246,0.2)' }}>
                 Routine save hone ke baad customer ke rabtnaturals.com pe "Saved Routines" page mein dikhe ga aur Add to Cart kar sakta hai
               </div>
 
-              {/* Routine time tabs */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
                 {ROUTINE_TIMES.map(t => (
                   <button key={t} onClick={() => setActiveRoutineTab(t)}
                     style={{ padding: '8px 20px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: activeRoutineTab === t ? (t === 'morning' ? 'rgba(251,191,36,0.15)' : t === 'evening' ? 'rgba(139,92,246,0.15)' : 'rgba(30,41,59,0.5)') : 'var(--s2)', color: activeRoutineTab === t ? (t === 'morning' ? '#F59E0B' : t === 'evening' ? '#8B5CF6' : '#94A3B8') : 'var(--mu)', border: '1px solid ' + (activeRoutineTab === t ? (t === 'morning' ? 'rgba(245,158,11,0.4)' : t === 'evening' ? 'rgba(139,92,246,0.4)' : 'rgba(148,163,184,0.3)') : 'var(--b1)'), textTransform: 'capitalize' }}>
-                    {t === 'morning' ? 'â˜€ï¸' : t === 'evening' ? 'ðŸŒ…' : 'ðŸŒ™'} {t.charAt(0).toUpperCase() + t.slice(1)} ({routine[t].length})
+                    {t === 'morning' ? 'Morning' : t === 'evening' ? 'Evening' : 'Night'} ({routine[t].length})
                   </button>
                 ))}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 20 }}>
-                {/* Steps */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                     <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, textTransform: 'capitalize' }}>{activeRoutineTab} Routine</div>
@@ -364,8 +329,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
 
                   {routine[activeRoutineTab].length === 0 ? (
                     <div style={{ textAlign: 'center', padding: 40, background: 'var(--s2)', borderRadius: 12, border: '1px dashed var(--b2)' }}>
-                      <div style={{ fontSize: 28, marginBottom: 8 }}>ðŸŒ¿</div>
-                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>Koi step nahi â€” "+ Add Step" se shuru karo</div>
+                      <div style={{ fontSize: 13, color: 'var(--mu)' }}>Koi step nahi — "+ Add Step" se shuru karo</div>
                     </div>
                   ) : (
                     routine[activeRoutineTab].map((step, i) => (
@@ -380,25 +344,20 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                           <div>
                             <label style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Product Type*</label>
-                            <input value={step.productType} onChange={e => updateRoutineStep(activeRoutineTab, i, 'productType', e.target.value)}
-                              placeholder="e.g. Cleanser, Moisturizer, Serum" style={inp} />
+                            <input value={step.productType} onChange={e => updateRoutineStep(activeRoutineTab, i, 'productType', e.target.value)} placeholder="e.g. Cleanser, Moisturizer" style={inp} />
                           </div>
                           <div>
                             <label style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>Rabt Product</label>
                             <select value={step.recommendedProduct} onChange={e => updateRoutineStep(activeRoutineTab, i, 'recommendedProduct', e.target.value)} style={inp}>
                               <option value="">No product selected</option>
-                              {products.map(p => (
-                                <option key={p._id} value={p._id}>{p.name}</option>
-                              ))}
+                              {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                             </select>
                           </div>
                         </div>
                         <div>
                           <label style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', display: 'block', marginBottom: 4 }}>How to Use</label>
-                          <input value={step.description} onChange={e => updateRoutineStep(activeRoutineTab, i, 'description', e.target.value)}
-                            placeholder="e.g. Gently massage for 30 seconds, then rinse" style={inp} />
+                          <input value={step.description} onChange={e => updateRoutineStep(activeRoutineTab, i, 'description', e.target.value)} placeholder="e.g. Gently massage for 30 seconds" style={inp} />
                         </div>
-                        {/* Show selected product preview */}
                         {step.recommendedProduct && (() => {
                           const prod = products.find(p => p._id === step.recommendedProduct)
                           if (!prod) return null
@@ -417,7 +376,6 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                   )}
                 </div>
 
-                {/* Product search sidebar */}
                 <div>
                   <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 10 }}>Products ({products.length})</div>
                   <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="Search product..." style={{ ...inp, marginBottom: 10 }} />
@@ -440,10 +398,10 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
                               }, 50)
                             }
                           }}>
-                          {img ? <img src={img} alt={p.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--b1)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>ðŸŒ¿</div>}
+                          {img ? <img src={img} alt={p.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: 36, height: 36, borderRadius: 6, background: 'var(--b1)', flexShrink: 0 }} />}
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: 11, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
-                            <div style={{ fontSize: 10.5, color: isInRoutine ? 'var(--gold)' : 'var(--mu)', fontWeight: 600 }}>{isInRoutine ? 'Added âœ“' : 'Rs.' + price}</div>
+                            <div style={{ fontSize: 10.5, color: isInRoutine ? 'var(--gold)' : 'var(--mu)', fontWeight: 600 }}>{isInRoutine ? 'Added' : 'Rs.' + price}</div>
                           </div>
                         </div>
                       )
@@ -455,7 +413,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
               <div style={{ marginTop: 20 }}>
                 <button onClick={saveRoutine} disabled={saving}
                   style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
-                  {saving ? 'Saving...' : 'Save Routine â€” Customer ke Saved Routines mein jayega âœ“'}
+                  {saving ? 'Saving...' : 'Save Routine — Customer ke Saved Routines mein jayega'}
                 </button>
               </div>
             </div>
@@ -465,8 +423,3 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
     </div>
   )
 }
-
-
-
-
-
