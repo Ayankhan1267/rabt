@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   StreamVideo,
@@ -42,7 +42,7 @@ function CallUI({ onEnd }: { onEnd: () => void }) {
   )
 }
 
-export default function VideoCallPage() {
+function VideoCallInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [client, setClient] = useState<StreamVideoClient | null>(null)
@@ -73,9 +73,7 @@ export default function VideoCallPage() {
   async function initCall() {
     try {
       setLoading(true)
-
-      // Get Stream token from HQ API
-      const res = await fetch(`/api/rabt-session?sessionId=${sessionId}&specialistUserId=${specialistUserId}`)
+      const res = await fetch('/api/rabt-session?sessionId=' + sessionId + '&specialistUserId=' + specialistUserId)
       const data = await res.json()
 
       if (!res.ok || !data.streamToken) {
@@ -86,7 +84,6 @@ export default function VideoCallPage() {
 
       const { streamToken, apiKey, callId } = data
 
-      // Init Stream client
       const streamClient = new StreamVideoClient({
         apiKey,
         user: {
@@ -99,14 +96,13 @@ export default function VideoCallPage() {
 
       clientRef.current = streamClient
 
-      // Join call
       const streamCall = streamClient.call('default', callId)
       await streamCall.join({ create: true, ring: false })
 
       setClient(streamClient)
-setCall(streamCall)
-setLoading(false)
-toast.success('Call join ho gaya!')
+      setCall(streamCall)
+      setLoading(false)
+      toast.success('Call join ho gaya!')
     } catch (err: any) {
       setError(err.message || 'Call join karne mein error')
       setLoading(false)
@@ -115,7 +111,6 @@ toast.success('Call join ho gaya!')
 
   async function handleEndCall() {
     try {
-      // Mark consultation as completed
       if (consultationId) {
         const url = process.env.NEXT_PUBLIC_MONGO_API_URL || 'http://localhost:5000'
         await fetch(url + '/api/consultations/' + consultationId, {
@@ -162,5 +157,18 @@ toast.success('Call join ho gaya!')
         </StreamCall>
       </StreamVideo>
     </StreamTheme>
+  )
+}
+
+export default function VideoCallPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#08090C' }}>
+        <div style={{ width: 40, height: 40, border: '3px solid #D4A853', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    }>
+      <VideoCallInner />
+    </Suspense>
   )
 }
