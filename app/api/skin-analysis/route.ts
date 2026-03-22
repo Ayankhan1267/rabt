@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+import { getConfig } from '@/lib/config'
 
 const RABT_PRODUCTS = `
 Rabt Naturals Product Catalog:
@@ -34,6 +33,9 @@ STANDALONE:
 
 export async function POST(req: NextRequest) {
   try {
+    const cfg = await getConfig()
+    const openai = new OpenAI({ apiKey: cfg.OPENAI_API_KEY })
+
     const body = await req.json()
     const { images, imageBase64, concern, age, skinType, concerns, customer, skinQ } = body
 

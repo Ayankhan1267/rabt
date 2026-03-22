@@ -1,19 +1,20 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import { StreamClient } from '@stream-io/node-sdk'
+import { getConfig } from '@/lib/config'
 
 const RABT_API = 'https://rabtnaturals.com/hq-api'
-const JWT_SECRET = process.env.RABT_JWT_SECRET || ''
 
-function makeToken(userId: string) {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '2h' })
+function makeToken(userId: string, secret: string) {
+  return jwt.sign({ userId }, secret, { expiresIn: '2h' })
 }
 
 // POST — Accept consultation + create session
 export async function POST(req: NextRequest) {
   try {
+    const cfg = await getConfig()
     const { consultationId, specialistMongoId } = await req.json()
-    const MONGO_API = process.env.NEXT_PUBLIC_MONGO_API_URL || 'http://localhost:5000'
+    const MONGO_API = cfg.NEXT_PUBLIC_MONGO_API_URL || 'http://localhost:5000'
     const res = await fetch(MONGO_API + '/api/create-session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -30,27 +31,25 @@ export async function POST(req: NextRequest) {
 // GET — Stream.io token generate karo specialist ke liye
 export async function GET(req: NextRequest) {
   try {
+    const cfg = await getConfig()
     const { searchParams } = new URL(req.url)
     const sessionId = searchParams.get('sessionId')
     const specialistUserId = searchParams.get('specialistUserId')
 
-    const STREAM_API_KEY = process.env.STREAM_API_KEY
-    const STREAM_API_SECRET = process.env.STREAM_API_SECRET
-
-    if (!STREAM_API_KEY || !STREAM_API_SECRET) {
+    if (!cfg.STREAM_API_KEY || !cfg.STREAM_API_SECRET) {
       return NextResponse.json({ error: 'Stream keys missing' }, { status: 500 })
     }
     if (!sessionId || !specialistUserId) {
       return NextResponse.json({ error: 'sessionId and specialistUserId required' }, { status: 400 })
     }
 
-    const streamClient = new StreamClient(STREAM_API_KEY, STREAM_API_SECRET)
+    const streamClient = new StreamClient(cfg.STREAM_API_KEY, cfg.STREAM_API_SECRET)
     const token = streamClient.generateUserToken({ user_id: specialistUserId })
 
     return NextResponse.json({
       success: true,
       streamToken: token,
-      apiKey: STREAM_API_KEY,
+      apiKey: cfg.STREAM_API_KEY,
       callId: sessionId,
     })
   } catch (err: any) {
@@ -69,12 +68,13 @@ export async function PATCH(req: NextRequest) {
     if (!skinProfileId || !specialistUserId || !type) {
       return NextResponse.json({ error: 'skinProfileId, specialistUserId, type required' }, { status: 400 })
     }
-    if (!JWT_SECRET) {
+    const cfg = await getConfig()
+    if (!cfg.RABT_JWT_SECRET) {
       return NextResponse.json({ error: 'JWT secret missing' }, { status: 500 })
     }
 
     const body = await req.json()
-    const token = makeToken(specialistUserId)
+    const token = makeToken(specialistUserId, cfg.RABT_JWT_SECRET)
 
     const url = RABT_API + '/skin-profiles/' + skinProfileId + '/' + type
 

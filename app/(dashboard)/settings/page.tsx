@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-type Tab = 'general' | 'whatsapp' | 'notifications' | 'crm' | 'integrations' | 'security'
+type Tab = 'general' | 'whatsapp' | 'notifications' | 'crm' | 'integrations' | 'security' | 'apikeys'
 
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'general',       icon: '🏢', label: 'General' },
@@ -12,6 +12,7 @@ const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'crm',           icon: '🎯', label: 'CRM Pipeline' },
   { id: 'integrations',  icon: '🔌', label: 'Integrations' },
   { id: 'security',      icon: '🔒', label: 'Security' },
+  { id: 'apikeys',       icon: '🔑', label: 'API Keys' },
 ]
 
 const CRM_STAGES = [
@@ -81,6 +82,25 @@ export default function SettingsPage() {
     require_phone_for_all: true,
   })
 
+  // API Keys
+  const [apiKeys, setApiKeys] = useState({
+    OPENAI_API_KEY: '',
+    ANTHROPIC_API_KEY: '',
+    VAPID_PUBLIC_KEY: '',
+    VAPID_PRIVATE_KEY: '',
+    VAPID_EMAIL: '',
+    STREAM_API_KEY: '',
+    STREAM_API_SECRET: '',
+    RABT_JWT_SECRET: '',
+    NEXT_PUBLIC_MONGO_API_URL: '',
+    NEXT_PUBLIC_APP_URL: '',
+    TWILIO_ACCOUNT_SID: '',
+    TWILIO_AUTH_TOKEN: '',
+    TWILIO_WHATSAPP_NUMBER: '',
+  })
+  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
+  const [savingKeys, setSavingKeys] = useState(false)
+
   useEffect(() => {
     setIsMobile(window.innerWidth < 768)
     window.addEventListener('resize', () => setIsMobile(window.innerWidth < 768))
@@ -97,6 +117,7 @@ export default function SettingsPage() {
     if (map.notifications) setNotifs(n => ({ ...n, ...map.notifications }))
     if (map.crm_config)    setCrmConfig(c => ({ ...c, ...map.crm_config }))
     if (map.security)      setSecurity(s => ({ ...s, ...map.security }))
+    if (map.api_keys)      setApiKeys(k => ({ ...k, ...map.api_keys }))
   }
 
   async function saveSetting(key: string, value: any) {
@@ -142,6 +163,27 @@ export default function SettingsPage() {
       }
     } catch { toast.error('Init failed') }
     setWaLoading(false)
+  }
+
+  async function saveApiKeys() {
+    setSavingKeys(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/config/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (session?.access_token || ''),
+        },
+        body: JSON.stringify({ keys: apiKeys }),
+      })
+      const data = await res.json()
+      if (!res.ok) { toast.error(data.error || 'Save failed'); return }
+      toast.success('API keys saved & config cache cleared!')
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+    setSavingKeys(false)
   }
 
   async function logoutWa() {
@@ -476,6 +518,100 @@ export default function SettingsPage() {
       )}
 
       {/* ── SECURITY ── */}
+      {tab === 'apikeys' && (
+        <>
+          {card(<>
+            {sectionTitle('🔑 API Keys & Secrets', 'Yahan se sab keys change hoti hain — DB mein save hoti hain, env vars override hoti hain')}
+
+            <div style={{ padding: '10px 12px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.2)', borderRadius: 8, marginBottom: 20, fontSize: 12.5, color: 'var(--gold)' }}>
+              ⚠️ Yeh keys encrypted nahi hain — sirf founder/admin dekh sakte hain. Render env vars se zyada priority milti hai inhe.
+            </div>
+
+            {([
+              { group: '🤖 AI Models', keys: [
+                { key: 'OPENAI_API_KEY',     label: 'OpenAI API Key',     placeholder: 'sk-proj-...', hint: 'Skin analysis (GPT-4o Vision)' },
+                { key: 'ANTHROPIC_API_KEY',  label: 'Anthropic API Key',  placeholder: 'sk-ant-...', hint: 'Claude AI features' },
+              ]},
+              { group: '🔔 Push Notifications (VAPID)', keys: [
+                { key: 'VAPID_PUBLIC_KEY',   label: 'VAPID Public Key',   placeholder: 'BDTS...', hint: 'Browser push public key' },
+                { key: 'VAPID_PRIVATE_KEY',  label: 'VAPID Private Key',  placeholder: '4MPS...', hint: 'Browser push private key' },
+                { key: 'VAPID_EMAIL',        label: 'VAPID Contact Email', placeholder: 'mailto:support@...', hint: 'Contact email for VAPID' },
+              ]},
+              { group: '🎥 Video Calls (Stream.io)', keys: [
+                { key: 'STREAM_API_KEY',     label: 'Stream API Key',     placeholder: 'wgpfcax...', hint: 'GetStream.io API key' },
+                { key: 'STREAM_API_SECRET',  label: 'Stream API Secret',  placeholder: 'ngbtxq3...', hint: 'GetStream.io API secret' },
+              ]},
+              { group: '🌐 Endpoints & URLs', keys: [
+                { key: 'NEXT_PUBLIC_MONGO_API_URL', label: 'MongoDB API URL', placeholder: 'https://rabt-api.onrender.com', hint: 'Express API server base URL' },
+                { key: 'NEXT_PUBLIC_APP_URL',       label: 'App Base URL',    placeholder: 'https://admin.rabtnaturals.com', hint: 'This HQ panel URL' },
+              ]},
+              { group: '🔐 Security', keys: [
+                { key: 'RABT_JWT_SECRET',    label: 'JWT Secret',         placeholder: 'random-long-secret', hint: 'For session tokens' },
+              ]},
+              { group: '📱 Twilio WhatsApp (Fallback)', keys: [
+                { key: 'TWILIO_ACCOUNT_SID',     label: 'Twilio Account SID', placeholder: 'ACxxxxxx', hint: 'Twilio account SID' },
+                { key: 'TWILIO_AUTH_TOKEN',       label: 'Twilio Auth Token',  placeholder: 'xxxxxxxx', hint: 'Twilio auth token' },
+                { key: 'TWILIO_WHATSAPP_NUMBER',  label: 'Twilio WA Number',   placeholder: 'whatsapp:+14155238886', hint: 'From number (Twilio sandbox)' },
+              ]},
+            ] as { group: string; keys: { key: string; label: string; placeholder: string; hint: string }[] }[]).map(section => (
+              <div key={section.group} style={{ marginBottom: 24 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid var(--b1)' }}>
+                  {section.group}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {section.keys.map(({ key, label, placeholder, hint }) => (
+                    <div key={key}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                        <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</label>
+                        <span style={{ fontSize: 10.5, color: 'var(--mu)' }}>{hint}</span>
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type={showKeys[key] ? 'text' : 'password'}
+                          value={(apiKeys as any)[key] || ''}
+                          onChange={e => setApiKeys(k => ({ ...k, [key]: e.target.value }))}
+                          placeholder={placeholder}
+                          style={{ width: '100%', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, padding: '9px 44px 9px 12px', color: 'var(--tx)', fontSize: 12.5, fontFamily: 'DM Mono', outline: 'none', boxSizing: 'border-box' }}
+                        />
+                        <button
+                          onClick={() => setShowKeys(s => ({ ...s, [key]: !s[key] }))}
+                          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--mu)', padding: 2 }}>
+                          {showKeys[key] ? '🙈' : '👁️'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            <button onClick={saveApiKeys} disabled={savingKeys}
+              style={{ padding: '11px 32px', background: savingKeys ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: savingKeys ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
+              {savingKeys ? 'Saving...' : 'Save All API Keys'}
+            </button>
+          </>)}
+
+          {card(<>
+            {sectionTitle('ℹ️ Priority Order', 'Key kahan se aati hai')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {[
+                { priority: '1st', label: 'Settings Page (hq_settings DB)', color: 'var(--green)', note: 'Yahan save ki gayi values sabse pehle use hoti hain' },
+                { priority: '2nd', label: 'Render Environment Variables', color: 'var(--gold)', note: 'Settings mein key blank ho toh env var use hoti hai' },
+                { priority: '3rd', label: 'Default/Hardcoded Fallback', color: 'var(--mu)', note: 'Kuch keys ke liye default values hain (e.g. VAPID email)' },
+              ].map(item => (
+                <div key={item.priority} style={{ display: 'flex', gap: 12, padding: '10px 12px', background: 'var(--s2)', borderRadius: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: item.color, width: 32, flexShrink: 0 }}>{item.priority}</span>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{item.label}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 2 }}>{item.note}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>)}
+        </>
+      )}
+
       {tab === 'security' && (
         <>
           {card(<>

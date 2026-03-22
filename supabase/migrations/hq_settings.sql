@@ -18,3 +18,6 @@ INSERT INTO hq_settings (key, value) VALUES
   ('crm_config', '{"auto_assign":false,"default_stage":"new","auto_advance_on_consult":true,"auto_advance_on_purchase":true,"follow_up_days":"3"}'),
   ('security', '{"otp_expiry_minutes":"10","session_days":"30","require_phone_for_all":true}')
 ON CONFLICT (key) DO NOTHING;
+
+-- API keys row (values left blank — fill from Settings page)
+INSERT INTO hq_settings (key, value) VALUES ('api_keys', '{}') ON CONFLICT (key) DO NOTHING;
