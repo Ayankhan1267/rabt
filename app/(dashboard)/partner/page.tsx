@@ -398,12 +398,15 @@ export default function PartnerPortalPage() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>{['Date','Customer','Amount','Commission','Status','Actions'].map(h => (
+                    <tr>{['Date','Customer','Amount','Commission','Status','Tracking','Actions'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '8px 14px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)' }}>{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody>
-                    {partnerOrders.map((o,i) => (
+                    {partnerOrders.map((o,i) => {
+                      const awb = o.tracking_id || o.awb_number || ''
+                      const courier = o.courier_name || o.courier || ''
+                      return (
                       <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }}>
                         <td style={{ padding: '9px 14px', fontSize: 11.5, color: 'var(--mu)' }}>{new Date(o.created_at).toLocaleDateString('en-IN')}</td>
                         <td style={{ padding: '9px 14px' }}>
@@ -424,6 +427,16 @@ export default function PartnerPortalPage() {
                           </span>
                         </td>
                         <td style={{ padding: '9px 14px' }}>
+                          {awb ? (
+                            <div>
+                              <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</div>
+                              {courier && <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{courier}</div>}
+                              <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: 9, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>Track ↗</a>
+                            </div>
+                          ) : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
+                        </td>
+                        <td style={{ padding: '9px 14px' }}>
                           <div style={{ display: 'flex', gap: 6 }}>
                             {o.skin_category && (
                               <button onClick={() => generatePDF({orderId:o.order_id,assignedSpecialist:{name:o.specialist_assigned}},{skinScore:o.skin_score,skinCategory:o.skin_category,skinType:o.skin_type,recommendedRange:o.recommended_range},{name:o.customer_name,phone:o.customer_phone,age:'',city:o.customer_city||'',state:o.customer_state||''})}
@@ -435,7 +448,8 @@ export default function PartnerPortalPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      )
+                    })}
                   </tbody>
                 </table>
               </div>

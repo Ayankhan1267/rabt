@@ -113,6 +113,29 @@ async function syncOrders(req: NextRequest) {
             .or(`tracking_id.eq.${awb},notes.ilike.%${srOrderNum}%`)
         }
 
+        // 3. Update Supabase partner_orders by tracking_id or order_id
+        if (awb || ourStatus) {
+          const partnerUpdate: any = {}
+          if (ourStatus) partnerUpdate.status = ourStatus
+          if (awb) partnerUpdate.tracking_id = awb
+          if (courierName) partnerUpdate.courier_name = courierName
+          if (Object.keys(partnerUpdate).length) {
+            // Try matching by tracking_id (already set) or by order_id matching srOrderNum
+            if (awb) {
+              await supabase
+                .from('partner_orders')
+                .update(partnerUpdate)
+                .eq('tracking_id', awb)
+            }
+            if (srOrderNum) {
+              await supabase
+                .from('partner_orders')
+                .update(partnerUpdate)
+                .eq('order_id', srOrderNum)
+            }
+          }
+        }
+
         updated.push({
           srOrderId,
           orderNum: srOrderNum,

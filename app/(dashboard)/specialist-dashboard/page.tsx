@@ -73,6 +73,11 @@ export default function SpecialistDashboard() {
   const [patientSearch, setPatientSearch] = useState('')
   const [patientFilter, setPatientFilter] = useState<'all' | 'online' | 'offline'>('all')
 
+  // Add Lead
+  const [showAddLead, setShowAddLead] = useState(false)
+  const [leadForm, setLeadForm] = useState({ name: '', phone: '', email: '', notes: '', stage: 'new_lead' })
+  const [addingLead, setAddingLead] = useState(false)
+
   // Consultation detail
   const [selectedCons, setSelectedCons] = useState<any>(null)
   const [rescheduleModal, setRescheduleModal] = useState<any>(null)
@@ -747,6 +752,29 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
     setPayoutLoading(false)
   }
 
+  async function addLead() {
+    if (!leadForm.name || !leadForm.phone) { toast.error('Name aur phone required'); return }
+    setAddingLead(true)
+    try {
+      await supabase.from('leads').insert({
+        name: leadForm.name,
+        phone: leadForm.phone,
+        email: leadForm.email || null,
+        notes: leadForm.notes || null,
+        stage: leadForm.stage,
+        assigned_to: profile?.id,
+        source: 'specialist',
+      })
+      toast.success('Lead added!')
+      setShowAddLead(false)
+      setLeadForm({ name: '', phone: '', email: '', notes: '', stage: 'new_lead' })
+      // Refresh CRM leads
+      const { data: supaLeads } = await supabase.from('leads').select('*').eq('assigned_to', profile?.id)
+      setCrmLeads(supaLeads || [])
+    } catch (e: any) { toast.error('Failed: ' + e.message) }
+    setAddingLead(false)
+  }
+
   const totals = getCartTotal()
   const inp: any = { width: '100%', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, padding: '8px 10px', color: 'var(--tx)', fontSize: 12.5, fontFamily: 'Outfit', outline: 'none' }
 
@@ -905,15 +933,17 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>{['Patient', 'Products', 'Amount', 'Status', 'Source', 'Commission'].map(h => (
+                    <tr>{['Patient', 'Products', 'Amount', 'Status', 'Tracking', 'Commission'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)' }}>{h}</th>
                     ))}</tr>
                   </thead>
                   <tbody>
-                    {myPatientOrders.slice(0, 8).map((o, i) => {
+                    {myPatientOrders.slice(0, 20).map((o, i) => {
                       const status = (o.orderStatus || o.status || '').toLowerCase()
                       const isDelivered = status === 'delivered'
                       const isCancelled = ['cancelled', 'canceled'].includes(status)
+                      const awb = o.awbNumber || o.awb_code || o.tracking_id || ''
+                      const courier = o.courierName || o.courier_name || o.courier || ''
                       return (
                         <tr key={i} style={{ opacity: isCancelled ? 0.5 : 1 }}>
                           <td style={{ padding: '9px 12px', fontSize: 12.5, fontWeight: 500 }}>{o.customerName || o.customer_name || '-'}</td>
@@ -924,7 +954,16 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                           <td style={{ padding: '9px 12px' }}>
                             <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize' }}>{status}</span>
                           </td>
-                          <td style={{ padding: '9px 12px', fontSize: 11 }}>{(() => { const src = (o.source || '').toLowerCase(); if (src === 'specialist_offline') return 'Offline'; if (src === 'partner') return 'Partner'; return 'Website' })()}</td>
+                          <td style={{ padding: '9px 12px' }}>
+                            {awb ? (
+                              <div>
+                                <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</div>
+                                {courier && <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{courier}</div>}
+                                <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
+                                  style={{ fontSize: 9, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>Track ↗</a>
+                              </div>
+                            ) : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
+                          </td>
                           <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)', fontSize: 12 }}>
                             {isCancelled ? '-' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12)}
                           </td>
@@ -1192,6 +1231,10 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
                 ))}
+                <button onClick={() => setShowAddLead(true)}
+                  style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap' }}>
+                  + Add Lead
+                </button>
               </div>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
@@ -1751,6 +1794,48 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               <button onClick={requestPayout} disabled={payoutLoading}
                 style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {payoutLoading ? 'Sending...' : 'Send Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ── ADD LEAD MODAL ── */}
+      {showAddLead && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowAddLead(false)}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '24px 28px', width: 420, maxWidth: '94vw' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>+ Add New Lead</div>
+              <button onClick={() => setShowAddLead(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {[
+                { key: 'name',  label: 'Name *',  placeholder: 'Priya Sharma', type: 'text' },
+                { key: 'phone', label: 'Phone *', placeholder: '+91 9876543210', type: 'tel' },
+                { key: 'email', label: 'Email',   placeholder: 'priya@gmail.com', type: 'email' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'block' }}>{f.label}</label>
+                  <input type={f.type} value={(leadForm as any)[f.key]} onChange={e => setLeadForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder} style={inp} />
+                </div>
+              ))}
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'block' }}>Stage</label>
+                <select value={leadForm.stage} onChange={e => setLeadForm(p => ({ ...p, stage: e.target.value }))} style={inp}>
+                  {['new_lead','contacted','skin_analysis_done','consultation_booked','consultation_done','purchased','repeat_customer'].map(s => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 4, display: 'block' }}>Notes</label>
+                <textarea value={leadForm.notes} onChange={e => setLeadForm(p => ({ ...p, notes: e.target.value }))}
+                  placeholder="Koi khas baat..." rows={3}
+                  style={{ ...inp, resize: 'vertical', lineHeight: 1.6 }} />
+              </div>
+              <button onClick={addLead} disabled={addingLead || !leadForm.name || !leadForm.phone}
+                style={{ width: '100%', padding: '12px', background: leadForm.name && leadForm.phone ? 'linear-gradient(135deg,#0097A7,#005F6A)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: leadForm.name && leadForm.phone ? '#fff' : 'var(--mu)', fontWeight: 800, fontSize: 14, cursor: leadForm.name && leadForm.phone ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
+                {addingLead ? 'Adding...' : 'Add Lead →'}
               </button>
             </div>
           </div>
