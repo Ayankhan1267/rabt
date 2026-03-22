@@ -286,9 +286,10 @@ export default function CRMPage() {
   async function addLead() {
     if (!form.name) { toast.error('Name required'); return }
     const { data: { user } } = await supabase.auth.getUser()
+    const assignTo = profile?.role === 'specialist' ? profile.id : (form.assigned_to || null)
     const { error } = await supabase.from('leads').insert({
       name: form.name, phone: form.phone, email: form.email, concern: form.concern,
-      source: form.source, stage: form.stage, assigned_to: form.assigned_to || null,
+      source: form.source, stage: form.stage, assigned_to: assignTo,
       created_by: user?.id, notes: form.notes
     })
     if (error) { toast.error(error.message); return }
@@ -703,12 +704,14 @@ export default function CRMPage() {
             <select value={form.source} onChange={e => setForm(p => ({...p, source: e.target.value}))} style={inp}>{SOURCES.map(s => <option key={s} value={s}>{s}</option>)}</select>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Initial Stage</label>
             <select value={form.stage} onChange={e => setForm(p => ({...p, stage: e.target.value}))} style={inp}>{STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}</select>
+            {profile?.role !== 'specialist' && (<>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Assign To</label>
             <select value={form.assigned_to} onChange={e => setForm(p => ({...p, assigned_to: e.target.value}))} style={inp}>
               <option value="">Unassigned</option>
               <optgroup label="Specialists">{profiles.filter(p => p.role === 'specialist').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
               <optgroup label="Team">{profiles.filter(p => p.role !== 'specialist').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
             </select>
+            </>)}
             <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={addLead} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Lead</button>
