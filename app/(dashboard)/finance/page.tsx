@@ -82,7 +82,7 @@ export default function FinancePage() {
   const [tab, setTab] = useState<'overview'|'pl'|'expenses'|'shipping'|'analytics'|'settings'|'payroll'>('overview')
   const [expenseForm, setExpenseForm] = useState({ title: '', amount: 0, category: 'Marketing', date: new Date().toISOString().split('T')[0], notes: '', recurring: false })
   const [showAddExpense, setShowAddExpense] = useState(false)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
+  const [selectedMonth, setSelectedMonth] = useState(-1) // -1 = All months
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   // Shipping calc tool
   const [shipCalc, setShipCalc] = useState({ weight: 0.3, zone: 'zone_b', payment: 'prepaid' as 'cod'|'prepaid', qty: 1 })
@@ -148,15 +148,16 @@ export default function FinancePage() {
   }
 
   // ── CALCULATIONS ──────────────────────────────────────────────────────────
-  const deliveredOrders = orders.filter(o => (o.orderStatus || o.status || '').toLowerCase() === 'delivered')
-  const cancelledOrders = orders.filter(o => ['cancelled','canceled','rto','returned'].includes((o.orderStatus || o.status || '').toLowerCase()))
-  const activeOrders    = orders.filter(o => !['delivered','cancelled','canceled','rto','returned'].includes((o.orderStatus || o.status || '').toLowerCase()))
+  const periodOrders    = filterByPeriod(orders, 'createdAt')
+  const deliveredOrders = periodOrders.filter(o => (o.orderStatus || o.status || '').toLowerCase() === 'delivered')
+  const cancelledOrders = periodOrders.filter(o => ['cancelled','canceled','rto','returned'].includes((o.orderStatus || o.status || '').toLowerCase()))
+  const activeOrders    = periodOrders.filter(o => !['delivered','cancelled','canceled','rto','returned'].includes((o.orderStatus || o.status || '').toLowerCase()))
 
   const grossRevenue    = deliveredOrders.reduce((s, o) => s + (o.amount || 0), 0)
   const pendingRevenue  = activeOrders.reduce((s, o) => s + (o.amount || 0), 0)
   const cancelledValue  = cancelledOrders.reduce((s, o) => s + (o.amount || 0), 0)
 
-  const completedCons     = consultations.filter(c => c.status === 'completed').length
+  const completedCons     = filterByPeriod(consultations, 'createdAt').filter(c => c.status === 'completed').length
   const consultationCost  = completedCons * 500  // avg specialist fee per consultation (we pay this)
   const totalRevenue      = grossRevenue
 
@@ -183,10 +184,13 @@ export default function FinancePage() {
   // Razorpay 2% fee on prepaid orders
   const razorpayFee = Math.round(prepaidOrders.reduce((s, o) => s + (o.amount || 0) * 0.02, 0))
 
-  const partnerCommissions = partnerPayouts.reduce((s, p) => s + (p.amount || 0), 0)
-  const specialistCommissions = payouts.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0)
-  const pendingCommissions     = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0)
-  const totalExpenses  = expenses.reduce((s, e) => s + (e.amount || 0), 0)
+  const periodPayouts          = filterByPeriod(payouts, 'createdAt')
+  const periodPartnerPayouts   = filterByPeriod(partnerPayouts, 'created_at')
+  const periodExpenses         = filterByPeriod(expenses, 'date')
+  const partnerCommissions     = periodPartnerPayouts.reduce((s, p) => s + (p.amount || 0), 0)
+  const specialistCommissions  = periodPayouts.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0)
+  const pendingCommissions     = periodPayouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0)
+  const totalExpenses          = periodExpenses.reduce((s, e) => s + (e.amount || 0), 0)
   const totalCOGS       = productionCost + packagingCost + totalShipping + razorpayFee + specialistCommissions + partnerCommissions + consultationCost
   const grossProfit     = revenueExGST - productionCost
   const operatingProfit = grossProfit - packagingCost - totalShipping - razorpayFee - specialistCommissions - partnerCommissions - consultationCost
@@ -197,6 +201,14 @@ export default function FinancePage() {
   // Monthly
   function filterByMonth(items: any[], field: string, m: number, y: number) {
     return items.filter(i => { const d = new Date(i[field] || Date.now()); return d.getMonth() === m && d.getFullYear() === y })
+  }
+  function filterByPeriod(items: any[], field: string) {
+    return items.filter(i => {
+      const d = new Date(i[field] || Date.now())
+      if (d.getFullYear() !== selectedYear) return false
+      if (selectedMonth >= 0 && d.getMonth() !== selectedMonth) return false
+      return true
+    })
   }
   const monthlyData = Array.from({ length: 12 }, (_, m) => {
     const mOrds = filterByMonth(deliveredOrders, 'createdAt', m, selectedYear)
@@ -213,11 +225,13 @@ export default function FinancePage() {
   const maxMonthRev = Math.max(...monthlyData.map(m => m.revenue), 1)
 
   const expByCat: Record<string, number> = {}
-  expenses.forEach(e => { expByCat[e.category] = (expByCat[e.category] || 0) + (e.amount || 0) })
+  periodExpenses.forEach(e => { expByCat[e.category] = (expByCat[e.category] || 0) + (e.amount || 0) })
 
-  const curMonthOrds = filterByMonth(deliveredOrders, 'createdAt', selectedMonth, selectedYear)
-  const curMonthRev  = curMonthOrds.reduce((s, o) => s + (o.amount || 0), 0) + filterByMonth(consultations.filter(c => c.status === 'completed'), 'createdAt', selectedMonth, selectedYear).length * 30
-  const curMonthExp  = filterByMonth(expenses, 'date', selectedMonth, selectedYear).reduce((s, e) => s + (e.amount || 0), 0)
+  const displayMonth = selectedMonth >= 0 ? selectedMonth : new Date().getMonth()
+  const allYearDelivered = orders.filter(o => (o.orderStatus || o.status || '').toLowerCase() === 'delivered' && new Date(o.createdAt || Date.now()).getFullYear() === selectedYear)
+  const curMonthOrds = filterByMonth(allYearDelivered, 'createdAt', displayMonth, selectedYear)
+  const curMonthRev  = curMonthOrds.reduce((s, o) => s + (o.amount || 0), 0) + filterByMonth(consultations.filter(c => c.status === 'completed'), 'createdAt', displayMonth, selectedYear).length * 30
+  const curMonthExp  = filterByMonth(expenses, 'date', displayMonth, selectedYear).reduce((s, e) => s + (e.amount || 0), 0)
   const curMonthShip = curMonthOrds.filter(o => (o.paymentMethod||o.payment||'').toLowerCase().includes('cod')).length * calcShipping(settings.defaultWeight, settings.defaultZone, 'cod', settings.codCharge, settings.fuelSurcharge) + curMonthOrds.filter(o => !(o.paymentMethod||o.payment||'').toLowerCase().includes('cod')).length * calcShipping(settings.defaultWeight, settings.defaultZone, 'prepaid', settings.codCharge, settings.fuelSurcharge)
   const curMonthProfit = curMonthRev - Math.round(curMonthRev * settings.productionCostPct / 100) - curMonthOrds.length * settings.packagingPerOrder - curMonthShip - curMonthExp
 
@@ -236,7 +250,11 @@ export default function FinancePage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Finance <span style={{ color: 'var(--gold)' }}>Dashboard</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>Auto P&L · Smart Shipping · Expenses · Profit</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} style={{ ...inp, marginBottom: 0, width: 'auto' }}>
+            <option value={-1}>All Months</option>
+            {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+          </select>
           <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} style={{ ...inp, marginBottom: 0, width: 'auto' }}>
             {[2024,2025,2026].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -296,12 +314,15 @@ export default function FinancePage() {
             </div>
           </div>
 
-          {/* Current month */}
+          {/* Monthly breakdown */}
           <div className="card">
-            <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12 }}>This Month</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>{selectedMonth >= 0 ? MONTHS[selectedMonth] + ' ' + selectedYear : 'Monthly Breakdown'}</div>
+              {selectedMonth >= 0 && <span onClick={() => setSelectedMonth(-1)} style={{ fontSize: 10, color: 'var(--mu)', cursor: 'pointer', textDecoration: 'underline' }}>Clear</span>}
+            </div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
               {MONTHS.map((m, i) => (
-                <span key={i} onClick={() => setSelectedMonth(i)} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', background: selectedMonth === i ? 'var(--gL)' : 'transparent', color: selectedMonth === i ? 'var(--gold)' : 'var(--mu)', fontWeight: selectedMonth === i ? 700 : 400 }}>{m}</span>
+                <span key={i} onClick={() => setSelectedMonth(selectedMonth === i ? -1 : i)} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 6, cursor: 'pointer', background: displayMonth === i ? 'var(--gL)' : 'transparent', color: displayMonth === i ? 'var(--gold)' : 'var(--mu)', fontWeight: displayMonth === i ? 700 : 400, border: selectedMonth === i ? '1px solid rgba(212,168,83,0.4)' : '1px solid transparent' }}>{m}</span>
               ))}
             </div>
             {[
@@ -325,7 +346,7 @@ export default function FinancePage() {
         <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ padding: '18px 22px', background: 'linear-gradient(135deg,rgba(212,168,83,0.1),rgba(212,168,83,0.05))', borderBottom: '1px solid var(--b1)' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>Profit & Loss Statement</div>
-            <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 3 }}>Rabt Naturals · Auto-calculated</div>
+            <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 3 }}>Rabt Naturals · {selectedMonth >= 0 ? MONTHS[selectedMonth] + ' ' + selectedYear : 'Full Year ' + selectedYear}</div>
           </div>
 
           {/* Revenue */}
@@ -409,7 +430,7 @@ export default function FinancePage() {
       {tab === 'expenses' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Expenses <span style={{ color: 'var(--mu)', fontWeight: 500, fontSize: 13 }}>({expenses.length} · ₹{totalExpenses.toLocaleString('en-IN')})</span></div>
+            <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Expenses <span style={{ color: 'var(--mu)', fontWeight: 500, fontSize: 13 }}>({periodExpenses.length} · ₹{totalExpenses.toLocaleString('en-IN')})</span></div>
             <button onClick={() => setShowAddExpense(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Expense</button>
           </div>
 
@@ -433,7 +454,7 @@ export default function FinancePage() {
                 ))}</tr>
               </thead>
               <tbody>
-                {expenses.map((e, i) => (
+                {periodExpenses.map((e, i) => (
                   <tr key={i} onMouseOver={ev => ev.currentTarget.style.background='rgba(255,255,255,0.018)'} onMouseOut={ev => ev.currentTarget.style.background=''}>
                     <td style={{ padding: '10px 14px', fontWeight: 600, fontSize: 13 }}>{e.title}</td>
                     <td style={{ padding: '10px 14px' }}><span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: 'rgba(139,92,246,0.12)', color: 'var(--purple)' }}>{e.category}</span></td>
@@ -443,7 +464,7 @@ export default function FinancePage() {
                     <td style={{ padding: '10px 14px' }}><button onClick={() => deleteExpense(e.id)} style={{ padding: '3px 9px', background: 'var(--rdL)', border: 'none', borderRadius: 5, color: 'var(--red)', fontSize: 10.5, cursor: 'pointer' }}>Del</button></td>
                   </tr>
                 ))}
-                {expenses.length === 0 && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No expenses yet</td></tr>}
+                {periodExpenses.length === 0 && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No expenses{selectedMonth >= 0 ? ' for ' + MONTHS[selectedMonth] : ''}</td></tr>}
               </tbody>
             </table>
           </div>
