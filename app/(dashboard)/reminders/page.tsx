@@ -281,6 +281,12 @@ function RemindersContent() {
   const [editedMsg, setEditedMsg]               = useState('')
   const [extraVars, setExtraVars]               = useState({ joinLink: '', skinProfileLink: '', routineLink: '', concern: '' })
 
+  // Automation
+  const [autoSettings, setAutoSettings] = useState({ enabled: false, day_before: true, min5_before: true, time_now: true })
+  const [autoLastRun, setAutoLastRun]   = useState<string|null>(null)
+  const [autoLastSent, setAutoLastSent] = useState<number>(0)
+  const [autoRunning, setAutoRunning]   = useState(false)
+
   // Template editing
   const [templates, setTemplates]           = useState(DEFAULT_TEMPLATES)
   const [editingTemplate, setEditingTemplate] = useState<string|null>(null)
@@ -346,15 +352,24 @@ function RemindersContent() {
   }, [selectedPerson, selectedTemplate, templates, extraVars])
 
   async function loadConfig() {
-    const [waCfgRow, bridgeCfgRow, tmplRow] = await Promise.all([
+    const [waCfgRow, bridgeCfgRow, tmplRow, autoRow] = await Promise.all([
       supabase.from('app_settings').select('*').eq('key', 'wa_business_config').single(),
       supabase.from('app_settings').select('*').eq('key', 'wa_bridge_url').single(),
       supabase.from('app_settings').select('*').eq('key', 'reminder_templates').single(),
+      supabase.from('hq_settings').select('*').eq('key', 'reminder_automations').single(),
     ])
     if (waCfgRow.data?.value) { try { setWaConfig(JSON.parse(waCfgRow.data.value)) } catch {} }
     const savedUrl = bridgeCfgRow.data?.value ? bridgeCfgRow.data.value.replace(/^"|"$/g, '') : '/api/wa'
     setBridgeUrl(savedUrl)
     if (tmplRow.data?.value) { try { setTemplates(t => ({ ...t, ...JSON.parse(tmplRow.data!.value) })) } catch {} }
+    if (autoRow.data?.value) {
+      try {
+        const a = JSON.parse(autoRow.data.value)
+        setAutoSettings({ enabled: a.enabled ?? false, day_before: a.day_before ?? true, min5_before: a.min5_before ?? true, time_now: a.time_now ?? true })
+        if (a.last_run) setAutoLastRun(a.last_run)
+        if (a.last_sent != null) setAutoLastSent(a.last_sent)
+      } catch {}
+    }
     // Check bridge status
     try {
       const r = await fetch(savedUrl + '/status', { signal: AbortSignal.timeout(3000) })
@@ -362,6 +377,31 @@ function RemindersContent() {
       setBridgeStatus(d.status)
       if (d.phone) setBridgePhone(d.phone)
     } catch {}
+  }
+
+  async function saveAutoSettings(next: typeof autoSettings) {
+    setAutoSettings(next)
+    await supabase.from('hq_settings').upsert({
+      key: 'reminder_automations',
+      value: JSON.stringify({ ...next, last_run: autoLastRun, last_sent: autoLastSent }),
+    })
+    toast.success('Automation settings saved!')
+  }
+
+  async function runAutoNow() {
+    setAutoRunning(true)
+    try {
+      const r = await fetch('/api/automation/reminders', { method: 'POST' })
+      const d = await r.json()
+      if (d.error) { toast.error('Error: ' + d.error) }
+      else {
+        const sent = d.processed?.filter((x: any) => x.sent).length ?? 0
+        toast.success(`Done! ${sent} message${sent !== 1 ? 's' : ''} sent`)
+        setAutoLastRun(d.started)
+        setAutoLastSent(sent)
+      }
+    } catch (e: any) { toast.error('Failed: ' + e.message) }
+    setAutoRunning(false)
   }
 
   async function saveWaConfig() {
@@ -1067,6 +1107,71 @@ function RemindersContent() {
             <div>1️⃣ <strong>Bridge (Scan)</strong> — agar connected hai (aapke number se)</div>
             <div>2️⃣ <strong>Meta Cloud API</strong> — agar configured hai</div>
             <div>3️⃣ <strong>wa.me Link</strong> — manual fallback (browser mein khulega)</div>
+          </div>
+
+          {/* ── AUTOMATION ── */}
+          <div className="card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>⚡ Consultation Auto-Reminders</div>
+              {/* Master toggle */}
+              <div onClick={() => saveAutoSettings({ ...autoSettings, enabled: !autoSettings.enabled })}
+                style={{ width: 44, height: 24, borderRadius: 12, background: autoSettings.enabled ? 'var(--green)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                <div style={{ position: 'absolute', top: 3, left: autoSettings.enabled ? 22 : 3, width: 18, height: 18, borderRadius: 9, background: '#fff', transition: 'left 0.2s' }} />
+              </div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 16, lineHeight: 1.6 }}>
+              Consultations ki date/time ke hisaab se automatically WhatsApp reminders jayenge. Enable karne ke baad cron set karo (niche URL hai).
+            </div>
+
+            {/* Per-type toggles */}
+            {[
+              { key: 'day_before',  icon: '📅', label: '1 Din Pehle',     desc: 'Kal consultation hai — reminder + join link' },
+              { key: 'min5_before', icon: '🚨', label: '5 Minute Pehle',  desc: 'Sirf 5 min baad — urgent join reminder' },
+              { key: 'time_now',    icon: '🟢', label: 'Time Ho Gayi!',   desc: 'Exact time pe — ABHI join karo!' },
+            ].map(({ key, icon, label, desc }) => {
+              const val = autoSettings[key as keyof typeof autoSettings] as boolean
+              return (
+                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--s2)', borderRadius: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--mu)' }}>{desc}</div>
+                  </div>
+                  <div onClick={() => saveAutoSettings({ ...autoSettings, [key]: !val })}
+                    style={{ width: 38, height: 22, borderRadius: 11, background: val ? 'var(--teal)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                    <div style={{ position: 'absolute', top: 3, left: val ? 18 : 3, width: 16, height: 16, borderRadius: 8, background: '#fff', transition: 'left 0.2s' }} />
+                  </div>
+                </div>
+              )
+            })}
+
+            {/* Last run status */}
+            {autoLastRun && (
+              <div style={{ padding: '8px 12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 8, fontSize: 11.5, color: 'var(--mu)', marginBottom: 12 }}>
+                ✅ Last run: <strong style={{ color: 'var(--tx)' }}>{new Date(autoLastRun).toLocaleString('en-IN')}</strong>
+                {autoLastSent > 0 && <span style={{ color: 'var(--green)', marginLeft: 8 }}>• {autoLastSent} message{autoLastSent !== 1 ? 's' : ''} sent</span>}
+              </div>
+            )}
+
+            {/* Manual run button */}
+            <button onClick={runAutoNow} disabled={autoRunning}
+              style={{ width: '100%', padding: '11px', background: autoRunning ? 'var(--s2)' : 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: autoRunning ? 'var(--mu)' : '#fff', fontSize: 13, fontWeight: 700, cursor: autoRunning ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', marginBottom: 12 }}>
+              {autoRunning ? '⏳ Running...' : '▶ Abhi Chalao (Manual Run)'}
+            </button>
+
+            {/* Cron URL */}
+            <div style={{ padding: '12px 14px', background: 'var(--s2)', borderRadius: 8, fontSize: 11.5, lineHeight: 1.8 }}>
+              <div style={{ fontWeight: 700, color: 'var(--tx)', marginBottom: 8 }}>🕐 Auto-run ke liye Cron URL:</div>
+              <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--teal)', background: 'var(--s3)', padding: '7px 10px', borderRadius: 6, wordBreak: 'break-all', marginBottom: 8 }}>
+                {typeof window !== 'undefined' ? window.location.origin : 'https://admin.rabtnaturals.com'}/api/automation/reminders
+              </div>
+              <div style={{ color: 'var(--mu)', fontSize: 11 }}>
+                👆 Is URL ko <strong>har 1-2 minute</strong> pe hit karwao:<br />
+                • <strong>Render Cron Job</strong> — dashboard mein "New Cron Job" → */2 * * * *<br />
+                • <strong>cron-job.org</strong> (free) — URL dalo, interval: 1 min<br />
+                • <strong>UptimeRobot</strong> — monitor type: HTTP, interval: 5 min
+              </div>
+            </div>
           </div>
         </div>
       )}
