@@ -5,81 +5,195 @@ import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 // ── TEMPLATES ────────────────────────────────────────────────────────────────
-// Use {name} {specialist} {skinType} as placeholders — user can edit inline
-const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; color: string; text: string }> = {
-  routine_morning: {
-    label: '🌅 Morning Routine',
-    category: 'Routine',
-    color: 'var(--gold)',
-    text: `Good morning {name}! ☀️\n\nTime for your Rabt Naturals morning routine! 🌿\n\n*Your AM Routine:*\n1️⃣ Cleanser\n2️⃣ Toner\n3️⃣ Serum\n4️⃣ Moisturizer\n5️⃣ Sunscreen ☀️\n\nConsistency = Results! 💪\n~{specialist} 🌿`,
-  },
-  routine_night: {
-    label: '🌙 Night Routine',
-    category: 'Routine',
+// Placeholders: {name} {specialist} {skinType} {concern} {joinLink} {skinProfileLink} {routineLink}
+const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; color: string; text: string; needsLink?: string }> = {
+
+  // ── Pre-Consultation ──
+  skin_analysis_pending: {
+    label: '🔬 Skin Analysis Pending',
+    category: 'Pre-Consultation',
     color: 'var(--purple)',
-    text: `Good night {name}! 🌙\n\nDon't forget your night routine! 💤\n\n*Your PM Routine:*\n1️⃣ Cleanser 🧴\n2️⃣ Serum ✨\n3️⃣ Moisturizer 💧\n\nSweet dreams and glowing skin! 🌿\n~{specialist}`,
+    text: `Hi {name}! 👋\n\nAapne abhi tak apni free *Skin Analysis* nahi ki! 🔬\n\nSirf 2 minute mein jaano:\n✅ Apna skin type\n✅ Main concerns\n✅ Personalized routine\n\n👉 *Abhi karo:* rabtnaturals.com/skin-analysis\n\nBilkul free hai! 🌿\n~{specialist}`,
   },
-  followup_7day: {
-    label: '📊 7-Day Follow Up',
-    category: 'Follow Up',
+  book_consultation: {
+    label: '📅 Book Consultation',
+    category: 'Pre-Consultation',
     color: 'var(--teal)',
-    text: `Hi {name}! 🌿\n\nIt's been 7 days since your consultation! How's your skin doing? 😊\n\n*Quick check-in — Reply:*\n1️⃣ Amazing! Seeing results\n2️⃣ Good, adjusting to it\n3️⃣ Need some help\n\nYour specialist {specialist} is here! 💚\n~Rabt Naturals 🌿`,
+    text: `Hi {name}! 👋\n\nAapki skin ke liye *FREE Expert Consultation* available hai! 🌿\n\n✅ Personalized skin analysis\n✅ Custom routine\n✅ 1-on-1 specialist session\n\n📲 Book karo: rabtnaturals.com/consultation\nYa reply karein "BOOK" 👇\n\n~{specialist} 🌿`,
   },
-  followup_14day: {
-    label: '📊 14-Day Progress',
-    category: 'Follow Up',
-    color: 'var(--blue)',
-    text: `Hi {name}! 🌿\n\n2 weeks into your Rabt Naturals journey! 🎉\n\nYou should start seeing:\n✨ More even skin tone\n✨ Better hydration\n✨ Natural glow\n\n📸 Take a selfie and compare!\n\nStill have concerns? Reply anytime!\n~Rabt Naturals 🌿`,
-  },
-  followup_30day: {
-    label: '🎯 30-Day Review',
-    category: 'Follow Up',
+
+  // ── Consultation Journey ──
+  consultation_booked_join: {
+    label: '📅 Consultation Booked + Join Link',
+    category: 'Consultation',
     color: 'var(--gold)',
-    text: `Hi {name}! 🌟\n\n30 DAYS of consistent skincare! You're amazing! 🎉\n\n⭐ Rate your results and get 15% off!\nCode: RABT30 at rabtnaturals.com/shop\n\nThank you for trusting Rabt Naturals! 🌿`,
+    needsLink: 'joinLink',
+    text: `Hi {name}! 🎉\n\nAapki skin consultation confirm ho gayi hai!\n\n👩‍⚕️ *Specialist:* {specialist}\n\n*Video call join karne ke liye:*\n👉 {joinLink}\n\n⚠️ Join ke liye rabtnaturals.com pe login karein.\n\nKoi sawaal? Reply karein! 💚\n~Rabt Naturals 🌿`,
   },
   consultation_reminder: {
     label: '⏰ Consultation Reminder',
     category: 'Consultation',
     color: 'var(--orange)',
-    text: `Hi {name}! ⏰\n\nYour skin consultation is coming up! 🌿\n\nQuick checklist:\n✅ Clean face ready?\n✅ Good lighting?\n✅ Skin concerns noted?\n\nSee you soon! 🌿\n~{specialist}`,
+    needsLink: 'joinLink',
+    text: `Hi {name}! ⏰\n\n*Aapki consultation aaj/kal hai!* 🌿\n\n✅ Saaf chehra tayar karein\n✅ Achhi lighting wali jagah chuno\n✅ Skin concerns note kar lein\n\n*Join link:*\n👉 {joinLink}\n\nSee you soon! 🌿\n~{specialist}`,
   },
-  purchase_reminder: {
-    label: '🛒 Complete Your Purchase',
-    category: 'Lead',
+
+  // ── No Show Sequence ──
+  no_show_1: {
+    label: '😔 No Show — Day 1',
+    category: 'No Show (1/5)',
+    color: 'var(--red)',
+    text: `Hi {name}! 🌿\n\nAaj aapki consultation miss ho gayi — koi baat nahi!\n\nDobara schedule karein:\n👉 rabtnaturals.com/consultation\n\nYa reply karein — {specialist} aapke liye available hai! 💚\n~Rabt Naturals`,
+  },
+  no_show_2: {
+    label: '😔 No Show — Day 3',
+    category: 'No Show (2/5)',
+    color: 'var(--red)',
+    text: `Hi {name}! 👋\n\n{specialist} aapka intezaar kar rahi hai! 🌿\n\nAapki skin consultation slot abhi bhi available hai.\n\nKab suit karega? Reply karein ya book karein:\n👉 rabtnaturals.com/consultation\n\n~Rabt Naturals 🌿`,
+  },
+  no_show_3: {
+    label: '😔 No Show — Day 5',
+    category: 'No Show (3/5)',
+    color: 'var(--red)',
+    text: `Hi {name}! 🌿\n\nAapki FREE consultation slot abhi bhi reserve hai.\n\nSkin concerns akele solve karna mushkil hota hai — isliye hum hain! 💚\n\nEk baar zaroor try karein:\n📲 rabtnaturals.com/consultation\n\n~{specialist}, Rabt Naturals`,
+  },
+  no_show_4: {
+    label: '😔 No Show — Day 7',
+    category: 'No Show (4/5)',
+    color: 'var(--red)',
+    text: `Hi {name}!\n\n*Special priority slot* sirf aapke liye! 🌿\n\nIss hafte mein book karein aur paayein:\n🎁 *Free skin assessment report*\n\n📅 rabtnaturals.com/consultation\n\n~Rabt Naturals 💚`,
+  },
+  no_show_5: {
+    label: '😔 No Show — Day 10 (Final)',
+    category: 'No Show (5/5)',
+    color: 'var(--red)',
+    text: `Hi {name}! 🌿\n\nYeh hamara last message hai consultation ke baare mein.\n\nJab bhi ready hon — hum yahaan hain:\n🔗 rabtnaturals.com/consultation\n\nAapki skin hamesha better ho sakti hai! 💚\n~Rabt Naturals`,
+  },
+
+  // ── Post Consultation ──
+  consultation_complete: {
+    label: '✅ Consultation Done — Skin Profile',
+    category: 'Post Consultation',
     color: 'var(--green)',
-    text: `Hi {name}! 🌿\n\nAapki skin ke liye specially curated routine ready hai! 🌿\n\n🛒 Abhi order karo: rabtnaturals.com/shop\n🎁 15% off first order: *RABT15*\n✨ Free delivery above ₹999\n\nKoi sawaal? Reply karein! 💚\n~{specialist} 🌿`,
+    needsLink: 'skinProfileLink',
+    text: `Hi {name}! 🎉\n\nAapki skin consultation complete ho gayi! 🌿\n\n*Aapka Skin Profile ready hai:*\n👉 {skinProfileLink}\n\nAapki personalized routine:\n🌅 Morning: Cleanser → Toner → Serum → Moisturizer → SPF\n🌙 Night: Cleanser → Serum → Moisturizer\n\n4-6 weeks consistently follow karein — results zaroor aayenge! ✨\n\nKoi sawaal? Reply karein! 💚\n~{specialist}, Rabt Naturals 🌿`,
   },
-  book_consultation: {
-    label: '📅 Book Consultancy',
-    category: 'Lead',
+
+  // ── Purchase Sequence ──
+  routine_not_purchased_1: {
+    label: '🛒 Routine Ready — Day 1',
+    category: 'Purchase Sequence (1/4)',
+    color: 'var(--blue)',
+    needsLink: 'routineLink',
+    text: `Hi {name}! 🌿\n\nAapki *personalized skin routine* {specialist} ne ready kar di hai! ✨\n\n*Aapke liye curated products:*\n👉 {routineLink}\n\nYe products specifically aapki skin type ke liye choose ki gayi hain!\n\n📦 Free delivery ₹999 se upar\n~Rabt Naturals 🌿`,
+  },
+  routine_not_purchased_2: {
+    label: '🛒 Routine Ready — Day 3',
+    category: 'Purchase Sequence (2/4)',
+    color: 'var(--blue)',
+    needsLink: 'routineLink',
+    text: `Hi {name}! 💚\n\nAapki routine abhi bhi wait kar rahi hai! 🌿\n\n*Kyun zaroori hai:*\n✅ {specialist} ne personally recommend kiya\n✅ Aapki skin type ke liye tested\n✅ 4-6 weeks mein visible results\n\nAbhi order karein: {routineLink}\n\n~Rabt Naturals`,
+  },
+  routine_not_purchased_3: {
+    label: '🛒 Routine Ready — Day 7 (Offer)',
+    category: 'Purchase Sequence (3/4)',
+    color: 'var(--blue)',
+    needsLink: 'routineLink',
+    text: `Hi {name}! 🎁\n\n*Special offer sirf aapke liye:*\n\n🎁 *15% off* — Code: *RABT15*\n📦 Free delivery\n🌿 Specialist support\n\n👉 {routineLink}\n\nOffer limited time ke liye! ⏰\n~{specialist}, Rabt Naturals`,
+  },
+  routine_not_purchased_4: {
+    label: '🛒 Routine Ready — Day 14 (Last)',
+    category: 'Purchase Sequence (4/4)',
+    color: 'var(--blue)',
+    needsLink: 'routineLink',
+    text: `Hi {name}! 🌿\n\nYeh aapke liye last reminder hai.\n\nAapki skin concerns ka solution aapki routine mein hai — shuru toh karein! 💪\n\n*Abhi order karein:* {routineLink}\n\n~Rabt Naturals 🌿`,
+  },
+
+  // ── Post Purchase ──
+  post_purchase_thankyou: {
+    label: '🎉 Purchase Thank You',
+    category: 'Post Purchase',
+    color: 'var(--green)',
+    text: `Hi {name}! 🎉\n\nAapka order place ho gaya! Shukriya! 🌿\n\n📦 Expected delivery: 3-5 working days\n🔍 Track: rabtnaturals.com/profile\n\nJab routine aaye — {specialist} aapko guide karenge! 💚\n~Rabt Naturals`,
+  },
+  post_purchase_education: {
+    label: '📚 Skin Education + Diet',
+    category: 'Post Purchase',
     color: 'var(--teal)',
-    text: `Hi {name}! 👋\n\nAapki skin ke liye FREE expert consultation available hai! 🌿\n\n*Kya milega:*\n✅ Personalized skin analysis\n✅ Custom routine recommendation\n✅ 1-on-1 specialist session\n\n📲 Book karo: rabtnaturals.com/consultation\nYa reply karein "BOOK" 👇\n\n~{specialist} 🌿`,
+    text: `Hi {name}! 📚\n\nWelcome to your skin journey! 🌿\n\n*Aapki Skin Type:* {skinType}\n*Main Concerns:* {concern}\n\n🧴 *Routine Tips:*\n• Subah: Cleanser → Toner → Serum → Moisturizer → SPF\n• Raat: Double cleanse → Serum → Night cream\n• Consistency = Results (4-6 weeks!)\n\n🥗 *Diet for your skin:*\n• ✅ Khao: Hara saag, fruits, omega-3\n• ✅ Paani: 3-4 litre roz\n• ❌ Avoid: Sugar, dairy, junk food\n• 😴 Neend: 7-8 ghante\n\n💡 Pillowcase har hafte badlo — bacteria skin pe aata hai!\n\nKoi sawaal? Hum yahaan hain! 💚\n~{specialist}, Rabt Naturals 🌿`,
   },
-  skin_profile_view: {
-    label: '🔬 See Your Skin Profile',
-    category: 'Lead',
+
+  // ── Ongoing ──
+  routine_morning: {
+    label: '🌅 Morning Routine',
+    category: 'Routine',
+    color: 'var(--gold)',
+    text: `Good morning {name}! ☀️\n\nAaj morning routine kiya? 🌿\n\n*AM Steps:*\n1️⃣ Cleanser\n2️⃣ Toner\n3️⃣ Serum\n4️⃣ Moisturizer\n5️⃣ Sunscreen ☀️\n\nConsistency = Results! 💪\n~{specialist} 🌿`,
+  },
+  routine_night: {
+    label: '🌙 Night Routine',
+    category: 'Routine',
     color: 'var(--purple)',
-    text: `Hi {name}! 🌿\n\nAapka *Skin Profile* ready hai! ✨\n\nApna complete skin analysis dekho:\n👉 rabtnaturals.com/skin-profile\n\nPersonalized recommendations bhi available hain! 💚\n\n~{specialist} 🌿`,
+    text: `Good night {name}! 🌙\n\nPM Routine yaad hai na? 💤\n\n1️⃣ Cleanser\n2️⃣ Toner\n3️⃣ Serum / Treatment\n4️⃣ Night Moisturizer\n\nRaat ko skin repair hoti hai — miss mat karo! ✨\n~{specialist}`,
+  },
+  followup_7day: {
+    label: '📊 7-Day Follow Up',
+    category: 'Follow Up',
+    color: 'var(--teal)',
+    text: `Hi {name}! 🌿\n\n7 din ho gaye consultation ke! Skin kaisi chal rahi hai? 😊\n\n*Reply karo:*\n1️⃣ Amazing! Results aa rahe hain\n2️⃣ Theek hai, adjust ho raha hoon\n3️⃣ Thodi help chahiye\n\nYour specialist {specialist} is here! 💚\n~Rabt Naturals 🌿`,
+  },
+  followup_14day: {
+    label: '📊 14-Day Progress',
+    category: 'Follow Up',
+    color: 'var(--blue)',
+    text: `Hi {name}! 🌿\n\n2 weeks into your Rabt Naturals journey! 🎉\n\nAb tak dikhe:\n✨ Even skin tone\n✨ Better hydration\n✨ Natural glow\n\n📸 Selfie lo aur compare karo!\n\nKoi concern? Reply anytime!\n~Rabt Naturals 🌿`,
+  },
+  followup_30day: {
+    label: '🎯 30-Day Review',
+    category: 'Follow Up',
+    color: 'var(--gold)',
+    text: `Hi {name}! 🌟\n\n30 DAYS consistent skincare — aap amazing ho! 🎉\n\n⭐ Review share karo aur pao 15% off:\nCode: *RABT30* at rabtnaturals.com\n\nThank you for trusting Rabt Naturals! 🌿`,
   },
   diet_tip: {
     label: '🥗 Diet & Lifestyle Tip',
     category: 'Routine',
     color: 'var(--green)',
-    text: `Hi {name}! 🥗\n\nWeekly skin health tip from {specialist}!\n\n🥗 Eat: Leafy greens, fruits, omega-3\n❌ Avoid: Dairy, sugar, junk food\n💧 Water: 3-4 litres daily!\n😴 Sleep: 7-8 hours minimum\n\nSkincare + Diet + Sleep = Glowing skin! ✨\n~Rabt Naturals 🌿`,
+    text: `Hi {name}! 🥗\n\nWeekly skin tip from {specialist}!\n\n🥗 Khao: Saag, fruits, omega-3 (akhrot)\n❌ Avoid: Sugar, dairy, junk food\n💧 Paani: 3-4 litre daily\n😴 Neend: 7-8 ghante\n\nSkincare + Diet + Sleep = Glowing skin! ✨\n~Rabt Naturals 🌿`,
+  },
+  skin_profile_view: {
+    label: '🔬 See Your Skin Profile',
+    category: 'Post Consultation',
+    color: 'var(--purple)',
+    needsLink: 'skinProfileLink',
+    text: `Hi {name}! 🌿\n\nAapka *Skin Profile* ready hai! ✨\n\nApna complete skin analysis dekho:\n👉 {skinProfileLink}\n\nPersonalized recommendations bhi available hain! 💚\n\n~{specialist} 🌿`,
+  },
+  purchase_reminder: {
+    label: '🛒 Complete Your Purchase',
+    category: 'Purchase Sequence (1/4)',
+    color: 'var(--green)',
+    needsLink: 'routineLink',
+    text: `Hi {name}! 🌿\n\nAapki skin ke liye specially curated routine ready hai! 🌿\n\n👉 {routineLink}\n🎁 15% off first order: *RABT15*\n✨ Free delivery above ₹999\n\nKoi sawaal? Reply karein! 💚\n~{specialist} 🌿`,
   },
   routine_purchased: {
     label: '🛍️ Purchase Start Guide',
-    category: 'Order',
+    category: 'Post Purchase',
     color: 'var(--blue)',
-    text: `Hi {name}! 🎉\n\nThank you for your purchase from Rabt Naturals! 🌿\n\nYour routine will arrive in 3-5 days.\n\n*Your personalized routine:*\n🌅 Morning: Cleanser → Serum → Moisturizer → Sunscreen\n🌙 Night: Cleanser → Serum → Moisturizer\n\nI'll send you daily reminders! 💪\n~{specialist}`,
+    text: `Hi {name}! 🎉\n\nThank you for your purchase! 🌿\n\nYour routine arrives in 3-5 days.\n\n*Your routine:*\n🌅 Morning: Cleanser → Serum → Moisturizer → Sunscreen\n🌙 Night: Cleanser → Serum → Moisturizer\n\nDaily reminders bhejunga! 💪\n~{specialist}`,
   },
 }
 
-function fillTemplate(text: string, data: { name?: string; specialist?: string; skinType?: string }) {
+function fillTemplate(text: string, data: {
+  name?: string; specialist?: string; skinType?: string
+  concern?: string; joinLink?: string; skinProfileLink?: string; routineLink?: string
+}) {
   return text
     .replace(/\{name\}/g, data.name || 'there')
     .replace(/\{specialist\}/g, data.specialist || 'Rabt Naturals')
-    .replace(/\{skinType\}/g, data.skinType || '')
+    .replace(/\{skinType\}/g, data.skinType || 'your skin type')
+    .replace(/\{concern\}/g, data.concern || 'skin concerns')
+    .replace(/\{joinLink\}/g, data.joinLink || '[Join Link]')
+    .replace(/\{skinProfileLink\}/g, data.skinProfileLink || 'rabtnaturals.com/skin-profile')
+    .replace(/\{routineLink\}/g, data.routineLink || 'rabtnaturals.com/shop')
 }
 
 async function callWhatsAppAPI(phone: string, message: string, cfg: { apiKey: string; phoneNumberId: string }) {
@@ -151,6 +265,7 @@ function RemindersContent() {
   const [selectedTemplate, setSelectedTemplate] = useState('routine_morning')
   const [selectedPerson, setSelectedPerson]     = useState<any>(null)
   const [editedMsg, setEditedMsg]               = useState('')
+  const [extraVars, setExtraVars]               = useState({ joinLink: '', skinProfileLink: '', routineLink: '', concern: '' })
 
   // Template editing
   const [templates, setTemplates]           = useState(DEFAULT_TEMPLATES)
@@ -207,10 +322,14 @@ function RemindersContent() {
       setEditedMsg(fillTemplate(tmpl.text, {
         name: selectedPerson.name || 'there',
         specialist: mongoSpec?.name || 'Your Specialist',
-        skinType: sp?.skinType || selectedPerson.skinType || '',
+        skinType: sp?.aiExtractedData?.skinType || sp?.skinType || selectedPerson.skinType || '',
+        concern: (sp?.aiExtractedData?.skinConcerns || []).join(', ') || extraVars.concern,
+        joinLink: extraVars.joinLink,
+        skinProfileLink: extraVars.skinProfileLink || (sp ? `rabtnaturals.com/skin-profile` : ''),
+        routineLink: extraVars.routineLink,
       }))
     }
-  }, [selectedPerson, selectedTemplate, templates])
+  }, [selectedPerson, selectedTemplate, templates, extraVars])
 
   async function loadConfig() {
     const [waCfgRow, bridgeCfgRow, tmplRow] = await Promise.all([
@@ -488,12 +607,50 @@ function RemindersContent() {
             Select a person to preview message
           </div>
         )}
+        {/* Dynamic link fields — shown only when template needs them */}
+        {selectedTemplate && (() => {
+          const tmpl = templates[selectedTemplate as keyof typeof templates] as any
+          if (!tmpl?.needsLink) return null
+          const fields: { key: keyof typeof extraVars; label: string; placeholder: string }[] = [
+            { key: 'joinLink',         label: '🔗 Join Link',          placeholder: 'https://rabtnaturals.com/video-session/...' },
+            { key: 'skinProfileLink',  label: '🔬 Skin Profile Link',  placeholder: 'rabtnaturals.com/skin-profile' },
+            { key: 'routineLink',      label: '🛒 Routine/Shop Link',  placeholder: 'rabtnaturals.com/shop' },
+          ]
+          const needed = fields.filter(f => tmpl.text?.includes('{' + f.key + '}'))
+          if (!needed.length) return null
+          return (
+            <div style={{ padding: '0 14px 8px', display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {needed.map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 3 }}>{f.label}</label>
+                  <input
+                    value={extraVars[f.key]}
+                    onChange={e => setExtraVars(v => ({ ...v, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    style={{ ...inp, marginBottom: 0, fontSize: 11.5, fontFamily: 'DM Mono', padding: '7px 10px' }}
+                  />
+                </div>
+              ))}
+              {tmpl.text?.includes('{concern}') && (
+                <div>
+                  <label style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.07em', display: 'block', marginBottom: 3 }}>🎯 Skin Concern (if not in profile)</label>
+                  <input
+                    value={extraVars.concern}
+                    onChange={e => setExtraVars(v => ({ ...v, concern: e.target.value }))}
+                    placeholder="e.g. acne, pigmentation, dryness"
+                    style={{ ...inp, marginBottom: 0, fontSize: 12 }}
+                  />
+                </div>
+              )}
+            </div>
+          )
+        })()}
         <div style={{ padding: 14 }}>
           <textarea
             value={editedMsg}
             onChange={e => setEditedMsg(e.target.value)}
             placeholder="Select person + template to generate message. You can edit before sending."
-            style={{ ...inp, width: '100%', height: 260, resize: 'vertical', fontSize: 12, lineHeight: 1.7, fontFamily: 'system-ui', padding: '12px 14px' }}
+            style={{ ...inp, width: '100%', height: 240, resize: 'vertical', fontSize: 12, lineHeight: 1.7, fontFamily: 'system-ui', padding: '12px 14px' }}
           />
         </div>
         <div style={{ padding: '0 12px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>

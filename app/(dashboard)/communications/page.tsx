@@ -10,108 +10,354 @@ const CHANNELS = [
 ]
 
 const TRIGGER_TYPES = [
-  { id: 'post_purchase',       label: 'Post Purchase',         icon: '🛍️',  desc: 'Order place hone ke baad' },
-  { id: 'consultation_booked', label: 'Consultation Booked',   icon: '📅',  desc: 'Consultation schedule hone pe' },
-  { id: 'consultation_reminder', label: 'Consultation Reminder', icon: '⏰', desc: '1 day pehle reminder' },
-  { id: 'routine_morning',     label: 'Morning Routine',       icon: '🌅',  desc: 'Daily morning reminder' },
-  { id: 'routine_night',       label: 'Night Routine',         icon: '🌙',  desc: 'Daily night reminder' },
-  { id: 'skin_education',      label: 'Skin Education',        icon: '📚',  desc: 'Skin tips & education' },
-  { id: 'reorder_reminder',    label: 'Reorder Reminder',      icon: '🔄',  desc: '30 days baad product reorder' },
-  { id: 'feedback_request',    label: 'Feedback Request',      icon: '⭐',  desc: 'Delivery ke 3 din baad' },
-  { id: 'user_login',          label: 'New User Login',        icon: '👋',  desc: 'Pehli baar login pe' },
-  { id: 'user_login',          label: 'New User Login',        icon: '👋',  desc: 'Pehli baar login pe welcome' },
-  { id: 'consultation_complete', label: 'Consultation Complete',  icon: '✅',  desc: 'Skin profile + PDF link bhejo' },
-  { id: 'no_booking',           label: 'Not Booked Reminder',   icon: '📅',  desc: 'Login kiya, consultation nahi ki' },
-  { id: 'cart_abandoned',       label: 'Cart Abandoned',         icon: '🛒',  desc: 'Cart mein product add kiya, order nahi' },
-  { id: 'birthday',             label: 'Birthday Wish',          icon: '🎂',  desc: 'Birthday pe special offer' },
-  { id: 'win_back',             label: 'Win Back',               icon: '💝',  desc: '30 din se koi order nahi' },
-  { id: 'custom',               label: 'Custom Campaign',        icon: '📢',  desc: 'Manual broadcast' },
+  // ── Skin Analysis ──
+  { id: 'skin_analysis_pending', label: 'Skin Analysis Pending', icon: '🔬', desc: 'Analysis nahi ki — "Do it now" with link', group: 'Pre-Consultation' },
+  // ── Consultation Journey ──
+  { id: 'consultation_booked',   label: 'Consultation Booked + Join Link', icon: '📅', desc: 'Booking confirm + video join link bhejo', group: 'Consultation' },
+  { id: 'consultation_reminder', label: 'Consultation Reminder (1 day)',   icon: '⏰', desc: '1 din pehle reminder', group: 'Consultation' },
+  { id: 'consultation_no_show_1',label: 'No Show — Day 1',    icon: '😔', desc: 'Missed consultation — soft reschedule', group: 'No Show Sequence (4-5x)' },
+  { id: 'consultation_no_show_2',label: 'No Show — Day 3',    icon: '😔', desc: 'Follow up reschedule Day 3', group: 'No Show Sequence (4-5x)' },
+  { id: 'consultation_no_show_3',label: 'No Show — Day 5',    icon: '😔', desc: 'Urgency + free slot offer Day 5', group: 'No Show Sequence (4-5x)' },
+  { id: 'consultation_no_show_4',label: 'No Show — Day 7',    icon: '😔', desc: 'Last chance + special offer Day 7', group: 'No Show Sequence (4-5x)' },
+  { id: 'consultation_no_show_5',label: 'No Show — Day 10',   icon: '😔', desc: 'Final message Day 10', group: 'No Show Sequence (4-5x)' },
+  { id: 'consultation_complete', label: 'Consultation Done — Skin Profile', icon: '✅', desc: 'Skin profile + PDF + profile link bhejo', group: 'Post Consultation' },
+  // ── Purchase Journey ──
+  { id: 'routine_not_purchased_1',label: 'Routine Ready — Day 1',  icon: '🛒', desc: 'Routine save hai, purchase karo', group: 'Purchase Sequence (until bought)' },
+  { id: 'routine_not_purchased_2',label: 'Routine Ready — Day 3',  icon: '🛒', desc: 'Benefits remind karo Day 3', group: 'Purchase Sequence (until bought)' },
+  { id: 'routine_not_purchased_3',label: 'Routine Ready — Day 7',  icon: '🛒', desc: 'Special offer ke saath Day 7', group: 'Purchase Sequence (until bought)' },
+  { id: 'routine_not_purchased_4',label: 'Routine Ready — Day 14', icon: '🛒', desc: 'Last reminder Day 14', group: 'Purchase Sequence (until bought)' },
+  { id: 'post_purchase',          label: 'Post Purchase — Thank You', icon: '🎉', desc: 'Order confirm + delivery info', group: 'Post Purchase' },
+  { id: 'post_purchase_education',label: 'Skin Education + Diet',   icon: '📚', desc: 'Skin type ke according tips + diet chart', group: 'Post Purchase' },
+  // ── Ongoing ──
+  { id: 'routine_morning',     label: 'Morning Routine Reminder', icon: '🌅', desc: 'Daily morning skincare reminder', group: 'Ongoing' },
+  { id: 'routine_night',       label: 'Night Routine Reminder',   icon: '🌙', desc: 'Daily night skincare reminder', group: 'Ongoing' },
+  { id: 'reorder_reminder',    label: 'Reorder Reminder',         icon: '🔄', desc: '30 days baad product reorder', group: 'Ongoing' },
+  { id: 'feedback_request',    label: 'Feedback Request',         icon: '⭐', desc: 'Delivery ke 3 din baad review', group: 'Ongoing' },
+  { id: 'no_booking',          label: 'Not Booked Reminder',      icon: '📆', desc: 'Login kiya, consultation nahi ki', group: 'Pre-Consultation' },
+  { id: 'user_login',          label: 'New User Welcome',         icon: '👋', desc: 'Pehli baar login pe welcome', group: 'Pre-Consultation' },
+  { id: 'cart_abandoned',      label: 'Cart Abandoned',           icon: '🛒', desc: 'Cart mein product, order nahi', group: 'Ongoing' },
+  { id: 'birthday',            label: 'Birthday Wish',            icon: '🎂', desc: 'Birthday pe special offer', group: 'Ongoing' },
+  { id: 'win_back',            label: 'Win Back',                 icon: '💝', desc: '30 din se koi order nahi', group: 'Ongoing' },
+  { id: 'custom',              label: 'Custom Campaign',          icon: '📢', desc: 'Manual broadcast', group: 'Manual' },
 ]
 
 const DEFAULT_TEMPLATES: Record<string, string> = {
-  post_purchase: `Hi {{name}}! 🎉 Aapka order #{{orderNumber}} place ho gaya hai!
 
-🌿 Rabt Naturals se purchase karne ke liye shukriya.
-📦 Expected delivery: 3-5 working days
+  // ── PRE-CONSULTATION ──────────────────────────────────────────────────────
 
-Apna order track karein: rabtnaturals.com/track
-Koi sawaal ho toh reply karein! 💚`,
+  skin_analysis_pending: `Hi {{name}}! 👋
 
-  consultation_booked: `Hi {{name}}! 📅
+Aapne abhi tak apni free *Skin Analysis* nahi ki! 🔬
 
-Aapki skin consultation schedule ho gayi hai!
-🗓️ Date: {{date}}
-⏰ Time: {{time}}
-👩‍⚕️ Specialist: {{specialist}}
+Sirf 2 minute mein jaano:
+✅ Apna skin type (oily/dry/combo/sensitive)
+✅ Main skin concerns
+✅ Personalized routine recommendation
 
-Kuch bhi puchna ho toh reply karein.
+👉 *Abhi karo:* rabtnaturals.com/skin-analysis
+
+Bilkul free hai — koi signup nahi chahiye! 🌿
+~Rabt Naturals`,
+
+  no_booking: `Hi {{name}}! 🌿
+
+Aapne skin analysis complete ki — ab ek step aur!
+
+*FREE Expert Skin Consultation* available hai aapke liye:
+✅ 1-on-1 specialist session
+✅ Personalized skin routine
+✅ Product recommendations
+
+📲 Book karo: rabtnaturals.com/consultation
+Ya reply karein "BOOK" 👇
+
+~{{specialist}} 🌿`,
+
+  user_login: `Hi {{name}}! 👋 Welcome to Rabt Naturals! 🌿
+
+Aapka account ready hai!
+
+*Shuru karein yahan se:*
+🔬 Skin Analysis → rabtnaturals.com/skin-analysis
+📅 Consultation Book → rabtnaturals.com/consultation
+
+Koi bhi sawaal ho — reply karein! 💚
+~Rabt Naturals`,
+
+  // ── CONSULTATION JOURNEY ────────────────────────────────────────────────
+
+  consultation_booked: `Hi {{name}}! 🎉
+
+Aapki skin consultation confirm ho gayi hai!
+
+🗓️ *Date:* {{date}}
+⏰ *Time:* {{time}}
+👩‍⚕️ *Specialist:* {{specialist}}
+
+*Video call join karne ke liye:*
+👉 {{joinLink}}
+
+⚠️ Join ke liye rabtnaturals.com pe apne account se login zaroor karein.
+
+Koi bhi sawaal ho toh reply karein! 💚
 ~Rabt Naturals 🌿`,
 
-  consultation_reminder: `Hi {{name}}! ⏰ Reminder
+  consultation_reminder: `Hi {{name}}! ⏰
 
-Kal aapki skin consultation hai!
-🗓️ {{date}} ko {{time}} pe
+*Kal aapki skin consultation hai!*
+
+🗓️ {{date}} — ⏰ {{time}}
 👩‍⚕️ {{specialist}} ke saath
 
-Ready rahein — apni skin concerns list banaye rakhein! 🌿
+*Tayari ke liye:*
+✅ Saaf chehra (no makeup)
+✅ Achhi lighting wali jagah
+✅ Apni skin concerns note kar lein
+
+Join link: {{joinLink}}
+
+See you tomorrow! 🌿
 ~Rabt Naturals`,
+
+  consultation_no_show_1: `Hi {{name}}! 🌿
+
+Aaj aapki consultation miss ho gayi — koi baat nahi!
+
+Apni skin ke liye specialist se baat karna bohot zaroori hai. Dobara schedule karein:
+👉 rabtnaturals.com/consultation
+
+Ya reply karein — {{specialist}} aapke liye available hai! 💚
+~Rabt Naturals`,
+
+  consultation_no_show_2: `Hi {{name}}! 👋
+
+{{specialist}} aapka intezaar kar rahi hai! 🌿
+
+Aapki skin ke liye personalized consultation abhi bhi available hai.
+
+*Kab suit karega?* Waqt batayein ya yahan book karein:
+👉 rabtnaturals.com/consultation
+
+~Rabt Naturals 🌿`,
+
+  consultation_no_show_3: `Hi {{name}}! 🌿
+
+Skin problems akele solve karna mushkil hai — isliye hum hain! 💚
+
+Aapki *FREE consultation* slot abhi bhi reserve hai.
+
+Ek baar zaroor try karein:
+📲 rabtnaturals.com/consultation
+
+~{{specialist}}, Rabt Naturals`,
+
+  consultation_no_show_4: `Hi {{name}}!
+
+Ek last invite 🌿
+
+Aapke liye *special priority slot* available hai — iss hafte ke andar book karein aur *free skin assessment report* paayein!
+
+📅 rabtnaturals.com/consultation
+
+~Rabt Naturals 💚`,
+
+  consultation_no_show_5: `Hi {{name}}! 🌿
+
+Yeh hamara final message hai consultation ke baare mein.
+
+Jab bhi ready hon — hum yahaan hain:
+🔗 rabtnaturals.com/consultation
+
+Aapki skin hamesha better ho sakti hai — Rabt Naturals ke saath! 💚
+~Rabt Naturals`,
+
+  consultation_complete: `Hi {{name}}! 🎉
+
+Aapki skin consultation complete ho gayi! Bohot accha kiya! 🌿
+
+*Aapka Skin Profile ready hai:*
+👉 {{skinProfileLink}}
+
+*Aapki personalized routine:*
+🌅 Morning: Cleanser → Toner → Serum → Moisturizer → Sunscreen
+🌙 Night: Cleanser → Serum → Moisturizer
+
+{{specialist}} ne aapki skin carefully analyze ki hai. Routine consistently follow karein — 4-6 weeks mein results nazar aayenge! ✨
+
+Koi bhi sawaal ho toh reply karein! 💚
+~Rabt Naturals 🌿`,
+
+  // ── PURCHASE JOURNEY ────────────────────────────────────────────────────
+
+  routine_not_purchased_1: `Hi {{name}}! 🌿
+
+Aapki *personalized skin routine* {{specialist}} ne ready kar di hai! ✨
+
+*Aapke liye curated products:*
+👉 {{routineLink}}
+
+Ye products specifically aapki skin type ke liye choose ki gayi hain — dusri cheez se replace mat karo!
+
+*Free delivery ₹999 se upar* 📦
+~Rabt Naturals 🌿`,
+
+  routine_not_purchased_2: `Hi {{name}}! 💚
+
+3 din ho gaye — aapki routine abhi bhi wait kar rahi hai! 🌿
+
+*Kyun zaroori hai?*
+✅ {{specialist}} ne personally recommend kiya
+✅ Aapki skin type ke liye tested
+✅ 4-6 weeks mein visible results
+
+Abhi order karein: {{routineLink}}
+
+~Rabt Naturals`,
+
+  routine_not_purchased_3: `Hi {{name}}! 🎁
+
+*Special offer sirf aapke liye:*
+
+Apni Rabt Naturals routine order karein aur paayein:
+🎁 *15% off* — Code: *RABT15*
+📦 Free delivery
+🌿 Specialist support
+
+👉 {{routineLink}}
+
+Offer limited time ke liye hai! ⏰
+~{{specialist}}, Rabt Naturals`,
+
+  routine_not_purchased_4: `Hi {{name}}! 🌿
+
+Yeh aapke liye last reminder hai.
+
+Aapki skin analysis aur consultation mein jo concerns saamne aayi thi — unka solution aapki routine mein hai.
+
+*Abhi order karein:* {{routineLink}}
+
+Skin results aapki consistency pe depend karti hai — shuru toh karein! 💪
+~Rabt Naturals 🌿`,
+
+  post_purchase: `Hi {{name}}! 🎉
+
+Aapka order place ho gaya hai! Shukriya! 🌿
+
+📦 *Order #{{orderNumber}}*
+🚚 Expected delivery: 3-5 working days
+🔍 Track: rabtnaturals.com/profile
+
+Jab routine aaye, {{specialist}} aapko guide karenge! 💚
+~Rabt Naturals`,
+
+  post_purchase_education: `Hi {{name}}! 📚
+
+Welcome to your skin journey! 🌿
+
+*Aapki Skin Type:* {{skinType}}
+*Main Concerns:* {{concern}}
+
+*Aapke liye Skin Education Tips:*
+
+🧴 *Routine:*
+• Subah: Cleanser → Toner → Serum → Moisturizer → SPF
+• Raat: Double cleanse → Serum → Night cream
+• Consistency = Results (4-6 weeks!)
+
+🥗 *Diet for your skin:*
+• ✅ Khao: Hara saag, fruits, omega-3 (akhrot, fish)
+• ✅ Paani: 3-4 litre roz
+• ❌ Avoid: Sugar, dairy, junk food, processed snacks
+• 😴 Neend: 7-8 ghante zaroor
+
+💡 *Pro tip:*
+Apna pillowcase har hafte badlo — bacteria skin pe aata hai! ✨
+
+Koi bhi sawaal? Hum yahaan hain! 💚
+~{{specialist}}, Rabt Naturals 🌿`,
+
+  // ── ONGOING ──────────────────────────────────────────────────────────────
 
   routine_morning: `Good morning {{name}}! ☀️
 
-Aaj apna morning skincare routine kiya?
-🌿 Consistency hi key hai!
+Aaj ka morning routine kiya? 🌿
 
-AM Routine Steps:
+*AM Steps:*
 1️⃣ Cleanser
 2️⃣ Toner
 3️⃣ Serum
 4️⃣ Moisturizer
-5️⃣ Sunscreen ☀️
+5️⃣ Sunscreen ☀️ (SPF skip mat karo!)
 
-Results 4-6 weeks mein nazar aayenge! 💪
+Consistency hi key hai — results aa rahe hain! 💪
 ~Rabt Naturals 🌿`,
 
   routine_night: `Good night {{name}}! 🌙
 
-PM Routine yaad hai na?
-1️⃣ Cleanser
+*PM Routine yaad hai na?*
+1️⃣ Cleanser (double cleanse if wearing makeup)
 2️⃣ Toner
-3️⃣ Serum/Treatment
+3️⃣ Serum / Treatment
 4️⃣ Night Moisturizer
 
-Raat ko skin repair hoti hai — miss mat karo! ✨
-~Rabt Naturals 🌿`,
-
-  skin_education: `Hi {{name}}! 📚
-
-Aaj ki skin tip:
-💡 {{tip}}
-
-Apni skin ke baare mein aur jaanna chahte hain?
-rabtnaturals.com pe AI skin analysis try karein!
-
+Raat ko skin repair hoti hai — iska faayda uthao! ✨
 ~Rabt Naturals 🌿`,
 
   reorder_reminder: `Hi {{name}}! 🔄
 
-Aapka {{product}} khatam hone wala hoga!
-30 din ho gaye hain purchase ke.
+Aapka *{{product}}* khatam hone wala hoga — 30 din ho gaye hain! ⏰
 
-Reorder karein aur routine maintain rakhein:
+Routine break mat karo — reorder karein:
 🛒 rabtnaturals.com
 
+Apna same routine reorder karo jaldi! 💚
 ~Rabt Naturals 🌿`,
 
   feedback_request: `Hi {{name}}! ⭐
 
-Aapka order deliver ho gaya hoga!
-Kaisi lagi hamari products?
+Delivery ho gayi hogi ab tak! Kaisi lagi hamari products? 😊
 
-Apna review share karein:
+*Apna review share karein:*
 🔗 rabtnaturals.com/review
 
-Aapka feedback hume behtar banane mein help karta hai! 💚
+Aapka feedback dusre logon ki madad karta hai — aur hume aur behtar banata hai! 💚
 ~Rabt Naturals 🌿`,
+
+  cart_abandoned: `Hi {{name}}! 🛒
+
+Aapne kuch products cart mein daale the — order complete nahi hua! 🌿
+
+*Aapka cart:* rabtnaturals.com/cart
+
+*Sirf aapke liye:* Use code *SAVE10* for 10% off!
+
+Offer kal tak valid hai! ⏰
+~Rabt Naturals`,
+
+  birthday: `Hi {{name}}! 🎂🎉
+
+Rabt Naturals ki taraf se *Happy Birthday!* 🌿
+
+Aapke liye ek special birthday gift:
+🎁 *20% off* — Code: *BDAY20*
+(Aaj ke din valid — sirf aapke liye!)
+
+Apni skin ko best gift do! 💚
+👉 rabtnaturals.com
+~Rabt Naturals 🌿`,
+
+  win_back: `Hi {{name}}! 💝
+
+Bohot dino se aapko dekha nahi! 🌿
+
+Aapki skin ka kya haal hai? 😊
+
+Wapas aao aur *15% off* paao:
+Code: *COMEBACK15*
+👉 rabtnaturals.com
+
+Aapki specialist {{specialist}} ko aapki yaad aa rahi hai! 💚
+~Rabt Naturals`,
 
   custom: `Hi {{name}}! 🌿
 
