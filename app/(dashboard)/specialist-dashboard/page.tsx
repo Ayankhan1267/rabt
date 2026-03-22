@@ -67,6 +67,7 @@ export default function SpecialistDashboard() {
   const [sessions, setSessions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const [tab, setTab] = useState<'overview' | 'consultations' | 'crm' | 'skinprofiles' | 'earnings'>('overview')
   const [patientSearch, setPatientSearch] = useState('')
   const [patientFilter, setPatientFilter] = useState<'all' | 'online' | 'offline'>('all')
@@ -113,6 +114,9 @@ export default function SpecialistDashboard() {
 
   useEffect(() => {
     setMounted(true)
+    setIsMobile(window.innerWidth < 768)
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
     loadAll()
     const channel = supabase.channel('specialist_notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, async (payload) => {
@@ -144,7 +148,7 @@ export default function SpecialistDashboard() {
       } catch {}
     }, 30000)
 
-    return () => { channel.unsubscribe(); clearInterval(interval) }
+    return () => { channel.unsubscribe(); clearInterval(interval); window.removeEventListener('resize', onResize) }
   }, [])
 
   async function loadAll() {
@@ -386,6 +390,8 @@ export default function SpecialistDashboard() {
           type: 'consultation',
           is_read: false,
         })
+        // Auto-sync CRM
+        await syncLeadStage(c, 'consultation_accepted')
         loadAll()
       } else {
         toast.error(data.error || 'Failed to accept')
@@ -408,6 +414,33 @@ export default function SpecialistDashboard() {
     }
     toast.success('Rejected!')
     loadAll()
+  }
+
+  // Auto-sync CRM lead stage when consultation status changes
+  async function syncLeadStage(c: any, newStage: string) {
+    try {
+      const STAGE_ORDER = ['just_login','new','contacted','consultation_pending','consultation_booked','consultation_accepted','consultation_rescheduled','consultation_completed','routine_purchased','converted','consultation_cancelled','lost']
+      const userId = (c.userId || c.user?.toString() || '').replace(/[^a-zA-Z0-9]/g, '').slice(0,24)
+      const phone = c.phone || ''
+      if (!userId && !phone) return
+      // Build OR filter
+      let query = supabase.from('leads').select('id,stage')
+      if (userId && phone) {
+        query = query.or(`mongo_user_id.eq.${userId},phone.eq.${phone}`)
+      } else if (userId) {
+        query = query.eq('mongo_user_id', userId)
+      } else {
+        query = query.eq('phone', phone)
+      }
+      const { data: matchLeads } = await query.limit(1)
+      if (!matchLeads?.length) return
+      const lead = matchLeads[0]
+      const currentIdx = STAGE_ORDER.indexOf(lead.stage)
+      const newIdx = STAGE_ORDER.indexOf(newStage)
+      if (newIdx > currentIdx) {
+        await supabase.from('leads').update({ stage: newStage, updated_at: new Date().toISOString() }).eq('id', lead.id)
+      }
+    } catch {}
   }
 
   async function confirmReschedule() {
@@ -442,7 +475,12 @@ export default function SpecialistDashboard() {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed', completedAt: new Date() })
       })
-      if (res.ok) { toast.success('Consultation completed! \uD83C\uDF89'); setSelectedCons(null); loadAll() }
+      if (res.ok) {
+        await syncLeadStage(c, 'consultation_completed')
+        toast.success('Consultation completed! \uD83C\uDF89')
+        setSelectedCons(null)
+        loadAll()
+      }
       else toast.error('Failed')
     } catch { toast.error('Error') }
   }
@@ -696,7 +734,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
       </div>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
         {[
           { label: 'Total Patients', value: allMyPatients.length, color: 'var(--blue)' },
           { label: 'Online', value: allMyPatients.filter(p => p.source === 'online').length, color: 'var(--teal)' },
@@ -711,7 +749,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 20, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
         {[
           { id: 'overview', label: 'Overview' },
           { id: 'consultations', label: 'Consultations' },
@@ -720,7 +758,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           { id: 'earnings', label: 'Earnings' },
         ].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as any)}
-            style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: tab === t.id ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: tab === t.id ? 'var(--gold)' : 'var(--mu)', border: '1px solid ' + (tab === t.id ? 'rgba(212,168,83,0.3)' : 'var(--b1)') }}>
+            style={{ padding: '8px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: tab === t.id ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: tab === t.id ? 'var(--gold)' : 'var(--mu)', border: '1px solid ' + (tab === t.id ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), whiteSpace: 'nowrap', flexShrink: 0 }}>
             {t.label}
           </button>
         ))}
@@ -734,13 +772,13 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
         <>
           {/* OVERVIEW */}
           {tab === 'overview' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
               {unassignedCons.length > 0 && (
                 <div style={{ gridColumn: '1/-1', background: 'var(--orL)', borderRadius: 12, padding: '16px 18px', border: '1px solid rgba(251,146,60,0.3)' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: 'var(--orange)', marginBottom: 12 }}>
-                    \uD83D\uDD14 New Consultation Requests ({unassignedCons.length}) &mdash; Website se aaye hain
+                    🔔 New Consultation Requests ({unassignedCons.length}) — Website se aaye hain
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 10 }}>
                     {unassignedCons.slice(0, 6).map((c: any, i: number) => (
                       <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '12px 14px' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>{c.fullName || c.name}</div>
@@ -822,6 +860,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
               <div className="card" style={{ gridColumn: '1/-1', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>My Patient Orders &mdash; Commission Track</div>
+                <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>{['Patient', 'Products', 'Amount', 'Status', 'Source', 'Commission'].map(h => (
@@ -859,8 +898,9 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
           {/* CONSULTATIONS TAB */}
           {tab === 'consultations' && (
-            <div style={{ display: 'grid', gridTemplateColumns: selectedCons ? '1fr 380px' : '1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: selectedCons && !isMobile ? '1fr 380px' : '1fr', gap: 14 }}>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>{['Patient', 'Concern', 'Date/Time', 'Status', 'Images', 'Action'].map(h => (
@@ -903,6 +943,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     {consultations.length === 0 && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No consultations assigned yet</td></tr>}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               {/* ✅ Detail Panel with new buttons */}
@@ -1062,7 +1103,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           {/* CRM / MY PATIENTS */}
           {tab === 'crm' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
                 {[
                   { label: 'Total Patients', value: allMyPatients.length, color: 'var(--blue)' },
                   { label: 'Online', value: allMyPatients.filter(p => p.source === 'online').length, color: 'var(--teal)' },
@@ -1085,6 +1126,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 ))}
               </div>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>{['Patient', 'Skin Type / Concerns', 'Consults', 'Orders', 'Spent', 'Source', 'Actions'].map(h => (
@@ -1149,6 +1191,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     {filteredPatients.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No patients found</td></tr>}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -1163,7 +1206,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               {mySkinProfiles.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 60, color: 'var(--mu)', fontSize: 13 }}>No skin profiles yet</div>
               ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)', gap: 14 }}>
                   {mySkinProfiles.map((p, i) => (
                     <div key={i} className="card">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
@@ -1217,7 +1260,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           {/* EARNINGS */}
           {tab === 'earnings' && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: 14, marginBottom: 20 }}>
                 {[
                   { label: 'Total Earned', value: 'Rs.' + totalEarnings.toLocaleString('en-IN'), sub: 'Consultation + Commission', color: 'var(--gold)', big: true },
                   { label: 'Consultation Fee', value: 'Rs.' + consultationEarnings, sub: completedCons + ' \u00D7 Rs.30', color: 'var(--teal)' },
@@ -1238,6 +1281,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     + Request Payout
                   </button>
                 </div>
+                <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>{['Payout #', 'Amount', 'UPI ID', 'Requested', 'Status'].map(h => (
@@ -1263,6 +1307,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     )}
                   </tbody>
                 </table>
+                </div>
               </div>
             </div>
           )}
@@ -1358,7 +1403,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               {posStep === 'analysis' && aiAnalysis && (
                 <div style={{ maxWidth: 600, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>AI Skin Analysis Results</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
                     {[{ l: 'Skin Type', v: aiAnalysis.skinType }, { l: 'Skin Tone', v: aiAnalysis.skinTone }, { l: 'Condition', v: aiAnalysis.skinCondition }].map((item, i) => (
                       <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', textAlign: 'center' }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 6 }}>{item.l}</div>
@@ -1405,10 +1450,10 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </div>
               )}
               {posStep === 'products' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, height: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 320px', gap: 20, height: '100%' }}>
                   <div>
                     <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>Select Products ({products.length})</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3,1fr)', gap: 10 }}>
                       {products.map((p: any, i: number) => {
                         const img = getProductImg(p)
                         const price = getProductPrice(p)

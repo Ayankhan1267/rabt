@@ -104,6 +104,40 @@ export default function CRMPage() {
     } else {
       setLeads(all)
     }
+    // Auto-detect purchases from MongoDB and update leads
+    autoDetectPurchases()
+  }
+
+  async function autoDetectPurchases() {
+    const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
+    if (!url) return
+    try {
+      const ordRes = await fetch(url + '/api/orders').then(r => r.ok ? r.json() : [])
+      const orders = Array.isArray(ordRes) ? ordRes : []
+      const STAGE_ORDER = ['just_login','new','contacted','consultation_pending','consultation_booked','consultation_accepted','consultation_rescheduled','consultation_completed','routine_purchased','converted','consultation_cancelled','lost']
+      const purchasedIdx = STAGE_ORDER.indexOf('routine_purchased')
+      // Collect phones of customers who ordered
+      const purchasedPhones = [...new Set(
+        orders
+          .filter((o: any) => !['cancelled','canceled','rto','returned'].includes((o.orderStatus || o.status || '').toLowerCase()))
+          .map((o: any) => (o.customerPhone || '').replace(/[^0-9]/g, ''))
+          .filter((p: string) => p.length >= 10)
+      )] as string[]
+      if (purchasedPhones.length === 0) return
+      // Find leads that have these phones but haven't been marked as purchased yet
+      const { data: leadsToUpdate } = await supabase.from('leads')
+        .select('id,stage,phone')
+        .in('phone', purchasedPhones)
+        .not('stage', 'in', '("routine_purchased","converted","lost")')
+      if (!leadsToUpdate?.length) return
+      // Only upgrade — never downgrade
+      for (const lead of leadsToUpdate) {
+        const currentIdx = STAGE_ORDER.indexOf(lead.stage)
+        if (purchasedIdx > currentIdx) {
+          await supabase.from('leads').update({ stage: 'routine_purchased' }).eq('id', lead.id)
+        }
+      }
+    } catch {}
   }
 
   async function autoSync() {

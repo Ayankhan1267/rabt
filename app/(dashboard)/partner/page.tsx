@@ -16,6 +16,7 @@ const getApiUrl = () =>
   'https://rabt-api.onrender.com'
 
 export default function PartnerPortalPage() {
+  const [isMobile, setIsMobile] = useState(false)
   const [view, setView]                   = useState<'dashboard'|'new-order'|'customer-detail'|'withdraw'>('dashboard')
   const [step, setStep]                   = useState(0)
   const [mounted, setMounted]             = useState(false)
@@ -59,7 +60,14 @@ export default function PartnerPortalPage() {
   const [payment, setPayment]         = useState<'cod'|'online'>('cod')
   const [orderResult, setOrderResult] = useState<any>(null)
 
-  useEffect(() => { setMounted(true); loadAll() }, [])
+  useEffect(() => {
+    setMounted(true)
+    setIsMobile(window.innerWidth < 768)
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    loadAll()
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   async function loadAll() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -343,10 +351,10 @@ export default function PartnerPortalPage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>🌿 Sales Partner <span style={{ color: 'var(--gold)' }}>Portal</span></h1>
           {partner && <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{partner.name} · {partner.commission_pct}% commission · {specialists.length} specialists</p>}
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { setView('dashboard'); setSelectedCustomer(null) }} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: view==='dashboard'?'var(--gL)':'rgba(255,255,255,0.05)', color: view==='dashboard'?'var(--gold)':'var(--mu2)', border: '1px solid '+(view==='dashboard'?'rgba(212,168,83,0.3)':'var(--b1)') }}>📊 Dashboard</button>
-          <button onClick={() => setView('withdraw')} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: view==='withdraw'?'var(--grL)':'rgba(255,255,255,0.05)', color: view==='withdraw'?'var(--green)':'var(--mu2)', border: '1px solid '+(view==='withdraw'?'rgba(34,197,94,.3)':'var(--b1)') }}>💸 Withdraw</button>
-          <button onClick={() => { setView('new-order'); setStep(1) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Order</button>
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
+          <button onClick={() => { setView('dashboard'); setSelectedCustomer(null) }} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: view==='dashboard'?'var(--gL)':'rgba(255,255,255,0.05)', color: view==='dashboard'?'var(--gold)':'var(--mu2)', border: '1px solid '+(view==='dashboard'?'rgba(212,168,83,0.3)':'var(--b1)'), whiteSpace: 'nowrap', flexShrink: 0 }}>📊 Dashboard</button>
+          <button onClick={() => setView('withdraw')} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: view==='withdraw'?'var(--grL)':'rgba(255,255,255,0.05)', color: view==='withdraw'?'var(--green)':'var(--mu2)', border: '1px solid '+(view==='withdraw'?'rgba(34,197,94,.3)':'var(--b1)'), whiteSpace: 'nowrap', flexShrink: 0 }}>💸 Withdraw</button>
+          <button onClick={() => { setView('new-order'); setStep(1) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap', flexShrink: 0 }}>+ New Order</button>
         </div>
       </div>
 
@@ -589,6 +597,7 @@ export default function PartnerPortalPage() {
           </div>
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Order History</div>
+            <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr>{['Date','Order ID','Amount','Commission','Status','Actions'].map(h => (
@@ -613,6 +622,7 @@ export default function PartnerPortalPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       )}
@@ -651,7 +661,7 @@ export default function PartnerPortalPage() {
               </div>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Address</label>
               <input value={customer.address} onChange={e=>setCustomer(p=>({...p,address:e.target.value}))} placeholder="House/Flat, Street, Colony" style={inp} />
-              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 {[{k:'city',l:'City',p:'Indore'},{k:'state',l:'State',p:'MP'},{k:'pincode',l:'Pincode',p:'452001'}].map(f=>(
                   <div key={f.k}>
                     <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>{f.l}</label>
@@ -752,7 +762,7 @@ export default function PartnerPortalPage() {
           {/* STEP 2 RESULTS */}
           {step === 2 && aiAnalysis && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 <div className="card">
                   <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14 }}>
                     {photoPreview && <img src={photoPreview} alt="Customer" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid var(--teal)', flexShrink: 0 }} />}
@@ -784,7 +794,7 @@ export default function PartnerPortalPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
                 {[{title:'🌅 Morning Routine',routine:aiAnalysis.amRoutine},{title:'🌙 Night Routine',routine:aiAnalysis.pmRoutine}].map(({title,routine},i)=>(
                   <div key={i} className="card">
                     <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12 }}>{title}</div>
@@ -854,7 +864,7 @@ export default function PartnerPortalPage() {
 
           {/* STEP 3: CHECKOUT */}
           {step === 3 && (
-            <div style={{ display: 'grid', gridTemplateColumns: typeof window !== 'undefined' && window.innerWidth < 768 ? '1fr' : '1fr 400px', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 400px', gap: 16 }}>
               <div>
                 <div className="card" style={{ marginBottom: 14 }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>📦 Order Summary</div>
