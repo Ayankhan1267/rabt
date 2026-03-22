@@ -783,21 +783,21 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: 20, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 0 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>
+          <h1 style={{ fontFamily: 'Syne', fontSize: isMobile ? 20 : 22, fontWeight: 800 }}>
             Specialist <span style={{ color: 'var(--gold)' }}>Dashboard</span>
           </h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>
             {mongoSpec?.name || profile?.name || 'Specialist'} &middot; {consultations.length} consultations &middot; Rs.{totalEarnings.toLocaleString('en-IN')} earned
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
           <button onClick={() => { navigator.clipboard.writeText('https://rabtnaturals.com#book-consultation'); toast.success('Booking link copied! Share with patients 🔗') }}
-            style={{ padding: '10px 16px', background: 'rgba(26,155,160,0.1)', border: '1px solid rgba(26,155,160,0.3)', borderRadius: 10, color: 'var(--teal)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+            style={{ padding: '10px 16px', background: 'rgba(26,155,160,0.1)', border: '1px solid rgba(26,155,160,0.3)', borderRadius: 10, color: 'var(--teal)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', flex: isMobile ? 1 : 'none' }}>
             🔗 Share Booking Link
           </button>
-          <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', flex: isMobile ? 1 : 'none' }}>
             + Offline Order
           </button>
         </div>
@@ -930,14 +930,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
               <div className="card" style={{ gridColumn: '1/-1', padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>My Patient Orders &mdash; Commission Track</div>
-                <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>{['Patient', 'Products', 'Amount', 'Status', 'Tracking', 'Commission'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)' }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
                     {myPatientOrders.slice(0, 20).map((o, i) => {
                       const status = (o.orderStatus || o.status || '').toLowerCase()
                       const isDelivered = status === 'delivered'
@@ -945,92 +939,160 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       const awb = o.awbNumber || o.awb_code || o.tracking_id || ''
                       const courier = o.courierName || o.courier_name || o.courier || ''
                       return (
-                        <tr key={i} style={{ opacity: isCancelled ? 0.5 : 1 }}>
-                          <td style={{ padding: '9px 12px', fontSize: 12.5, fontWeight: 500 }}>{o.customerName || o.customer_name || '-'}</td>
-                          <td style={{ padding: '9px 12px', fontSize: 11.5, color: 'var(--mu2)', maxWidth: 180 }}>
-                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.products || o.product || o.items?.[0]?.name || '-'}</div>
-                          </td>
-                          <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700 }}>Rs.{o.amount}</td>
-                          <td style={{ padding: '9px 12px' }}>
-                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize' }}>{status}</span>
-                          </td>
-                          <td style={{ padding: '9px 12px' }}>
-                            {awb ? (
-                              <div>
-                                <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</div>
-                                {courier && <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{courier}</div>}
-                                <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
-                                  style={{ fontSize: 9, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>Track ↗</a>
-                              </div>
-                            ) : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
-                          </td>
-                          <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)', fontSize: 12 }}>
-                            {isCancelled ? '-' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12)}
-                          </td>
-                        </tr>
+                        <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', opacity: isCancelled ? 0.6 : 1 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{o.customerName || o.customer_name || '-'}</div>
+                            <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize', flexShrink: 0, marginLeft: 8 }}>{status}</span>
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--mu2)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.products || o.product || o.items?.[0]?.name || '-'}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 13 }}>Rs.{o.amount}</div>
+                            <div style={{ fontFamily: 'DM Mono', fontWeight: 700, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)', fontSize: 12 }}>
+                              {isCancelled ? '-' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12)}
+                            </div>
+                          </div>
+                          {awb && (
+                            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</div>
+                              {courier && <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{courier}</div>}
+                              <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
+                                style={{ fontSize: 9, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>Track ↗</a>
+                            </div>
+                          )}
+                        </div>
                       )
                     })}
-                    {myPatientOrders.length === 0 && <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No patient orders yet</td></tr>}
-                  </tbody>
-                </table>
+                    {myPatientOrders.length === 0 && <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No patient orders yet</div>}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>{['Patient', 'Products', 'Amount', 'Status', 'Tracking', 'Commission'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)' }}>{h}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {myPatientOrders.slice(0, 20).map((o, i) => {
+                        const status = (o.orderStatus || o.status || '').toLowerCase()
+                        const isDelivered = status === 'delivered'
+                        const isCancelled = ['cancelled', 'canceled'].includes(status)
+                        const awb = o.awbNumber || o.awb_code || o.tracking_id || ''
+                        const courier = o.courierName || o.courier_name || o.courier || ''
+                        return (
+                          <tr key={i} style={{ opacity: isCancelled ? 0.5 : 1 }}>
+                            <td style={{ padding: '9px 12px', fontSize: 12.5, fontWeight: 500 }}>{o.customerName || o.customer_name || '-'}</td>
+                            <td style={{ padding: '9px 12px', fontSize: 11.5, color: 'var(--mu2)', maxWidth: 180 }}>
+                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.products || o.product || o.items?.[0]?.name || '-'}</div>
+                            </td>
+                            <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700 }}>Rs.{o.amount}</td>
+                            <td style={{ padding: '9px 12px' }}>
+                              <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize' }}>{status}</span>
+                            </td>
+                            <td style={{ padding: '9px 12px' }}>
+                              {awb ? (
+                                <div>
+                                  <div style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</div>
+                                  {courier && <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{courier}</div>}
+                                  <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
+                                    style={{ fontSize: 9, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>Track ↗</a>
+                                </div>
+                              ) : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
+                            </td>
+                            <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--mu)' : 'var(--orange)', fontSize: 12 }}>
+                              {isCancelled ? '-' : (isDelivered ? '+' : 'Pending ') + 'Rs.' + Math.round(o.amount * 0.12)}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                      {myPatientOrders.length === 0 && <tr><td colSpan={6} style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No patient orders yet</td></tr>}
+                    </tbody>
+                  </table>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
           )}
 
           {/* CONSULTATIONS TAB */}
           {tab === 'consultations' && (
             <div style={{ display: 'grid', gridTemplateColumns: selectedCons && !isMobile ? '1fr 380px' : '1fr', gap: 14 }}>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>{['Patient', 'Concern', 'Date/Time', 'Status', 'Images', 'Action'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
                     {consultations.map((c, i) => (
-                      <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
-                        <td style={{ padding: '11px 12px' }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 500 }}>{c.fullName || c.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Age {c.age || '-'}</div>
-                        </td>
-                        <td style={{ padding: '11px 12px', fontSize: 12, color: 'var(--mu2)', maxWidth: 150 }}>
-                          <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description || c.concern || '-'}</div>
-                        </td>
-                        <td style={{ padding: '11px 12px', fontSize: 11, color: 'var(--mu)', whiteSpace: 'nowrap' }}>
-                          {c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '-'} {c.scheduledTime}
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: STATUS_BG[c.status] || 'rgba(255,255,255,0.05)', color: STATUS_COLORS[c.status] || 'var(--mu)', textTransform: 'capitalize' }}>
+                      <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{c.fullName || c.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>Age {c.age || '-'}</div>
+                          </div>
+                          <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: STATUS_BG[c.status] || 'rgba(255,255,255,0.05)', color: STATUS_COLORS[c.status] || 'var(--mu)', textTransform: 'capitalize', flexShrink: 0, marginLeft: 8 }}>
                             {c.status}
                           </span>
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          {c.images?.length > 0 ? (
-                            <div style={{ display: 'flex', gap: 3 }}>
-                              {c.images.slice(0, 2).map((img: any, ii: number) => (
-                                <img key={ii} src={img.url} alt="" style={{ width: 26, height: 26, borderRadius: 4, objectFit: 'cover' }} />
-                              ))}
-                              {c.images.length > 2 && <span style={{ fontSize: 10, color: 'var(--mu)', alignSelf: 'center' }}>+{c.images.length - 2}</span>}
-                            </div>
-                          ) : '-'}
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <button onClick={() => setSelectedCons(selectedCons?._id === c._id ? null : c)} style={{ padding: '4px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit' }}>View</button>
-                        </td>
-                      </tr>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--mu2)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description || c.concern || '-'}</div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>
+                            {c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '-'} {c.scheduledTime}
+                          </div>
+                          <button onClick={() => setSelectedCons(selectedCons?._id === c._id ? null : c)} style={{ padding: '5px 12px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>View</button>
+                        </div>
+                      </div>
                     ))}
-                    {consultations.length === 0 && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No consultations assigned yet</td></tr>}
-                  </tbody>
-                </table>
-                </div>
+                    {consultations.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No consultations assigned yet</div>}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>{['Patient', 'Concern', 'Date/Time', 'Status', 'Images', 'Action'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {consultations.map((c, i) => (
+                        <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
+                          <td style={{ padding: '11px 12px' }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 500 }}>{c.fullName || c.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--mu)' }}>Age {c.age || '-'}</div>
+                          </td>
+                          <td style={{ padding: '11px 12px', fontSize: 12, color: 'var(--mu2)', maxWidth: 150 }}>
+                            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.description || c.concern || '-'}</div>
+                          </td>
+                          <td style={{ padding: '11px 12px', fontSize: 11, color: 'var(--mu)', whiteSpace: 'nowrap' }}>
+                            {c.scheduledDate ? new Date(c.scheduledDate).toLocaleDateString('en-IN') : '-'} {c.scheduledTime}
+                          </td>
+                          <td style={{ padding: '11px 12px' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, background: STATUS_BG[c.status] || 'rgba(255,255,255,0.05)', color: STATUS_COLORS[c.status] || 'var(--mu)', textTransform: 'capitalize' }}>
+                              {c.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '11px 12px' }}>
+                            {c.images?.length > 0 ? (
+                              <div style={{ display: 'flex', gap: 3 }}>
+                                {c.images.slice(0, 2).map((img: any, ii: number) => (
+                                  <img key={ii} src={img.url} alt="" style={{ width: 26, height: 26, borderRadius: 4, objectFit: 'cover' }} />
+                                ))}
+                                {c.images.length > 2 && <span style={{ fontSize: 10, color: 'var(--mu)', alignSelf: 'center' }}>+{c.images.length - 2}</span>}
+                              </div>
+                            ) : '-'}
+                          </td>
+                          <td style={{ padding: '11px 12px' }}>
+                            <button onClick={() => setSelectedCons(selectedCons?._id === c._id ? null : c)} style={{ padding: '4px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit' }}>View</button>
+                          </td>
+                        </tr>
+                      ))}
+                      {consultations.length === 0 && <tr><td colSpan={6} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No consultations assigned yet</td></tr>}
+                    </tbody>
+                  </table>
+                  </div>
+                )}
               </div>
 
               {/* ✅ Detail Panel with new buttons */}
               {selectedCons && (
-                <div style={{ position: 'sticky', top: 20, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: '18px' }}>
+                <div style={isMobile ? { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 1000, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: '14px 14px 0 0', padding: '18px', maxHeight: '80vh', overflowY: 'auto' } : { position: 'sticky', top: 20, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
                     <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>{selectedCons.fullName || selectedCons.name}</div>
                     <button onClick={() => setSelectedCons(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>&#x2715;</button>
@@ -1224,80 +1286,127 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 ))}
               </div>
               <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, flex: 1, minWidth: 200 }} />
-                {(['all', 'online', 'offline'] as const).map(f => (
-                  <button key={f} onClick={() => setPatientFilter(f)}
-                    style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--gold)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(212,168,83,0.3)' : 'var(--b1)') }}>
-                    {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, flex: 1, minWidth: isMobile ? '100%' : 200 }} />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
+                  {(['all', 'online', 'offline'] as const).map(f => (
+                    <button key={f} onClick={() => setPatientFilter(f)}
+                      style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--gold)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), flex: isMobile ? 1 : 'none' }}>
+                      {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
+                  <button onClick={() => setShowAddLead(true)}
+                    style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap', width: isMobile ? '100%' : 'auto' }}>
+                    + Add Lead
                   </button>
-                ))}
-                <button onClick={() => setShowAddLead(true)}
-                  style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap' }}>
-                  + Add Lead
-                </button>
+                </div>
               </div>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>{['Patient', 'CRM Stage', 'Skin Type', 'Consults', 'Orders', 'Spent', 'Actions'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
                     {filteredPatients.map((p, i) => (
-                      <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
-                        <td style={{ padding: '11px 12px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-                              {(p.name || 'P').charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.name}</div>
-                              <div style={{ fontSize: 10.5, color: 'var(--mu)', fontFamily: 'DM Mono' }}>{p.phone || p.email || '-'}</div>
-                            </div>
+                      <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                            {(p.name || 'P').charAt(0).toUpperCase()}
                           </div>
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          {p.crmStage ? (
-                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, whiteSpace: 'nowrap', background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)' }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
+                            <div style={{ fontSize: 10.5, color: 'var(--mu)', fontFamily: 'DM Mono' }}>{p.phone || p.email || '-'}</div>
+                          </div>
+                          {p.crmStage && (
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, whiteSpace: 'nowrap', background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)', flexShrink: 0 }}>
                               {p.crmStage.replace(/_/g, ' ')}
                             </span>
-                          ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
-                        </td>
-                        <td style={{ padding: '11px 12px', maxWidth: 140 }}>
-                          {p.skinType ? (
-                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize' }}>{p.skinType}</div>
-                          ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
-                        </td>
-                        <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{p.consults}</td>
-                        <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--blue)' }}>{p.orders}</td>
-                        <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>
-                          {p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : <span style={{ color: 'var(--mu)' }}>Rs.0</span>}
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <div style={{ display: 'flex', gap: 5 }}>
-                            {p.phone && (
-                              <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
-                                target="_blank" rel="noopener noreferrer"
-                                style={{ padding: '5px 10px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
-                                WA
-                              </a>
-                            )}
-                            {p.lastConsultation && (
-                              <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
-                                style={{ padding: '5px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
-                                View
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
+                          {p.skinType && <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'capitalize' }}>{p.skinType}</div>}
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Consults: <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{p.consults}</span></div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Orders: <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{p.orders}</span></div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Spent: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : 'Rs.0'}</span></div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          {p.phone && (
+                            <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
+                              target="_blank" rel="noopener noreferrer"
+                              style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                              WhatsApp
+                            </a>
+                          )}
+                          {p.lastConsultation && (
+                            <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
+                              style={{ flex: 1, padding: '7px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
+                              View Consultation
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     ))}
-                    {filteredPatients.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No patients found</td></tr>}
-                  </tbody>
-                </table>
-                </div>
+                    {filteredPatients.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No patients found</div>}
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>{['Patient', 'CRM Stage', 'Skin Type', 'Consults', 'Orders', 'Spent', 'Actions'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {filteredPatients.map((p, i) => (
+                        <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
+                          <td style={{ padding: '11px 12px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                                {(p.name || 'P').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <div style={{ fontSize: 12.5, fontWeight: 600 }}>{p.name}</div>
+                                <div style={{ fontSize: 10.5, color: 'var(--mu)', fontFamily: 'DM Mono' }}>{p.phone || p.email || '-'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '11px 12px' }}>
+                            {p.crmStage ? (
+                              <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, whiteSpace: 'nowrap', background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)' }}>
+                                {p.crmStage.replace(/_/g, ' ')}
+                              </span>
+                            ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 12px', maxWidth: 140 }}>
+                            {p.skinType ? (
+                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize' }}>{p.skinType}</div>
+                            ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
+                          </td>
+                          <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{p.consults}</td>
+                          <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--blue)' }}>{p.orders}</td>
+                          <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>
+                            {p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : <span style={{ color: 'var(--mu)' }}>Rs.0</span>}
+                          </td>
+                          <td style={{ padding: '11px 12px' }}>
+                            <div style={{ display: 'flex', gap: 5 }}>
+                              {p.phone && (
+                                <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
+                                  target="_blank" rel="noopener noreferrer"
+                                  style={{ padding: '5px 10px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+                                  WA
+                                </a>
+                              )}
+                              {p.lastConsultation && (
+                                <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
+                                  style={{ padding: '5px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
+                                  View
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {filteredPatients.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No patients found</td></tr>}
+                    </tbody>
+                  </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1387,33 +1496,54 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     + Request Payout
                   </button>
                 </div>
-                <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr>{['Payout #', 'Amount', 'UPI ID', 'Requested', 'Status'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)' }}>{h}</th>
-                    ))}</tr>
-                  </thead>
-                  <tbody>
+                {isMobile ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
                     {payouts.filter((p: any) => p.specialistId?.toString() === mongoSpec?._id?.toString()).map((p: any, i: number) => (
-                      <tr key={i}>
-                        <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontSize: 11, color: 'var(--mu)' }}>{p.payoutNumber || p._id?.slice(-8)}</td>
-                        <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 13, color: 'var(--gold)' }}>Rs.{p.amount}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: 'var(--mu2)' }}>{p.upiId || '-'}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 11, color: 'var(--mu)' }}>{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString('en-IN') : '-'}</td>
-                        <td style={{ padding: '9px 12px' }}>
+                      <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <div style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 16, color: 'var(--gold)' }}>Rs.{p.amount}</div>
                           <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: p.status === 'completed' ? 'var(--grL)' : p.status === 'rejected' ? 'var(--rdL)' : 'var(--orL)', color: p.status === 'completed' ? 'var(--green)' : p.status === 'rejected' ? 'var(--red)' : 'var(--orange)' }}>
                             {p.status || 'pending'}
                           </span>
-                        </td>
-                      </tr>
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--mu)', marginBottom: 2 }}>Payout # {p.payoutNumber || p._id?.slice(-8)}</div>
+                        {p.upiId && <div style={{ fontSize: 11.5, color: 'var(--mu2)', marginBottom: 2 }}>UPI: {p.upiId}</div>}
+                        <div style={{ fontSize: 11, color: 'var(--mu)' }}>{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString('en-IN') : '-'}</div>
+                      </div>
                     ))}
                     {payouts.filter((p: any) => p.specialistId?.toString() === mongoSpec?._id?.toString()).length === 0 && (
-                      <tr><td colSpan={5} style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No payout requests yet</td></tr>
+                      <div style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No payout requests yet</div>
                     )}
-                  </tbody>
-                </table>
-                </div>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>{['Payout #', 'Amount', 'UPI ID', 'Requested', 'Status'].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)' }}>{h}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody>
+                      {payouts.filter((p: any) => p.specialistId?.toString() === mongoSpec?._id?.toString()).map((p: any, i: number) => (
+                        <tr key={i}>
+                          <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontSize: 11, color: 'var(--mu)' }}>{p.payoutNumber || p._id?.slice(-8)}</td>
+                          <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 13, color: 'var(--gold)' }}>Rs.{p.amount}</td>
+                          <td style={{ padding: '9px 12px', fontSize: 12, color: 'var(--mu2)' }}>{p.upiId || '-'}</td>
+                          <td style={{ padding: '9px 12px', fontSize: 11, color: 'var(--mu)' }}>{p.requestedAt ? new Date(p.requestedAt).toLocaleDateString('en-IN') : '-'}</td>
+                          <td style={{ padding: '9px 12px' }}>
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: p.status === 'completed' ? 'var(--grL)' : p.status === 'rejected' ? 'var(--rdL)' : 'var(--orL)', color: p.status === 'completed' ? 'var(--green)' : p.status === 'rejected' ? 'var(--red)' : 'var(--orange)' }}>
+                              {p.status || 'pending'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {payouts.filter((p: any) => p.specialistId?.toString() === mongoSpec?._id?.toString()).length === 0 && (
+                        <tr><td colSpan={5} style={{ padding: 30, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No payout requests yet</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1422,18 +1552,18 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
       {/* OFFLINE POS MODAL */}
       {showPOS && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, width: '96vw', maxWidth: 1060, height: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', zIndex: 5000, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: isMobile ? '16px 16px 0 0' : 16, width: isMobile ? '100vw' : '96vw', maxWidth: isMobile ? '100vw' : 1060, height: isMobile ? '95vh' : '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <div>
                 <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>Offline Order &mdash; AI Skin Analysis</div>
-                <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
                   {[
                     { id: 'customer', label: '1. Customer' }, { id: 'skin', label: '2. Skin Photos' },
                     { id: 'analysis', label: '3. AI Analysis' }, { id: 'notes', label: '4. Notes' },
                     { id: 'products', label: '5. Products' }, { id: 'payment', label: '6. Payment' },
                   ].map((step, i) => (
-                    <span key={step.id} style={{ fontSize: 11, fontWeight: 700, color: posStep === step.id ? 'var(--gold)' : 'var(--mu)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span key={step.id} style={{ fontSize: 11, fontWeight: 700, color: posStep === step.id ? 'var(--gold)' : 'var(--mu)', display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
                       <span style={{ width: 18, height: 18, borderRadius: '50%', background: posStep === step.id ? 'var(--gold)' : 'var(--s2)', color: posStep === step.id ? '#08090C' : 'var(--mu)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>{i + 1}</span>
                       {step.label.split('. ')[1]}
                     </span>
@@ -1446,7 +1576,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               {posStep === 'customer' && (
                 <div style={{ maxWidth: 520, margin: '0 auto' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 20 }}>Customer Details</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                     {[
                       { k: 'name', l: 'Name*', p: 'Priya Sharma' }, { k: 'phone', l: 'Phone*', p: '+91 9876543210' },
                       { k: 'email', l: 'Email', p: 'priya@email.com' }, { k: 'address', l: 'Address', p: 'House No, Street' },
@@ -1668,8 +1798,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
       {/* Reschedule Modal */}
       {rescheduleModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 380, maxWidth: '94vw' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: isMobile ? '16px 16px 0 0' : 16, padding: '26px 30px', width: isMobile ? '100vw' : 380, maxWidth: isMobile ? '100vw' : '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 18 }}>Reschedule &mdash; {rescheduleModal.fullName || rescheduleModal.name}</div>
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>New Date</label>
@@ -1739,8 +1869,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
       {/* Payout Modal */}
       {payoutModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 420, maxWidth: '94vw' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: isMobile ? '16px 16px 0 0' : 16, padding: '26px 30px', width: isMobile ? '100vw' : 420, maxWidth: isMobile ? '100vw' : '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Request Payout</div>
             <div style={{ fontSize: 12.5, color: 'var(--mu)', marginBottom: 20 }}>Available: <strong style={{ color: 'var(--gold)' }}>Rs.{totalEarnings.toLocaleString('en-IN')}</strong></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
@@ -1801,8 +1931,8 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
       )}
       {/* ── ADD LEAD MODAL ── */}
       {showAddLead && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowAddLead(false)}>
-          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '24px 28px', width: 420, maxWidth: '94vw' }} onClick={e => e.stopPropagation()}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }} onClick={() => setShowAddLead(false)}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: isMobile ? '16px 16px 0 0' : 16, padding: '24px 28px', width: isMobile ? '100vw' : 420, maxWidth: isMobile ? '100vw' : '94vw', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>+ Add New Lead</div>
               <button onClick={() => setShowAddLead(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
