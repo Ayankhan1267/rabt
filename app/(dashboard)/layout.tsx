@@ -95,6 +95,13 @@ const NAV: NavSection[] = [
       { id: 'knowledge', label: 'Knowledge Base', icon: '📚', href: '/knowledge', roles: ['founder', 'manager', 'ops', 'specialist_manager'] },
     ]
   },
+  {
+    label: 'System',
+    roles: ['founder', 'admin'],
+    items: [
+      { id: 'settings', label: 'Settings', icon: '⚙️', href: '/settings', roles: ['founder', 'admin'] },
+    ]
+  },
 ]
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
