@@ -82,7 +82,7 @@ const NAV: NavSection[] = [
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
       { id: 'hr', label: 'HR', icon: '👥', href: '/hr', roles: ['founder','admin','manager','hr'] },
-      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub', roles: ['founder','admin','manager','specialist_manager','specialist','ops','support','hr'] },
+      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub' },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
     ]
   },

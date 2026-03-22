@@ -39,7 +39,7 @@ export default function CalendarPage() {
     setLoading(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const [p, pr, ev, kt] = await Promise.all([
+      const [p, pr, ev, kt, mtgs] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user?.id).single(),
         supabase.from('profiles').select('*').order('name'),
         supabase.from('calendar_events').select('*, created_by(id,name), assigned_to(id,name)').order('event_date'),
@@ -50,8 +50,7 @@ export default function CalendarPage() {
       setProfiles(pr.data || [])
       setEvents(ev.data || [])
       setKanbanTasks(kt.data || [])
-      const meetingsRes = await supabase.from('team_meetings').select('*').order('scheduled_at')
-      setTeamMeetings(meetingsRes.data || [])
+      setTeamMeetings(mtgs.data || [])
 
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (url) {
@@ -89,30 +88,54 @@ export default function CalendarPage() {
     toast.success('Deleted!')
   }
 
-  // Merge all events for a date
+  // Merge all events for a date with role-based filtering
   function getAllEventsForDate(date: Date) {
     const dateStr = date.toISOString().split('T')[0]
     const all: any[] = []
+    const role = profile?.role || ''
+    const userId = profile?.id || ''
+    const isManager = ['founder', 'admin', 'manager'].includes(role)
 
-    // Custom events
-    events.filter(e => e.event_date === dateStr).forEach(e => {
+    // Custom calendar events — managers see all; others see events assigned to them or created by them or unassigned
+    events.filter(e => {
+      if (e.event_date !== dateStr) return false
+      if (isManager) return true
+      return !e.assigned_to || e.assigned_to?.id === userId || e.created_by?.id === userId
+    }).forEach(e => {
       const type = EVENT_TYPES.find(t => t.id === e.type) || EVENT_TYPES[4]
       all.push({ ...e, _color: type.color, _bg: type.bg, _label: e.title, _source: 'event' })
     })
 
-    // Kanban tasks due
-    kanbanTasks.filter(t => t.due_date === dateStr).forEach(t => {
+    // Kanban tasks due — managers see all; others see tasks assigned to them
+    kanbanTasks.filter(t => {
+      if (t.due_date !== dateStr) return false
+      if (isManager) return true
+      return t.assigned_to?.id === userId
+    }).forEach(t => {
       const type = EVENT_TYPES[2]
       all.push({ ...t, _color: type.color, _bg: type.bg, _label: '📋 ' + t.title, _source: 'task' })
     })
 
-    // Consultations
+    // Consultations — managers see all; specialists see their own consultations
     consultations.filter(c => {
       const d = c.scheduledDate ? new Date(c.scheduledDate).toISOString().split('T')[0] : null
-      return d === dateStr
+      if (d !== dateStr) return false
+      if (isManager || role === 'specialist_manager') return true
+      if (role === 'specialist') return c.specialistId === userId || c.specialist_id === userId
+      return false
     }).forEach(c => {
       const type = EVENT_TYPES[0]
       all.push({ ...c, _color: type.color, _bg: type.bg, _label: '🌿 ' + (c.name || 'Consultation'), _source: 'consultation' })
+    })
+
+    // Team Hub meetings — all users see all team meetings
+    teamMeetings.filter(m => {
+      const d = m.scheduled_at ? new Date(m.scheduled_at).toISOString().split('T')[0] : null
+      return d === dateStr
+    }).forEach(m => {
+      const type = EVENT_TYPES[4]
+      const timeStr = m.scheduled_at ? new Date(m.scheduled_at).toTimeString().slice(0, 5) : null
+      all.push({ ...m, _color: type.color, _bg: type.bg, _label: '💬 ' + (m.title || 'Team Meeting'), _source: 'meeting', event_time: timeStr })
     })
 
     return all
