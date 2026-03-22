@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -129,7 +129,7 @@ async function sendWhatsApp(phone: string, message: string, cfg?: { apiKey: stri
 }
 
 // ── COMPONENT ────────────────────────────────────────────────────────────────
-export default function RemindersPage() {
+function RemindersContent() {
   const searchParams = useSearchParams()
   const [mongoSpec, setMongoSpec]               = useState<any>(null)
   const [myProfile, setMyProfile]               = useState<any>(null)
@@ -866,5 +866,13 @@ export default function RemindersPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function RemindersPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>Loading...</div>}>
+      <RemindersContent />
+    </Suspense>
   )
 }
