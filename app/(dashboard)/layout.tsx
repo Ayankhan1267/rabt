@@ -59,7 +59,7 @@ const NAV: NavSection[] = [
     items: [
       { id: 'support', label: 'Support Chat', icon: '💬', href: '/support', badge: '5', badgeColor: 'var(--red)', roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager'] },
       { id: 'communications', label: 'Communications', icon: '📡', href: '/communications', roles: ['founder', 'manager'] },
-      { id: 'reminders', label: 'Reminders & Follow-up', icon: '📲', href: '/reminders', roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager'] },
+      { id: 'reminders', label: 'Reminders & Follow-up', icon: '📲', href: '/reminders', roles: ['founder', 'manager', 'support', 'ops', 'specialist_manager', 'specialist'] },
     ]
   },
   {
