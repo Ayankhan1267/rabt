@@ -1271,81 +1271,122 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
           {/* CRM / MY PATIENTS */}
           {tab === 'crm' && (
-            <div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
+            <div style={{ width: '100%', maxWidth: '100%' }}>
+              {/* Stats */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
                 {[
-                  { label: 'Total Patients', value: allMyPatients.length, color: 'var(--blue)' },
+                  { label: 'Total', value: allMyPatients.length, color: 'var(--blue)' },
                   { label: 'Online', value: allMyPatients.filter(p => p.source === 'online').length, color: 'var(--teal)' },
                   { label: 'Offline', value: allMyPatients.filter(p => p.source === 'offline').length, color: 'var(--orange)' },
-                  { label: 'Total Revenue', value: 'Rs.' + allMyPatients.reduce((s, p) => s + p.spent, 0).toLocaleString('en-IN'), color: 'var(--gold)' },
+                  { label: 'Revenue', value: 'Rs.' + allMyPatients.reduce((s, p) => s + p.spent, 0).toLocaleString('en-IN'), color: 'var(--green)' },
                 ].map((s, i) => (
-                  <div key={i} className="card">
-                    <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>{s.label}</div>
-                    <div style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: s.color }}>{s.value}</div>
+                  <div key={i} className="card" style={{ padding: '10px 12px' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{s.label}</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 20, fontWeight: 800, color: s.color }}>{s.value}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, width: '100%', marginBottom: 0 }} />
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+
+              {/* Search + Filters */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+                <input
+                  value={patientSearch}
+                  onChange={e => setPatientSearch(e.target.value)}
+                  placeholder="🔍 Search by name or phone..."
+                  style={{ ...inp, width: '100%', marginBottom: 0, fontSize: 13 }}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
                   {(['all', 'online', 'offline'] as const).map(f => (
                     <button key={f} onClick={() => setPatientFilter(f)}
-                      style={{ flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'rgba(1,151,166,0.15)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--teal)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(1,151,166,0.4)' : 'var(--b1)') }}>
+                      style={{ padding: '9px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'rgba(1,151,166,0.15)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--teal)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(1,151,166,0.4)' : 'var(--b1)'), width: '100%' }}>
                       {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                   ))}
-                  <button onClick={() => setShowAddLead(true)}
-                    style={{ flex: isMobile ? '1 1 100%' : '0 0 auto', padding: '8px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
-                    + Add Lead
-                  </button>
                 </div>
+                <button onClick={() => setShowAddLead(true)}
+                  style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                  + Add New Lead
+                </button>
               </div>
-              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                {isMobile ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 12 }}>
-                    {filteredPatients.map((p, i) => (
-                      <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 15, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-                            {(p.name || 'P').charAt(0).toUpperCase()}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600 }}>{p.name}</div>
-                            <div style={{ fontSize: 10.5, color: 'var(--mu)', fontFamily: 'DM Mono' }}>{p.phone || p.email || '-'}</div>
-                          </div>
-                          {p.crmStage && (
-                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, whiteSpace: 'nowrap', background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)', flexShrink: 0 }}>
-                              {p.crmStage.replace(/_/g, ' ')}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-                          {p.skinType && <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'capitalize', background: 'var(--gL)', padding: '2px 8px', borderRadius: 20 }}>{p.skinType}</div>}
-                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>💬 <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{p.consults}</span></div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>📦 <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{p.orders}</span></div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>Rs.<span style={{ color: 'var(--green)', fontWeight: 700 }}>{p.spent > 0 ? p.spent.toLocaleString('en-IN') : '0'}</span></div>
-                        </div>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          {p.phone && (
-                            <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
-                              target="_blank" rel="noopener noreferrer"
-                              style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                              WhatsApp
-                            </a>
-                          )}
-                          {p.lastConsultation && (
-                            <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
-                              style={{ flex: 1, padding: '7px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
-                              View Consultation
-                            </button>
-                          )}
-                        </div>
+
+              {/* CSS-based responsive: cards on mobile, table on desktop */}
+              <style>{`
+                @media (min-width: 768px) { .crm-cards-view { display: none !important; } }
+                @media (max-width: 767px) { .crm-table-view { display: none !important; } }
+              `}</style>
+
+              {/* MOBILE CARDS */}
+              <div className="crm-cards-view" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredPatients.length === 0 && (
+                  <div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)', fontSize: 13 }}>No patients found</div>
+                )}
+                {filteredPatients.map((p, i) => (
+                  <div key={i} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '14px' }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                        {(p.name || 'P').charAt(0).toUpperCase()}
                       </div>
-                    ))}
-                    {filteredPatients.length === 0 && <div style={{ padding: 40, textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>No patients found</div>}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 1 }}>{p.phone || p.email || '—'}</div>
+                      </div>
+                      {p.source && (
+                        <span style={{ fontSize: 9, padding: '3px 7px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)', flexShrink: 0 }}>
+                          {p.source}
+                        </span>
+                      )}
+                    </div>
+                    {/* Stage */}
+                    {p.crmStage && (
+                      <div style={{ marginBottom: 8 }}>
+                        <span style={{ fontSize: 10, padding: '3px 9px', borderRadius: 20, fontWeight: 700, background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)' }}>
+                          {p.crmStage.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    )}
+                    {/* Stats row */}
+                    <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                      {p.skinType && (
+                        <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'rgba(1,151,166,0.1)', color: 'var(--teal)', fontWeight: 700, textTransform: 'capitalize' }}>
+                          🌿 {p.skinType}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'var(--s2)', color: 'var(--mu)' }}>
+                        💬 <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{p.consults}</span> consults
+                      </span>
+                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'var(--s2)', color: 'var(--mu)' }}>
+                        📦 <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{p.orders}</span> orders
+                      </span>
+                      {p.spent > 0 && (
+                        <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'var(--grL)', color: 'var(--green)', fontWeight: 700 }}>
+                          Rs.{p.spent.toLocaleString('en-IN')}
+                        </span>
+                      )}
+                    </div>
+                    {/* Action buttons */}
+                    <div style={{ display: 'grid', gridTemplateColumns: p.phone && p.lastConsultation ? '1fr 1fr' : '1fr', gap: 8 }}>
+                      {p.phone && (
+                        <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! 🌿 Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{ padding: '9px', background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 8, color: 'var(--green)', fontSize: 12, fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+                          💬 WhatsApp
+                        </a>
+                      )}
+                      {p.lastConsultation && (
+                        <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
+                          style={{ padding: '9px', background: 'rgba(1,151,166,0.1)', border: '1px solid rgba(1,151,166,0.25)', borderRadius: 8, color: 'var(--teal)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                          View Consultation
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div style={{ overflowX: 'auto' }}>
+                ))}
+              </div>
+
+              {/* DESKTOP TABLE */}
+              <div className="crm-table-view card" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>{['Patient', 'CRM Stage', 'Skin Type', 'Consults', 'Orders', 'Spent', 'Actions'].map(h => (
@@ -1373,20 +1414,18 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                               </span>
                             ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
                           </td>
-                          <td style={{ padding: '11px 12px', maxWidth: 140 }}>
-                            {p.skinType ? (
-                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize' }}>{p.skinType}</div>
-                            ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
+                          <td style={{ padding: '11px 12px' }}>
+                            {p.skinType ? <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'capitalize' }}>{p.skinType}</div> : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
                           </td>
                           <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{p.consults}</td>
                           <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--blue)' }}>{p.orders}</td>
-                          <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>
+                          <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>
                             {p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : <span style={{ color: 'var(--mu)' }}>Rs.0</span>}
                           </td>
                           <td style={{ padding: '11px 12px' }}>
                             <div style={{ display: 'flex', gap: 5 }}>
                               {p.phone && (
-                                <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! \uD83C\uDF3F Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
+                                <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! 🌿 Rabt Naturals ki taraf se aapko yaad dila rahe hain.')}
                                   target="_blank" rel="noopener noreferrer"
                                   style={{ padding: '5px 10px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
                                   WA
@@ -1394,7 +1433,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                               )}
                               {p.lastConsultation && (
                                 <button onClick={() => { setTab('consultations'); setSelectedCons(p.lastConsultation) }}
-                                  style={{ padding: '5px 10px', background: 'var(--gL)', border: 'none', borderRadius: 6, color: 'var(--gold)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
+                                  style={{ padding: '5px 10px', background: 'rgba(1,151,166,0.1)', border: '1px solid rgba(1,151,166,0.25)', borderRadius: 6, color: 'var(--teal)', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
                                   View
                                 </button>
                               )}
@@ -1405,8 +1444,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       {filteredPatients.length === 0 && <tr><td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No patients found</td></tr>}
                     </tbody>
                   </table>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
           )}
