@@ -894,6 +894,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </table>
               </div>
             </div>
+          </div>
           )}
 
           {/* CONSULTATIONS TAB */}
