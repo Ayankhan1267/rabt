@@ -150,7 +150,7 @@ export default function GoalsPage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Goals <span style={{ color: 'var(--gold)' }}>& OKR</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{totalGoals} goals · {completed} completed · {inProgress} in progress · {avgProgress}% avg</p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Goal</button>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Goal</button>
       </div>
 
       {/* Stats */}
@@ -201,7 +201,7 @@ export default function GoalsPage() {
                   <div style={{ fontSize: 40, marginBottom: 14 }}>🎯</div>
                   <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 8 }}>No Goals Yet</div>
                   <div style={{ color: 'var(--mu)', fontSize: 13, marginBottom: 20 }}>Set your first goal to track progress</div>
-                  <button onClick={() => setShowAdd(true)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add First Goal</button>
+                  <button onClick={() => setShowAdd(true)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add First Goal</button>
                 </div>
               )}
               {filtered.map(g => {
@@ -559,7 +559,7 @@ export default function GoalsPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addGoal} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Goal</button>
+              <button onClick={addGoal} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Goal</button>
             </div>
           </div>
         </div>
@@ -582,7 +582,7 @@ export default function GoalsPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAddKR(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addKR} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Key Result</button>
+              <button onClick={addKR} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Key Result</button>
             </div>
           </div>
         </div>

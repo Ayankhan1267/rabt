@@ -296,7 +296,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
               </div>
 
               <button onClick={saveSkinData} disabled={saving}
-                style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
+                style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
                 {saving ? 'Saving...' : 'Save Skin Data'}
               </button>
             </div>
@@ -412,7 +412,7 @@ export default function SkinProfileModal({ skinProfile, products, mongoSpec, onC
 
               <div style={{ marginTop: 20 }}>
                 <button onClick={saveRoutine} disabled={saving}
-                  style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
+                  style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne', opacity: saving ? 0.7 : 1 }}>
                   {saving ? 'Saving...' : 'Save Routine — Customer ke Saved Routines mein jayega'}
                 </button>
               </div>

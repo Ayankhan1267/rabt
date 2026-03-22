@@ -622,7 +622,7 @@ export default function TeamHubPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>📢 Announcements</div>
               {CAN_ANNOUNCE.includes(userRole) && (
-                <button onClick={() => setShowAnnouncementModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Announcement</button>
+                <button onClick={() => setShowAnnouncementModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Announcement</button>
               )}
             </div>
             {visibleAnnouncements.length === 0 ? (
@@ -787,7 +787,7 @@ export default function TeamHubPage() {
             </div>
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowAnnouncementModal(false)} style={{ flex: 1, padding: 11, background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={createAnnouncement} style={{ flex: 2, padding: 11, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>📢 Post & Notify</button>
+              <button onClick={createAnnouncement} style={{ flex: 2, padding: 11, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>📢 Post & Notify</button>
             </div>
           </div>
         </div>

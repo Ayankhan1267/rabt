@@ -62,7 +62,7 @@ export default function SupportPage() {
                 <span style={{ marginLeft: 'auto', fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: t.color + '22', color: t.color }}>{t.priority}</span>
               </div>
               <div style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.45, marginBottom: 9 }}>{t.msg}</div>
-              <button onClick={() => setInput('Draft reply for: ' + t.msg)} style={{ padding: '5px 12px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 7, color: '#08090C', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={() => setInput('Draft reply for: ' + t.msg)} style={{ padding: '5px 12px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 7, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 AI Reply
               </button>
             </div>
@@ -86,14 +86,14 @@ export default function SupportPage() {
                 <div style={{ width: 26, height: 26, borderRadius: 7, background: m.role === 'user' ? 'rgba(255,255,255,0.07)' : 'var(--blL)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>
                   {m.role === 'user' ? '👤' : '🎧'}
                 </div>
-                <div style={{ maxWidth: '78%', padding: '9px 12px', borderRadius: 11, fontSize: 12.5, lineHeight: 1.55, whiteSpace: 'pre-wrap', background: m.role === 'user' ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'var(--s2)', color: m.role === 'user' ? '#08090C' : 'var(--tx)', fontWeight: m.role === 'user' ? 500 : 400 }}>{m.content}</div>
+                <div style={{ maxWidth: '78%', padding: '9px 12px', borderRadius: 11, fontSize: 12.5, lineHeight: 1.55, whiteSpace: 'pre-wrap', background: m.role === 'user' ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'var(--s2)', color: m.role === 'user' ? '#fff' : 'var(--tx)', fontWeight: m.role === 'user' ? 500 : 400 }}>{m.content}</div>
               </div>
             ))}
             {loading && <div style={{ display: 'flex', gap: 8 }}><div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--blL)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🎧</div><div style={{ padding: '10px 14px', background: 'var(--s2)', borderRadius: '11px 11px 11px 3px', display: 'flex', gap: 5 }}>{[0,1,2].map(i => <div key={i} style={{ width: 4, height: 4, borderRadius: '50%', background: 'var(--mu)', animation: `pulse 1.2s ${i*0.2}s infinite` }} />)}</div></div>}
           </div>
           <div style={{ padding: '10px 13px', borderTop: '1px solid var(--b1)', display: 'flex', gap: 8 }}>
             <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Describe customer issue..." rows={2} style={{ flex: 1, background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, padding: '8px 11px', color: 'var(--tx)', fontSize: 12.5, fontFamily: 'Outfit', outline: 'none', resize: 'none' }} />
-            <button onClick={sendMessage} style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', cursor: 'pointer', fontSize: 14, alignSelf: 'flex-end' }}>➤</button>
+            <button onClick={sendMessage} style={{ width: 36, height: 36, borderRadius: 9, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', cursor: 'pointer', fontSize: 14, alignSelf: 'flex-end' }}>➤</button>
           </div>
         </div>
       </div>

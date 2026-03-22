@@ -64,7 +64,7 @@ export default function KnowledgePage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Knowledge <span style={{ color: 'var(--gold)' }}>Base</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{docs.length} documents · SOPs, Scripts, Guides</p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
           + New Doc
         </button>
       </div>
@@ -160,7 +160,7 @@ export default function KnowledgePage() {
             <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="Write your document content here..." rows={8} style={{ ...inputStyle, resize: 'vertical' }} />
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={saveDoc} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Save Document</button>
+              <button onClick={saveDoc} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Save Document</button>
             </div>
           </div>
         </div>

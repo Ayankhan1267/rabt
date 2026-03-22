@@ -306,7 +306,7 @@ export default function SpecialistsPage() {
                     <div key={i} onClick={() => setSelected(isSelected ? null : spec)} style={{ background: 'var(--s1)', border: '1px solid ' + (isSelected ? 'var(--gold)' : 'var(--b1)'), borderRadius: 14, padding: 18, cursor: 'pointer', transition: 'all 0.15s' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                         {spec.profilePhoto ? <img src={spec.profilePhoto} alt={spec.name} style={{ width: 48, height: 48, borderRadius: 12, objectFit: 'cover', flexShrink: 0 }} /> : (
-                          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#08090C', flexShrink: 0 }}>{spec.name?.charAt(0)}</div>
+                          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{spec.name?.charAt(0)}</div>
                         )}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'Syne', fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spec.name}</div>
@@ -348,7 +348,7 @@ export default function SpecialistsPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, background: 'var(--s2)', borderRadius: 12, padding: 14 }}>
                     {selected.profilePhoto ? <img src={selected.profilePhoto} alt={selected.name} style={{ width: 56, height: 56, borderRadius: 12, objectFit: 'cover' }} /> : (
-                      <div style={{ width: 56, height: 56, borderRadius: 12, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: '#08090C' }}>{selected.name?.charAt(0)}</div>
+                      <div style={{ width: 56, height: 56, borderRadius: 12, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: '#fff' }}>{selected.name?.charAt(0)}</div>
                     )}
                     <div>
                       <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>{selected.name}</div>
@@ -422,7 +422,7 @@ export default function SpecialistsPage() {
                         <a href={'https://wa.me/' + selected.phone.replace(/[^0-9]/g,'') + '?text=' + encodeURIComponent('Hi ' + selected.name + ', Rabt Naturals HQ se 👋')} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: 9, background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, textDecoration: 'none', textAlign: 'center' }}>💬 WhatsApp</a>
                       </div>
                     )}
-                    <button onClick={() => setCreateLoginModal(selected)} style={{ width: '100%', padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                    <button onClick={() => setCreateLoginModal(selected)} style={{ width: '100%', padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
                       Create / Reset HQ Login
                     </button>
                   </div>
@@ -447,7 +447,7 @@ export default function SpecialistsPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setCreateLoginModal(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={() => createSpecialistLogin(createLoginModal)} disabled={createLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={() => createSpecialistLogin(createLoginModal)} disabled={createLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {createLoading ? 'Creating...' : 'Create Login'}
               </button>
             </div>

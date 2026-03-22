@@ -128,7 +128,7 @@ export default function KanbanPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowAnalytics(!showAnalytics)} style={{ padding: '8px 14px', background: showAnalytics ? 'var(--gL)' : 'rgba(255,255,255,0.05)', border: '1px solid ' + (showAnalytics ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), borderRadius: 8, color: showAnalytics ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>📊 Analytics</button>
-          <button onClick={() => { setAddToColumn('todo'); setShowAdd(true) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Task</button>
+          <button onClick={() => { setAddToColumn('todo'); setShowAdd(true) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Task</button>
         </div>
       </div>
 
@@ -452,7 +452,7 @@ export default function KanbanPage() {
 
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addTask} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Task</button>
+              <button onClick={addTask} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Task</button>
             </div>
           </div>
         </div>

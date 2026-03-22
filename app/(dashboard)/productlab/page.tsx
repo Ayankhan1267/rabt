@@ -136,7 +136,7 @@ export default function ProductLabPage() {
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{totalProducts} products · {activeProducts} active · 3 ranges + standalones</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => { setEditing(false); setShowAdd(true) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Product</button>
+          <button onClick={() => { setEditing(false); setShowAdd(true) }} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Product</button>
         </div>
       </div>
 
@@ -499,7 +499,7 @@ export default function ProductLabPage() {
 
             <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
               <button onClick={() => { setShowAdd(false); setEditing(false) }} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={saveProduct} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>{editing ? 'Save Changes' : 'Add Product'}</button>
+              <button onClick={saveProduct} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>{editing ? 'Save Changes' : 'Add Product'}</button>
             </div>
           </div>
         </div>

@@ -232,7 +232,7 @@ export default function SettingsPage() {
       </div>
       <div onClick={() => onChange(!checked)} style={{
         width: 44, height: 24, borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s', position: 'relative',
-        background: checked ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'var(--b2)',
+        background: checked ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'var(--b2)',
       }}>
         <div style={{ position: 'absolute', top: 3, left: checked ? 23 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} />
       </div>
@@ -241,7 +241,7 @@ export default function SettingsPage() {
 
   const saveBtn = (onClick: () => void) => (
     <button onClick={onClick} disabled={saving}
-      style={{ marginTop: 20, padding: '10px 28px', background: saving ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
+      style={{ marginTop: 20, padding: '10px 28px', background: saving ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
       {saving ? 'Saving...' : 'Save Changes'}
     </button>
   )
@@ -355,7 +355,7 @@ export default function SettingsPage() {
             <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
               {waStatus?.status !== 'connected' && (
                 <button onClick={initWa} disabled={waLoading}
-                  style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: waLoading ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
+                  style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: waLoading ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
                   {waLoading ? 'Connecting...' : waStatus?.status === 'scanning' ? 'Reinitialize' : 'Connect WhatsApp'}
                 </button>
               )}
@@ -637,7 +637,7 @@ export default function SettingsPage() {
             </div>
 
             <button onClick={saveApiKeys} disabled={savingKeys}
-              style={{ padding: '11px 32px', background: savingKeys ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: savingKeys ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
+              style={{ padding: '11px 32px', background: savingKeys ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: savingKeys ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
               {savingKeys ? 'Saving...' : 'Save All API Keys'}
             </button>
           </>)}

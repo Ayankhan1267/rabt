@@ -137,8 +137,8 @@ export default function LoginPage() {
 
   const btnStyle = (disabled: boolean): React.CSSProperties => ({
     width: '100%', padding: 12,
-    background: disabled ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#D4A853,#B87C30)',
-    border: 'none', borderRadius: 8, color: '#08090C', fontSize: 14, fontWeight: 700,
+    background: disabled ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#0197a6,#017a87)',
+    border: 'none', borderRadius: 8, color: '#fff', fontSize: 14, fontWeight: 700,
     fontFamily: 'Syne', cursor: disabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s',
   })
 
@@ -155,9 +155,9 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 26 }}>
           <div style={{
-            width: 40, height: 40, background: 'linear-gradient(135deg,#D4A853,#B87C30)',
+            width: 40, height: 40, background: 'linear-gradient(135deg,#0197a6,#017a87)',
             borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#08090C',
+            fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#fff',
           }}>R</div>
           <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800 }}>
             Rabt <span style={{ color: 'var(--gold)' }}>HQ</span>

@@ -184,7 +184,7 @@ export default function HRPage() {
             + Leave Request
           </button>
           {isManager && (
-            <button onClick={() => setShowPayrollModal(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+            <button onClick={() => setShowPayrollModal(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
               + Add Payroll
             </button>
           )}
@@ -521,7 +521,7 @@ export default function HRPage() {
               <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 4 }}>Total cost: ₹{totalPayrollCost.toLocaleString('en-IN')}</div>
             </div>
             {isManager && (
-              <button onClick={() => setShowPayrollModal(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={() => setShowPayrollModal(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 + Add Payroll
               </button>
             )}
@@ -734,7 +734,7 @@ export default function HRPage() {
 
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowPayrollModal(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={savePayroll} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Save Payroll</button>
+              <button onClick={savePayroll} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Save Payroll</button>
             </div>
           </div>
         </div>

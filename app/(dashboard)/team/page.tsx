@@ -106,7 +106,7 @@ export default function TeamPage() {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={loadAll} style={{ padding: '8px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>↺ Refresh</button>
-          <a href="/admin" style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
+          <a href="/admin" style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>
             + Add Member →
           </a>
         </div>
@@ -172,7 +172,7 @@ export default function TeamPage() {
                 <div style={{ background: 'var(--s1)', border: '1px dashed var(--b2)', borderRadius: 14, padding: 60, textAlign: 'center', gridColumn: '1/-1' }}>
                   <div style={{ fontSize: 36, marginBottom: 12 }}>👥</div>
                   <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800, marginBottom: 8 }}>No Members Found</div>
-                  <a href="/admin" style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', display: 'inline-block' }}>Go to Admin Panel</a>
+                  <a href="/admin" style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', textDecoration: 'none', display: 'inline-block' }}>Go to Admin Panel</a>
                 </div>
               )}
 

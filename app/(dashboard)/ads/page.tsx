@@ -267,7 +267,7 @@ export default function AdsManagerPage() {
               <div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
               <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800, marginBottom: 8 }}>No Ads Connected</div>
               <div style={{ color: 'var(--mu)', fontSize: 13, marginBottom: 20 }}>Settings mein Meta ya Google Ads credentials add karo</div>
-              <button onClick={() => setTab('settings')} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>⚙️ Setup Credentials</button>
+              <button onClick={() => setTab('settings')} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>⚙️ Setup Credentials</button>
             </div>
           ) : (
             <>

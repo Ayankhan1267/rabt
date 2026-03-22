@@ -174,7 +174,7 @@ export default function SpecialistManagerPage() {
                         <div style={{ fontSize: 13, fontWeight: 600 }}>{c.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{c.concern} · Age {c.age}</div>
                       </div>
-                      <button onClick={() => setAssignModal(c)} style={{ padding: '4px 10px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 6, color: '#08090C', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
+                      <button onClick={() => setAssignModal(c)} style={{ padding: '4px 10px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>
                         Assign
                       </button>
                     </div>
@@ -273,7 +273,7 @@ export default function SpecialistManagerPage() {
                       style={{ background: 'var(--s1)', border: '1px solid ' + (selectedSpec?._id === spec._id ? 'var(--gold)' : 'var(--b1)'), borderRadius: 14, padding: 16, cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
                         {spec.profilePhoto ? <img src={spec.profilePhoto} style={{ width: 44, height: 44, borderRadius: 11, objectFit: 'cover', flexShrink: 0 }} /> :
-                          <div style={{ width: 44, height: 44, borderRadius: 11, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#08090C', flexShrink: 0 }}>{spec.name.charAt(0)}</div>}
+                          <div style={{ width: 44, height: 44, borderRadius: 11, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: '#fff', flexShrink: 0 }}>{spec.name.charAt(0)}</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spec.name}</div>
                           <div style={{ fontSize: 11, color: 'var(--mu)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spec.email}</div>
@@ -315,7 +315,7 @@ export default function SpecialistManagerPage() {
                     </div>
                     <div style={{ display: 'flex', gap: 10, marginBottom: 14, background: 'var(--s2)', borderRadius: 10, padding: 12 }}>
                       {selectedSpec.profilePhoto ? <img src={selectedSpec.profilePhoto} style={{ width: 56, height: 56, borderRadius: 11, objectFit: 'cover', flexShrink: 0 }} /> :
-                        <div style={{ width: 56, height: 56, borderRadius: 11, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: '#08090C' }}>{selectedSpec.name.charAt(0)}</div>}
+                        <div style={{ width: 56, height: 56, borderRadius: 11, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: '#fff' }}>{selectedSpec.name.charAt(0)}</div>}
                       <div>
                         <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>{selectedSpec.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--mu)' }}>{selectedSpec.email}</div>
@@ -371,7 +371,7 @@ export default function SpecialistManagerPage() {
                       )}
                       {d.pendingPayout > 0 && (
                         <button onClick={() => setPayoutAction({ payout: d.specPayouts.find(p => p.status === 'pending'), action: 'completed', spec: selectedSpec })}
-                          style={{ padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                          style={{ padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
                           Approve Payout Rs.{d.pendingPayout}
                         </button>
                       )}
@@ -423,7 +423,7 @@ export default function SpecialistManagerPage() {
                                 <button onClick={() => setAssignModal(c)} style={{ fontSize: 9, padding: '1px 5px', background: 'var(--gL)', border: 'none', borderRadius: 4, color: 'var(--gold)', cursor: 'pointer' }}>Re-assign</button>
                               </div>
                             ) : (
-                              <button onClick={() => setAssignModal(c)} style={{ padding: '4px 10px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 6, color: '#08090C', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>Assign</button>
+                              <button onClick={() => setAssignModal(c)} style={{ padding: '4px 10px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 10.5, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>Assign</button>
                             )}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
@@ -539,7 +539,7 @@ export default function SpecialistManagerPage() {
                     <div key={i} className="card">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                         {spec.profilePhoto ? <img src={spec.profilePhoto} style={{ width: 38, height: 38, borderRadius: 9, objectFit: 'cover' }} /> :
-                          <div style={{ width: 38, height: 38, borderRadius: 9, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#08090C' }}>{spec.name.charAt(0)}</div>}
+                          <div style={{ width: 38, height: 38, borderRadius: 9, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#fff' }}>{spec.name.charAt(0)}</div>}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{spec.name}</div>
                           <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 20, fontWeight: 700, background: spec.isActive ? 'var(--grL)' : 'var(--rdL)', color: spec.isActive ? 'var(--green)' : 'var(--red)' }}>{spec.isActive ? 'Active' : 'Inactive'}</span>
@@ -594,7 +594,7 @@ export default function SpecialistManagerPage() {
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => { setAssignModal(null); setAssignSpecId('') }} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={() => { if (!assignSpecId) { toast.error('Specialist select karo'); return } assignConsultation(assignModal._id, assignSpecId) }}
-                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 Assign
               </button>
             </div>

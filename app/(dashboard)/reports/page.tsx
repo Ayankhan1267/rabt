@@ -250,7 +250,7 @@ export default function ReportsPage() {
           <button onClick={handleCSVExport} style={{ padding: '9px 18px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,.3)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
             ⬇ CSV
           </button>
-          <button onClick={printPDF} disabled={generating} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          <button onClick={printPDF} disabled={generating} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
             🖨️ {generating ? 'Preparing...' : 'Print / PDF'}
           </button>
         </div>
@@ -376,7 +376,7 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          <button onClick={saveSettings} disabled={savingSettings} style={{ marginTop: 16, width: '100%', padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          <button onClick={saveSettings} disabled={savingSettings} style={{ marginTop: 16, width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>
             {savingSettings ? 'Saving...' : '💾 Save GST Settings'}
           </button>
         </div>

@@ -168,7 +168,7 @@ export default function PartnerManagerPage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>🤝 Sales Partners <span style={{ color: 'var(--gold)' }}>Manager</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>Commission tracking · Deliver orders · Payouts</p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '9px 20px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
           + Add Partner
         </button>
       </div>
@@ -218,7 +218,7 @@ export default function PartnerManagerPage() {
               <div style={{ background: 'var(--s1)', border: '1px dashed var(--b2)', borderRadius: 14, padding: 60, textAlign: 'center' }}>
                 <div style={{ fontSize: 40, marginBottom: 14 }}>🤝</div>
                 <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 8 }}>No Partners Yet</div>
-                <button onClick={() => setShowAdd(true)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add First Partner</button>
+                <button onClick={() => setShowAdd(true)} style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add First Partner</button>
               </div>
             )}
             {partners.map(p => {
@@ -307,7 +307,7 @@ export default function PartnerManagerPage() {
               {/* Login */}
               <div style={{ background: selected.user_id ? 'var(--blL)' : 'var(--orL)', border: `1px solid ${selected.user_id ? 'rgba(59,130,246,.3)' : 'rgba(249,115,22,.3)'}`, borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: selected.user_id ? 'var(--blue)' : 'var(--orange)', marginBottom: 4 }}>{selected.user_id ? '🔐 Login Active' : '⚠️ No Login'}</div>
-                <button onClick={() => setCreateLoginModal(selected)} disabled={createLoading} style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                <button onClick={() => setCreateLoginModal(selected)} disabled={createLoading} style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                   {selected.user_id ? '🔄 Reset Password' : '🔐 Create Login'}
                 </button>
               </div>
@@ -437,7 +437,7 @@ export default function PartnerManagerPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {partners.filter(p => (p.pending_payout||0) > 0).map(p => (
               <div key={p.id} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#08090C', fontFamily: 'Syne', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Syne', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>
                   {(p.name||'P').charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1 }}>
@@ -545,7 +545,7 @@ export default function PartnerManagerPage() {
             <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} rows={2} placeholder="Any notes..." style={{ ...inp, resize: 'none' }} />
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addPartner} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Partner + Create Login</button>
+              <button onClick={addPartner} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Partner + Create Login</button>
             </div>
           </div>
         </div>
@@ -563,7 +563,7 @@ export default function PartnerManagerPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setCreateLoginModal(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={() => createPartnerLogin(createLoginModal)} disabled={createLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={() => createPartnerLogin(createLoginModal)} disabled={createLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {createLoading ? 'Creating...' : 'Create Login'}
               </button>
             </div>

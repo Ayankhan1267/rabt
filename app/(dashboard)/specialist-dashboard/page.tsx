@@ -797,7 +797,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             style={{ padding: '10px 16px', background: 'rgba(26,155,160,0.1)', border: '1px solid rgba(26,155,160,0.3)', borderRadius: 10, color: 'var(--teal)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
             🔗 Share Booking Link
           </button>
-          <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
             + Offline Order
           </button>
         </div>
@@ -905,7 +905,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>Total Earned</div>
                   <div style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: 'var(--gold)' }}>Rs.{totalEarnings.toLocaleString('en-IN')}</div>
                 </div>
-                <button onClick={() => setPayoutModal(true)} style={{ width: '100%', marginTop: 14, padding: '10px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                <button onClick={() => setPayoutModal(true)} style={{ width: '100%', marginTop: 14, padding: '10px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
                   Request Payout
                 </button>
               </div>
@@ -1249,7 +1249,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
                         <td style={{ padding: '11px 12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#08090C', flexShrink: 0 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                               {(p.name || 'P').charAt(0).toUpperCase()}
                             </div>
                             <div>
@@ -1316,7 +1316,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   {mySkinProfiles.map((p, i) => (
                     <div key={i} className="card">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#08090C', flexShrink: 0 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                           {(p.name || 'P').charAt(0).toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -1383,7 +1383,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Payout History</div>
-                  <button onClick={() => setPayoutModal(true)} style={{ padding: '7px 16px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                  <button onClick={() => setPayoutModal(true)} style={{ padding: '7px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>
                     + Request Payout
                   </button>
                 </div>
@@ -1460,7 +1460,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                     ))}
                   </div>
                   <button onClick={() => { if (!offlineCustomer.name || !offlineCustomer.phone) { toast.error('Name aur phone required'); return } setPosStep('skin') }}
-                    style={{ width: '100%', marginTop: 20, padding: '12px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne' }}>
+                    style={{ width: '100%', marginTop: 20, padding: '12px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne' }}>
                     Next: Skin Photos &#x2192;
                   </button>
                 </div>
@@ -1499,7 +1499,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => setPosStep('customer')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>&#x2190; Back</button>
                     <button onClick={analyzeSkin} disabled={analyzing || skinImages.length === 0}
-                      style={{ flex: 2, padding: '11px', background: skinImages.length > 0 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: skinImages.length > 0 ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: skinImages.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
+                      style={{ flex: 2, padding: '11px', background: skinImages.length > 0 ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: skinImages.length > 0 ? '#fff' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: skinImages.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
                       {analyzing ? 'Analyzing...' : 'Analyze Skin with AI \u2728'}
                     </button>
                     <button onClick={() => setPosStep('notes')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>Skip &#x2192;</button>
@@ -1519,7 +1519,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => setPosStep('skin')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>&#x2190; Back</button>
-                    <button onClick={() => setPosStep('notes')} style={{ flex: 2, padding: '11px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>Next: Add Notes &#x2192;</button>
+                    <button onClick={() => setPosStep('notes')} style={{ flex: 2, padding: '11px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>Next: Add Notes &#x2192;</button>
                   </div>
                 </div>
               )}
@@ -1551,7 +1551,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                   <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
                     <button onClick={() => setPosStep(aiAnalysis ? 'analysis' : 'skin')} style={{ flex: 1, padding: '11px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>&#x2190; Back</button>
-                    <button onClick={() => setPosStep('products')} style={{ flex: 2, padding: '11px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>Next: Products &#x2192;</button>
+                    <button onClick={() => setPosStep('products')} style={{ flex: 2, padding: '11px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: 'Syne' }}>Next: Products &#x2192;</button>
                   </div>
                 </div>
               )}
@@ -1618,7 +1618,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       </div>
                     )}
                     <button onClick={() => { if (cart.length === 0) { toast.error('Cart empty'); return } setPosStep('payment') }} disabled={cart.length === 0}
-                      style={{ padding: '11px', background: cart.length > 0 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: cart.length > 0 ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: cart.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
+                      style={{ padding: '11px', background: cart.length > 0 ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: cart.length > 0 ? '#fff' : 'var(--mu)', fontWeight: 800, fontSize: 13, cursor: cart.length > 0 ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
                       Next: Payment &#x2192;
                     </button>
                   </div>
@@ -1655,7 +1655,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={() => setPosStep('products')} style={{ flex: 1, padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 10, color: 'var(--mu2)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>&#x2190; Back</button>
                     <button onClick={createOfflineOrder} disabled={posLoading}
-                      style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne' }}>
+                      style={{ flex: 2, padding: '12px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne' }}>
                       {posLoading ? 'Creating...' : 'Confirm Order \u2192 Rs.' + totals.total}
                     </button>
                   </div>
@@ -1682,7 +1682,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setRescheduleModal(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={confirmReschedule} disabled={rescheduleLoading}
-                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {rescheduleLoading ? 'Saving...' : 'Confirm'}
               </button>
             </div>
@@ -1718,7 +1718,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setEditSkinProfile(null)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={updateSkinProfile} disabled={skinProfileLoading}
-                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {skinProfileLoading ? 'Saving...' : (editSkinProfile._id ? 'Save Changes' : 'Create Profile')}
               </button>
             </div>
@@ -1792,7 +1792,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setPayoutModal(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
               <button onClick={requestPayout} disabled={payoutLoading}
-                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {payoutLoading ? 'Sending...' : 'Send Request'}
               </button>
             </div>

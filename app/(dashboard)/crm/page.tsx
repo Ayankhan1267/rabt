@@ -355,7 +355,7 @@ export default function CRMPage() {
               {syncing ? 'Syncing...' : 'Sync MongoDB'}
             </button>
           )}
-          <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
             + Add Lead
           </button>
         </div>
@@ -419,7 +419,7 @@ export default function CRMPage() {
                       <div style={{ display: 'flex', gap: 5 }}>
                         {lead.phone && <button onClick={() => sendWhatsApp(lead.phone, lead.name)} style={{ flex: 1, padding: '5px', background: 'var(--grL)', border: 'none', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer' }}>WA</button>}
                         {isAdmin && stage.id !== 'converted' && stage.id !== 'lost' && stage.id !== 'consultation_cancelled' && (
-                          <button onClick={() => { const order = STAGES.map(s => s.id); const i = order.indexOf(stage.id); if(i < order.length-3) updateStage(lead.id, order[i+1]) }} style={{ flex: 1, padding: '5px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 6, color: '#08090C', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>Next ?</button>
+                          <button onClick={() => { const order = STAGES.map(s => s.id); const i = order.indexOf(stage.id); if(i < order.length-3) updateStage(lead.id, order[i+1]) }} style={{ flex: 1, padding: '5px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>Next ?</button>
                         )}
                         {isAdmin && <button onClick={() => deleteLead(lead.id)} style={{ padding: '5px 7px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', fontSize: 11, cursor: 'pointer' }}>X</button>}
                       </div>
@@ -714,7 +714,7 @@ export default function CRMPage() {
             </>)}
             <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addLead} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Lead</button>
+              <button onClick={addLead} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Lead</button>
             </div>
           </div>
         </div>
@@ -786,7 +786,7 @@ export default function CRMPage() {
                 setImportData('')
                 setImporting(false)
                 loadLeads()
-              }} style={{ flex: 2, padding: 10, background: importing || !importData ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: importing || !importData ? 'var(--mu)' : '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              }} style={{ flex: 2, padding: 10, background: importing || !importData ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: importing || !importData ? 'var(--mu)' : '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 {importing ? 'Importing...' : '📥 Import Leads'}
               </button>
             </div>

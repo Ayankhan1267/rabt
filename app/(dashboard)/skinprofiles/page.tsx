@@ -588,7 +588,7 @@ export default function SkinProfilePage() {
                       </div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 8 }}>
-                      <button onClick={() => printProfile(selected)} style={{ width: '100%', padding: 11, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>Print / Download PDF</button>
+                      <button onClick={() => printProfile(selected)} style={{ width: '100%', padding: 11, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>Print / Download PDF</button>
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button onClick={() => shareWhatsApp(selected)} style={{ flex: 1, padding: 10, background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 9, color: 'var(--green)', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>WhatsApp Share</button>
                         {phone && <button onClick={() => shareWhatsApp(selected, true)} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>Send to Patient</button>}

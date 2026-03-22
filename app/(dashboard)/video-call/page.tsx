@@ -140,7 +140,7 @@ function VideoCallInner() {
         <div style={{ fontSize: 40 }}>⚠️</div>
         <div style={{ color: '#ef4444', fontFamily: 'Syne', fontSize: 16, fontWeight: 700 }}>{error}</div>
         <button onClick={() => router.push('/specialist-dashboard')}
-          style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
+          style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
           Dashboard pe wapas jao
         </button>
       </div>

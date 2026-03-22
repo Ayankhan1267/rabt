@@ -555,7 +555,7 @@ Return ONLY the text, no explanation, no quotes.`
               </div>
             ))}
           </div>
-          <button onClick={saveContent} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne', marginTop: 8 }}>
+          <button onClick={saveContent} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 10, color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: 'Syne', marginTop: 8 }}>
             💾 Save Settings
           </button>
         </div>

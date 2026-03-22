@@ -256,7 +256,7 @@ export default function MarketingPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Campaigns <span style={{ color: 'var(--mu)', fontSize: 13, fontWeight: 500 }}>({campaigns.length})</span></div>
-            <button onClick={() => setShowAddCampaign(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Campaign</button>
+            <button onClick={() => setShowAddCampaign(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Campaign</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: selectedCampaign ? '1fr 380px' : '1fr', gap: 16, alignItems: 'start' }}>
@@ -347,7 +347,7 @@ export default function MarketingPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Influencer Pipeline <span style={{ color: 'var(--mu)', fontSize: 13, fontWeight: 500 }}>({influencers.length})</span></div>
-            <button onClick={() => setShowAddInfluencer(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Influencer</button>
+            <button onClick={() => setShowAddInfluencer(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Influencer</button>
           </div>
 
           {/* Stage Kanban */}
@@ -418,7 +418,7 @@ export default function MarketingPage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Launch Calendar</div>
-            <button onClick={() => setShowAddLaunch(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Launch</button>
+            <button onClick={() => setShowAddLaunch(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Launch</button>
           </div>
 
           {overdueLaunches.length > 0 && (
@@ -560,7 +560,7 @@ export default function MarketingPage() {
             </div>
             <div style={{ display: 'flex', gap: 9, marginTop: 4 }}>
               <button onClick={() => setShowAddCampaign(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addCampaign} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Campaign</button>
+              <button onClick={addCampaign} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Campaign</button>
             </div>
           </div>
         </div>
@@ -581,7 +581,7 @@ export default function MarketingPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAddInfluencer(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addInfluencer} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Influencer</button>
+              <button onClick={addInfluencer} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Influencer</button>
             </div>
           </div>
         </div>
@@ -606,7 +606,7 @@ export default function MarketingPage() {
             <input value={launchForm.notes} onChange={e => setLaunchForm(p => ({...p, notes: e.target.value}))} placeholder="Details..." style={inp} />
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAddLaunch(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addLaunch} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Launch</button>
+              <button onClick={addLaunch} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Launch</button>
             </div>
           </div>
         </div>

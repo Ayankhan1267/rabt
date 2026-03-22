@@ -952,9 +952,9 @@ export default function CommunicationsPage() {
             </div>
             <button onClick={saveSettings} disabled={savingSettings} style={{
               width: '100%', padding: 13, marginTop: 20,
-              background: savingSettings ? 'var(--s2)' : 'linear-gradient(135deg,#D4A853,#B87C30)',
+              background: savingSettings ? 'var(--s2)' : 'linear-gradient(135deg,#0197a6,#017a87)',
               border: 'none', borderRadius: 10,
-              color: savingSettings ? 'var(--mu)' : '#08090C',
+              color: savingSettings ? 'var(--mu)' : '#fff',
               fontWeight: 800, fontSize: 14, cursor: savingSettings ? 'not-allowed' : 'pointer', fontFamily: 'Syne'
             }}>
               {savingSettings ? '⏳ Saving...' : '💾 Save All Settings'}

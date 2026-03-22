@@ -154,8 +154,8 @@ export default function EarningsPage() {
         </div>
         <button onClick={syncEarnings} disabled={syncing} style={{
           padding: '8px 18px',
-          background: syncing ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#D4A853,#B87C30)',
-          border: 'none', borderRadius: 8, color: syncing ? 'var(--mu)' : '#08090C',
+          background: syncing ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#0197a6,#017a87)',
+          border: 'none', borderRadius: 8, color: syncing ? 'var(--mu)' : '#fff',
           fontWeight: 700, fontSize: 12.5, cursor: syncing ? 'not-allowed' : 'pointer', fontFamily: 'Outfit'
         }}>
           {syncing ? '⏳ Syncing...' : '🔄 Sync from MongoDB'}
@@ -212,7 +212,7 @@ export default function EarningsPage() {
               <div style={{ fontSize: 36, marginBottom: 12 }}>💰</div>
               <div style={{ fontSize: 14, marginBottom: 6 }}>Abhi koi earnings nahi</div>
               <div style={{ fontSize: 12, marginBottom: 16 }}>MongoDB sync karo</div>
-              <button onClick={syncEarnings} style={{ padding: '8px 20px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={syncEarnings} style={{ padding: '8px 20px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
                 🔄 Sync Now
               </button>
             </div>
@@ -270,9 +270,9 @@ export default function EarningsPage() {
             </div>
             <button onClick={requestPayout} style={{
               width: '100%', padding: 11,
-              background: summary.pending >= 100 ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)',
+              background: summary.pending >= 100 ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'rgba(255,255,255,0.05)',
               border: 'none', borderRadius: 10,
-              color: summary.pending >= 100 ? '#08090C' : 'var(--mu)',
+              color: summary.pending >= 100 ? '#fff' : 'var(--mu)',
               fontSize: 13, fontWeight: 700,
               cursor: summary.pending >= 100 ? 'pointer' : 'not-allowed', fontFamily: 'Outfit'
             }}>

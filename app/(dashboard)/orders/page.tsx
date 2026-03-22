@@ -386,7 +386,7 @@ export default function OrdersPage() {
             </button>
             {srLastSync && <span style={{ fontSize: 9.5, color: 'var(--mu)' }}>Last: {new Date(srLastSync).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>}
           </div>
-          <button onClick={openPOS} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Order</button>
+          <button onClick={openPOS} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Order</button>
         </div>
       </div>
 
@@ -702,7 +702,7 @@ export default function OrdersPage() {
                     <select value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))} style={inp}>{HQ_STATUSES.map(s => <option key={s}>{s}</option>)}</select>
                   </div>
                 </div>
-                <button onClick={addOrder} disabled={cart.length === 0 || !form.customer_name} style={{ width: '100%', padding: '12px', background: cart.length > 0 && form.customer_name ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: cart.length > 0 && form.customer_name ? '#08090C' : 'var(--mu)', fontWeight: 800, fontSize: 14, cursor: cart.length > 0 && form.customer_name ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
+                <button onClick={addOrder} disabled={cart.length === 0 || !form.customer_name} style={{ width: '100%', padding: '12px', background: cart.length > 0 && form.customer_name ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'rgba(255,255,255,0.05)', border: 'none', borderRadius: 10, color: cart.length > 0 && form.customer_name ? '#fff' : 'var(--mu)', fontWeight: 800, fontSize: 14, cursor: cart.length > 0 && form.customer_name ? 'pointer' : 'not-allowed', fontFamily: 'Syne' }}>
                   {cart.length > 0 ? 'Create Order \u2192 Rs.' + totals.total : 'Cart mein product add karo'}
                 </button>
               </div>

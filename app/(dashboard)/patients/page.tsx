@@ -232,7 +232,7 @@ export default function PatientsPage() {
 
                   {/* Patient */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: 9, background: p.source === 'offline' ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'linear-gradient(135deg,#3B82F6,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 9, background: p.source === 'offline' ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'linear-gradient(135deg,#3B82F6,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 14, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                       {(p.name || 'P').charAt(0).toUpperCase()}
                     </div>
                     <div style={{ minWidth: 0 }}>

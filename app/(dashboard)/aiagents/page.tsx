@@ -196,8 +196,8 @@ export default function AIAgentsPage() {
               </div>
               <div style={{
                 maxWidth: '76%', padding: '10px 13px', borderRadius: 12, fontSize: 13, lineHeight: 1.55,
-                background: msg.role === 'user' ? 'linear-gradient(135deg,#D4A853,#B87C30)' : 'var(--s2)',
-                color: msg.role === 'user' ? '#08090C' : 'var(--tx)',
+                background: msg.role === 'user' ? 'linear-gradient(135deg,#0197a6,#017a87)' : 'var(--s2)',
+                color: msg.role === 'user' ? '#fff' : 'var(--tx)',
                 fontWeight: msg.role === 'user' ? 500 : 400,
                 borderBottomRightRadius: msg.role === 'user' ? 3 : 12,
                 borderBottomLeftRadius: msg.role === 'assistant' ? 3 : 12,

@@ -870,7 +870,7 @@ export default function PartnerPortalPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button onClick={()=>{setAiAnalysis(null);setPhotoBase64('');setPhotoPreview('')}} style={{ padding: '12px 20px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, color: 'var(--mu2)', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>🔄 Re-analyze</button>
-                  <button onClick={()=>{if(cart.length===0){toast.error('Add at least one product');return}setStep(3)}} style={{ padding: '12px 28px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>Proceed to Checkout →</button>
+                  <button onClick={()=>{if(cart.length===0){toast.error('Add at least one product');return}setStep(3)}} style={{ padding: '12px 28px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>Proceed to Checkout →</button>
                 </div>
               </div>
             </div>
@@ -1002,7 +1002,7 @@ export default function PartnerPortalPage() {
                 )}
               </div>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => generatePDF()} style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>📄 Download Skin Profile PDF</button>
+                <button onClick={() => generatePDF()} style={{ flex: 1, padding: '13px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>📄 Download Skin Profile PDF</button>
                 <button onClick={resetOrder} style={{ flex: 1, padding: '13px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, color: 'var(--mu2)', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Customer</button>
               </div>
             </div>

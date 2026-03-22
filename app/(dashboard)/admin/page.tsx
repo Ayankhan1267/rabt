@@ -145,7 +145,7 @@ export default function AdminPage() {
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Admin <span style={{ color: 'var(--gold)' }}>Panel</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{profiles.length} team members</p>
         </div>
-        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+        <button onClick={() => setShowAdd(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
           + Add Member
         </button>
       </div>
@@ -315,7 +315,7 @@ export default function AdminPage() {
 
                 <div style={{ display: 'flex', gap: 8 }}>
                   {waStatus.status !== 'connected' && (
-                    <button onClick={initWa} disabled={waLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                    <button onClick={initWa} disabled={waLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
                       {waStatus.status === 'scanning' ? 'Reinitialize' : 'Connect WhatsApp'}
                     </button>
                   )}
@@ -360,7 +360,7 @@ export default function AdminPage() {
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addMember} disabled={adding} style={{ flex: 2, padding: 10, background: adding ? 'rgba(212,168,83,0.4)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: adding ? 'not-allowed' : 'pointer', fontFamily: 'Outfit' }}>
+              <button onClick={addMember} disabled={adding} style={{ flex: 2, padding: 10, background: adding ? 'rgba(212,168,83,0.4)' : 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: adding ? 'not-allowed' : 'pointer', fontFamily: 'Outfit' }}>
                 {adding ? '⏳ Adding...' : 'Add Member'}
               </button>
             </div>
@@ -386,7 +386,7 @@ export default function AdminPage() {
             <div style={{ padding: '10px 12px', background: 'var(--orL)', borderRadius: 8, fontSize: 12, color: 'var(--orange)', marginBottom: 14 }}>
               ⚠️ Pehli baar login karke password change karne bolna!
             </div>
-            <button onClick={() => setNewCredentials(null)} style={{ width: '100%', padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+            <button onClick={() => setNewCredentials(null)} style={{ width: '100%', padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
               Done ✓
             </button>
           </div>

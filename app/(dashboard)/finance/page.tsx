@@ -431,7 +431,7 @@ export default function FinancePage() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Expenses <span style={{ color: 'var(--mu)', fontWeight: 500, fontSize: 13 }}>({periodExpenses.length} · ₹{totalExpenses.toLocaleString('en-IN')})</span></div>
-            <button onClick={() => setShowAddExpense(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Expense</button>
+            <button onClick={() => setShowAddExpense(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Expense</button>
           </div>
 
           {/* Category summary */}
@@ -728,7 +728,7 @@ export default function FinancePage() {
           </div>
 
           <div style={{ gridColumn: '1/-1' }}>
-            <button onClick={saveSettings} disabled={savingSettings} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>
+            <button onClick={saveSettings} disabled={savingSettings} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>
               {savingSettings ? 'Saving...' : '💾 Save All Settings'}
             </button>
           </div>
@@ -858,7 +858,7 @@ export default function FinancePage() {
             <input value={expenseForm.notes} onChange={e => setExpenseForm(p => ({...p, notes: e.target.value}))} placeholder="Details..." style={inp} />
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setShowAddExpense(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>
-              <button onClick={addExpense} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Expense</button>
+              <button onClick={addExpense} style={{ flex: 2, padding: 10, background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Add Expense</button>
             </div>
           </div>
         </div>
