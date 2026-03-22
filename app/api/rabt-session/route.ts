@@ -9,7 +9,7 @@ function makeToken(userId: string) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: '2h' })
 }
 
-// POST â€” Accept consultation + create session
+// POST — Accept consultation + create session
 export async function POST(req: NextRequest) {
   try {
     const { consultationId, specialistMongoId } = await req.json()
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET â€” Stream.io token generate karo specialist ke liye
+// GET — Stream.io token generate karo specialist ke liye
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// PATCH â€” Skin profile update (skin-data ya routine)
+// PATCH — Skin profile update (skin-data ya routine)
 export async function PATCH(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)

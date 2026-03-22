@@ -163,7 +163,7 @@ export default function CRMPage() {
         )
 
         if (exists) {
-          // Only upgrade stage � never downgrade to lower stage
+          // Only upgrade stage — never downgrade to lower stage
           const stageOrder = STAGES.map(s => s.id)
           const currentIdx = stageOrder.indexOf(exists.stage)
           const newIdx = stageOrder.indexOf(newStage)
@@ -226,7 +226,7 @@ export default function CRMPage() {
         added++
       }
 
-      toast.success(added + ' new � ' + autoAssigned + ' auto-assigned � ' + updated + ' updated', { id: 'sync', duration: 8000 })
+      toast.success(added + ' new — ' + autoAssigned + ' auto-assigned — ' + updated + ' updated', { id: 'sync', duration: 8000 })
       loadLeads()
     } catch (err: any) {
       toast.error('Error: ' + err.message, { id: 'sync' })
@@ -305,8 +305,8 @@ export default function CRMPage() {
         <div>
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>CRM / <span style={{ color: 'var(--gold)' }}>Leads</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>
-            {leads.length} total{unassigned.length > 0 && isAdmin && <span style={{ color: 'var(--orange)' }}> � {unassigned.length} unassigned</span>}
-            <span style={{ color: 'var(--green)' }}> � Live</span>
+            {leads.length} total{unassigned.length > 0 && isAdmin && <span style={{ color: 'var(--orange)' }}> — {unassigned.length} unassigned</span>}
+            <span style={{ color: 'var(--green)' }}> — Live</span>
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -375,7 +375,7 @@ export default function CRMPage() {
                       {isAdmin && (
                         <select value={lead.assigned_to?.id || ''} onChange={e => { const p = profiles.find(pr => pr.id === e.target.value); assignLead(lead.id, e.target.value, p?.name || '') }}
                           style={{ width: '100%', background: lead.assigned_to ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)', border: '1px solid ' + (lead.assigned_to ? 'rgba(34,197,94,0.3)' : 'rgba(249,115,22,0.3)'), borderRadius: 6, padding: '5px 8px', color: lead.assigned_to ? 'var(--green)' : 'var(--orange)', fontSize: 11, fontFamily: 'Outfit', outline: 'none', cursor: 'pointer', marginBottom: 8 }}>
-                          <option value="">{lead.assigned_to ? '� Change �' : '👆 Assign karo'}</option>
+                          <option value="">{lead.assigned_to ? '✏️ Change' : '👆 Assign karo'}</option>
                           <optgroup label="Specialists">{profiles.filter(p => p.role === 'specialist').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
                           <optgroup label="Team">{profiles.filter(p => p.role !== 'specialist').map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</optgroup>
                         </select>
@@ -412,8 +412,8 @@ export default function CRMPage() {
                 return (
                   <tr key={i} onMouseOver={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.018)')} onMouseOut={e => (e.currentTarget.style.background = '')}>
                     <td style={{ padding: '10px 12px', fontWeight: 500, fontSize: 12.5 }}>{l.name}</td>
-                    <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontSize: 12 }}>{l.phone || '�'}</td>
-                    <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--mu2)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.concern || '�'}</td>
+                    <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontSize: 12 }}>{l.phone || '—'}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--mu2)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.concern || '—'}</td>
                     <td style={{ padding: '10px 12px' }}><span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: l.source === 'Website' ? 'var(--grL)' : l.source === 'Offline' ? 'var(--orL)' : 'var(--blL)', color: l.source === 'Website' ? 'var(--green)' : l.source === 'Offline' ? 'var(--orange)' : 'var(--blue)' }}>{l.source}</span></td>
                     <td style={{ padding: '10px 12px' }}>
                       {isAdmin ? (
@@ -427,7 +427,7 @@ export default function CRMPage() {
                     <td style={{ padding: '10px 12px' }}>
                       {isAdmin ? (
                         <select value={l.assigned_to?.id || ''} onChange={e => { const p = profiles.find(pr => pr.id === e.target.value); assignLead(l.id, e.target.value, p?.name || '') }} style={{ background: l.assigned_to ? 'rgba(34,197,94,0.1)' : 'rgba(249,115,22,0.1)', border: '1px solid ' + (l.assigned_to ? 'rgba(34,197,94,0.3)' : 'rgba(249,115,22,0.3)'), borderRadius: 6, padding: '4px 8px', color: l.assigned_to ? 'var(--green)' : 'var(--orange)', fontSize: 11, cursor: 'pointer', outline: 'none', fontFamily: 'Outfit', maxWidth: 140 }}>
-                          <option value="">{l.assigned_to ? '� Change �' : '👆 Assign'}</option>
+                          <option value="">{l.assigned_to ? '✏️ Change' : '👆 Assign'}</option>
                           {profiles.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                       ) : (
@@ -610,11 +610,11 @@ export default function CRMPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
               {[
-                { label: 'Phone', value: selectedLead.phone || '�' },
-                { label: 'Email', value: selectedLead.email || '�' },
+                { label: 'Phone', value: selectedLead.phone || '—' },
+                { label: 'Email', value: selectedLead.email || '—' },
                 { label: 'Source', value: selectedLead.source },
                 { label: 'Stage', value: STAGES.find(s => s.id === selectedLead.stage)?.label || selectedLead.stage },
-                { label: 'Concern', value: selectedLead.concern || '�' },
+                { label: 'Concern', value: selectedLead.concern || '—' },
                 { label: 'Assigned', value: selectedLead.assigned_to?.name || 'Unassigned' },
               ].map((item, i) => (
                 <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px' }}>
@@ -628,7 +628,7 @@ export default function CRMPage() {
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Assign To</label>
                   <select value={selectedLead.assigned_to?.id || ''} onChange={e => { const p = profiles.find(pr => pr.id === e.target.value); assignLead(selectedLead.id, e.target.value, p?.name || ''); setSelectedLead({...selectedLead, assigned_to: p || null}) }} style={{ width: '100%', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, padding: '9px 12px', color: 'var(--tx)', fontSize: 13, fontFamily: 'Outfit', outline: 'none', cursor: 'pointer' }}>
-                    <option value="">� Unassigned �</option>
+                    <option value="">— Unassigned</option>
                     <optgroup label="Specialists">{profiles.filter(p => p.role === 'specialist').map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</optgroup>
                     <optgroup label="Team">{profiles.filter(p => p.role !== 'specialist').map(p => <option key={p.id} value={p.id}>{p.name} ({p.role})</option>)}</optgroup>
                   </select>

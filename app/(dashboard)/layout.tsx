@@ -261,11 +261,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 15, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.3px' }}>rabt </span>
               <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
             </div>
-            <div style={{ fontSize: 9, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>HQ � AI Business OS</div>
+            <div style={{ fontSize: 9, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>HQ · AI Business OS</div>
           </div>
           {/* Close button on mobile */}
           {isMobile && profile?.role !== 'partner' && (
-            <button onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 4 }}>?</button>
+            <button onClick={() => setSidebarOpen(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 4 }}>✕</button>
           )}
         </div>
         {roleConfig && (
@@ -317,7 +317,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)' }} />
         </div>
-        <button onClick={logout} style={{ width: '100%', marginTop: 9, padding: '6px', background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', borderRadius: 8, color: 'var(--teal)', fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>? Sign Out</button>
+        <button onClick={logout} style={{ width: '100%', marginTop: 9, padding: '6px', background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', borderRadius: 8, color: 'var(--teal)', fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>→ Sign Out</button>
       </div>
     </>
   )
@@ -378,7 +378,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               )}
             </div>
 
-            {/* Date � hide on small mobile */}
+            {/* Date — hide on small mobile */}
             {!isMobile && (
               <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono', padding: '5px 10px', background: 'rgba(26,155,160,0.06)', border: '1px solid rgba(26,155,160,0.15)', borderRadius: 6 }}>
                 {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}

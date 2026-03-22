@@ -135,7 +135,7 @@ export default function CustomersPage() {
 
   function getSpecialistName(id: string) {
     const sp = specialists.find((s:any) => s._id?.toString() === id?.toString())
-    return sp ? (sp.name || sp.firstName + ' ' + (sp.lastName || '')) : 'â€”'
+    return sp ? (sp.name || sp.firstName + ' ' + (sp.lastName || '')) : '—'
   }
 
   function generateSkinPDF(customer: any) {
@@ -146,14 +146,14 @@ export default function CustomersPage() {
     w.document.write(`<html><head><title>Skin Profile - ${customer.name}</title><style>body{font-family:Arial,sans-serif;padding:30px;color:#111;max-width:800px;margin:0 auto}.header{text-align:center;padding-bottom:20px;border-bottom:3px solid #0097A7;margin-bottom:24px}.brand{font-size:22px;font-weight:900;color:#0097A7}.section{font-size:13px;font-weight:800;color:#0097A7;text-transform:uppercase;letter-spacing:0.1em;margin:20px 0 10px}.card{background:#f0fafa;border-radius:10px;padding:16px;margin-bottom:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.label{font-size:10px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:4px}.value{font-size:14px;font-weight:600}.badge{display:inline-block;padding:3px 10px;border-radius:20px;background:#e0f7fa;color:#0097A7;font-size:11px;font-weight:700;margin:2px}.score{font-size:48px;font-weight:900;color:#0097A7}.footer{text-align:center;margin-top:30px;font-size:11px;color:#999}</style></head><body>
     <div class="header"><div class="brand">rabt NATURALS</div><div style="font-size:13px;color:#666;margin-top:4px">Personalized Skin Profile Report</div><div style="font-size:12px;color:#999;margin-top:2px">${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</div></div>
     <div class="section">Customer Details</div>
-    <div class="card grid"><div><div class="label">Name</div><div class="value">${customer.name}</div></div><div><div class="label">Phone</div><div class="value">${customer.phone || 'â€”'}</div></div><div><div class="label">City</div><div class="value">${customer.city || 'â€”'}</div></div><div><div class="label">Total Orders</div><div class="value">${customer.orders.length}</div></div></div>
+    <div class="card grid"><div><div class="label">Name</div><div class="value">${customer.name}</div></div><div><div class="label">Phone</div><div class="value">${customer.phone || '—'}</div></div><div><div class="label">City</div><div class="value">${customer.city || '—'}</div></div><div><div class="label">Total Orders</div><div class="value">${customer.orders.length}</div></div></div>
     <div class="section">Skin Analysis</div>
-    <div class="card" style="display:flex;gap:20px;align-items:center"><div style="text-align:center"><div class="score">${sp.skinScore || 'â€”'}</div><div style="font-size:11px;color:#666">/100 Skin Score</div></div><div style="flex:1"><div class="label">Skin Type</div><div class="value" style="margin-bottom:8px">${sp.skinType || 'â€”'}</div><div class="label">Category</div><div class="value">${sp.skinCategory || 'â€”'}</div></div></div>
+    <div class="card" style="display:flex;gap:20px;align-items:center"><div style="text-align:center"><div class="score">${sp.skinScore || '—'}</div><div style="font-size:11px;color:#666">/100 Skin Score</div></div><div style="flex:1"><div class="label">Skin Type</div><div class="value" style="margin-bottom:8px">${sp.skinType || '—'}</div><div class="label">Category</div><div class="value">${sp.skinCategory || '—'}</div></div></div>
     ${(sp.concerns || sp.skinConcerns || []).length ? `<div class="section">Skin Concerns</div><div class="card">${(sp.concerns || sp.skinConcerns || []).map((c: string) => `<span class="badge">${c}</span>`).join('')}</div>` : ''}
     ${sp.aiExtractedData ? `<div class='section'>AI Analysis</div><div class='card'><div class='grid'><div><div class='label'>Skin Type</div><div class='value'>${sp.aiExtractedData.skinType || '-'}</div></div><div><div class='label'>Stress Level</div><div class='value'>${sp.aiExtractedData.stressLevel || '-'}</div></div><div><div class='label'>Water Intake</div><div class='value'>${sp.aiExtractedData.waterIntake || '-'}</div></div><div><div class='label'>Diet</div><div class='value'>${sp.aiExtractedData.diet || '-'}</div></div><div><div class='label'>Skin Goals</div><div class='value'>${sp.aiExtractedData.skinGoals || '-'}</div></div><div><div class='label'>Allergies</div><div class='value'>${sp.aiExtractedData.allergies || '-'}</div></div></div></div>` : sp.skinSummary ? `<div class='section'>AI Analysis</div><div class='card'><p>${sp.skinSummary}</p></div>` : ''}
     ${sp.recommendedRange ? `<div class="section">Recommended Range</div><div class="card" style="background:#e8f5e9"><div style="font-size:18px;font-weight:800;color:#2e7d32">${sp.recommendedRange}</div></div>` : ''}
-    ${customer.orders.length ? `<div class="section">Order History</div><div class="card"><table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:2px solid #ddd"><th style="text-align:left;padding:6px">Order #</th><th style="text-align:left;padding:6px">Products</th><th style="text-align:right;padding:6px">Amount</th><th style="text-align:left;padding:6px">Status</th></tr>${customer.orders.slice(0,5).map((o: any) => `<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#0097A7;font-weight:700">${o.orderNumber || o._id?.toString().slice(-6) || 'â€”'}</td><td style="padding:6px;color:#555">${o.products || o.items?.[0]?.productSnapshot?.name || 'â€”'}</td><td style="padding:6px;text-align:right;font-weight:700">Rs.${o.amount || 0}</td><td style="padding:6px"><span style="background:#e0f7fa;color:#0097A7;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${o.status || o.orderStatus || 'â€”'}</span></td></tr>`).join('')}</table></div>` : ''}
-    <div class="footer">Rabt Naturals Â· rabtnaturals.com Â· support@rabtnaturals.in</div></body></html>`)
+    ${customer.orders.length ? `<div class="section">Order History</div><div class="card"><table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:2px solid #ddd"><th style="text-align:left;padding:6px">Order #</th><th style="text-align:left;padding:6px">Products</th><th style="text-align:right;padding:6px">Amount</th><th style="text-align:left;padding:6px">Status</th></tr>${customer.orders.slice(0,5).map((o: any) => `<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#0097A7;font-weight:700">${o.orderNumber || o._id?.toString().slice(-6) || '—'}</td><td style="padding:6px;color:#555">${o.products || o.items?.[0]?.productSnapshot?.name || '—'}</td><td style="padding:6px;text-align:right;font-weight:700">Rs.${o.amount || 0}</td><td style="padding:6px"><span style="background:#e0f7fa;color:#0097A7;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${o.status || o.orderStatus || '—'}</span></td></tr>`).join('')}</table></div>` : ''}
+    <div class="footer">Rabt Naturals · rabtnaturals.com · support@rabtnaturals.in</div></body></html>`)
     w.document.close()
     setTimeout(() => w.print(), 500)
   }
@@ -167,13 +167,13 @@ export default function CustomersPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Customer <span style={{ color: 'var(--teal)' }}>Intelligence</span></h1>
-          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{totalCustomers} total Â· {withSkinProfile} skin profiles Â· {repeatCustomers} repeat buyers</p>
+          <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>{totalCustomers} total · {withSkinProfile} skin profiles · {repeatCustomers} repeat buyers</p>
         </div>
-        <button onClick={loadAll} style={{ padding: '8px 16px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>ðŸ”„ Refresh</button>
+        <button onClick={loadAll} style={{ padding: '8px 16px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>🔄 Refresh</button>
       </div>
 
       <div style={{ display: 'flex', gap: 4, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[{ id: 'overview', l: 'ðŸ“Š Overview' }, { id: 'customers', l: 'ðŸ‘¥ All Customers' }, { id: 'analytics', l: 'ðŸ“ˆ Analytics' }, { id: 'skin', l: 'ðŸŒ¿ Skin Profiles' }].map(t => (
+        {[{ id: 'overview', l: '📊 Overview' }, { id: 'customers', l: '👥 All Customers' }, { id: 'analytics', l: '📈 Analytics' }, { id: 'skin', l: '🌿 Skin Profiles' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as any)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid ' + (tab === t.id ? 'rgba(0,151,167,0.3)' : 'var(--b1)'), background: tab === t.id ? 'rgba(0,151,167,0.1)' : 'var(--s2)', color: tab === t.id ? 'var(--teal)' : 'var(--mu2)', fontWeight: tab === t.id ? 700 : 500, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>{t.l}</button>
         ))}
       </div>
@@ -186,13 +186,13 @@ export default function CustomersPage() {
             <div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(130px,1fr))', gap: 12, marginBottom: 20 }}>
                 {[
-                  { label: 'Total Customers', value: totalCustomers,      color: 'var(--teal)',   icon: 'ðŸ‘¥' },
-                  { label: 'Website',         value: websiteCustomers,    color: 'var(--green)',  icon: 'ðŸŒ' },
-                  { label: 'HQ Orders',       value: hqCustomers,         color: 'var(--blue)',   icon: 'ðŸ¢' },
-                  { label: 'Partner',         value: partnerCustomers,    color: 'var(--orange)', icon: 'ðŸ¤' },
-                  { label: 'Specialist',      value: specialistCustomers, color: 'var(--purple)', icon: 'ðŸŒ¿' },
-                  { label: 'Skin Profiles',   value: withSkinProfile,     color: 'var(--teal)',   icon: 'âœ¨' },
-                  { label: 'Repeat Buyers',   value: repeatCustomers,     color: 'var(--gold)',   icon: 'â­' },
+                  { label: 'Total Customers', value: totalCustomers,      color: 'var(--teal)',   icon: '👥' },
+                  { label: 'Website',         value: websiteCustomers,    color: 'var(--green)',  icon: '🌐' },
+                  { label: 'HQ Orders',       value: hqCustomers,         color: 'var(--blue)',   icon: '🏢' },
+                  { label: 'Partner',         value: partnerCustomers,    color: 'var(--orange)', icon: '🤝' },
+                  { label: 'Specialist',      value: specialistCustomers, color: 'var(--purple)', icon: '🌿' },
+                  { label: 'Skin Profiles',   value: withSkinProfile,     color: 'var(--teal)',   icon: '✨' },
+                  { label: 'Repeat Buyers',   value: repeatCustomers,     color: 'var(--gold)',   icon: '⭐' },
                 ].map((s, i) => (
                   <div key={i} className="card" style={{ minHeight: 100 }}>
                     <div style={{ fontSize: 20, marginBottom: 8 }}>{s.icon}</div>
@@ -235,7 +235,7 @@ export default function CustomersPage() {
                 </div>
               </div>
               <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Recent Customers <span style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'Outfit', fontWeight: 400 }}>â€” click to view details</span></div>
+                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--b1)', fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Recent Customers <span style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'Outfit', fontWeight: 400 }}>— click to view details</span></div>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr>{['Customer', 'Phone', 'City', 'Orders', 'Spent', 'Source', 'Skin'].map(h => (
@@ -248,15 +248,15 @@ export default function CustomersPage() {
                         onMouseOver={e => (e.currentTarget.style.background = 'rgba(0,151,167,0.05)')}
                         onMouseOut={e => (e.currentTarget.style.background = '')}>
                         <td style={{ padding: '9px 12px', fontWeight: 600, fontSize: 13, color: 'var(--teal)' }}>{c.name}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, fontFamily: 'DM Mono', color: 'var(--mu2)' }}>{c.phone || 'â€”'}</td>
-                        <td style={{ padding: '9px 12px', fontSize: 12, color: 'var(--mu2)' }}>{c.city || 'â€”'}</td>
+                        <td style={{ padding: '9px 12px', fontSize: 12, fontFamily: 'DM Mono', color: 'var(--mu2)' }}>{c.phone || '—'}</td>
+                        <td style={{ padding: '9px 12px', fontSize: 12, color: 'var(--mu2)' }}>{c.city || '—'}</td>
                         <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--teal)' }}>{c.orders.length}</td>
                         <td style={{ padding: '9px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--green)' }}>Rs.{c.totalSpent.toLocaleString('en-IN')}</td>
                         <td style={{ padding: '9px 12px' }}>
                           {[...c.sources].map((src: string, si: number) => { const cfg = getSourceConfig(src); return <span key={si} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: cfg.bg, color: cfg.color, fontWeight: 700, marginRight: 3 }}>{cfg.label}</span> })}
                         </td>
                         <td style={{ padding: '9px 12px' }}>
-                          {c.skinProfile ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)', fontWeight: 700 }}>Yes</span> : <span style={{ fontSize: 10, color: 'var(--mu)' }}>â€”</span>}
+                          {c.skinProfile ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)', fontWeight: 700 }}>Yes</span> : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
                         </td>
                       </tr>
                     ))}
@@ -292,20 +292,20 @@ export default function CustomersPage() {
                           onMouseOut={e => (e.currentTarget.style.background = '')}>
                           <td style={{ padding: '10px 12px' }}>
                             <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--teal)' }}>{c.name}</div>
-                            {c.orders.length > 1 && <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2 }}>â­ Repeat</div>}
+                            {c.orders.length > 1 && <div style={{ fontSize: 10, color: 'var(--gold)', marginTop: 2 }}>⭐ Repeat</div>}
                           </td>
-                          <td style={{ padding: '10px 12px', fontSize: 12, fontFamily: 'DM Mono', color: 'var(--mu2)' }}>{c.phone || 'â€”'}</td>
-                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--mu2)' }}>{[c.city, c.state].filter(Boolean).join(', ') || 'â€”'}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 12, fontFamily: 'DM Mono', color: 'var(--mu2)' }}>{c.phone || '—'}</td>
+                          <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--mu2)' }}>{[c.city, c.state].filter(Boolean).join(', ') || '—'}</td>
                           <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--teal)' }}>{c.orders.length}</td>
                           <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--green)' }}>Rs.{c.totalSpent.toLocaleString('en-IN')}</td>
                           <td style={{ padding: '10px 12px' }}>
                             {[...c.sources].map((src: string, si: number) => { const cfg = getSourceConfig(src); return <span key={si} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: cfg.bg, color: cfg.color, fontWeight: 700, marginRight: 3 }}>{cfg.label}</span> })}
                           </td>
                           <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--mu)' }}>
-                            {lastOrder?.createdAt ? new Date(lastOrder.createdAt).toLocaleDateString('en-IN') : 'â€”'}
+                            {lastOrder?.createdAt ? new Date(lastOrder.createdAt).toLocaleDateString('en-IN') : '—'}
                           </td>
                           <td style={{ padding: '10px 12px' }}>
-                            {c.skinProfile ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)', fontWeight: 700 }}>Yes</span> : <span style={{ fontSize: 10, color: 'var(--mu)' }}>â€”</span>}
+                            {c.skinProfile ? <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)', fontWeight: 700 }}>Yes</span> : <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>}
                           </td>
                         </tr>
                       )
@@ -383,18 +383,18 @@ export default function CustomersPage() {
                         {sp.skinScore && <div style={{ textAlign: 'center', background: 'rgba(0,151,167,0.1)', borderRadius: 8, padding: '4px 10px' }}><div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: 'var(--teal)' }}>{sp.skinScore}</div><div style={{ fontSize: 9, color: 'var(--mu)' }}>/100</div></div>}
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-                        <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Skin Type</div><div style={{ fontSize: 12, fontWeight: 700 }}>{sp.skinType || 'â€”'}</div></div>
-                        <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Category</div><div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal)' }}>{sp.skinCategory || 'â€”'}</div></div>
+                        <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Skin Type</div><div style={{ fontSize: 12, fontWeight: 700 }}>{sp.skinType || '—'}</div></div>
+                        <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Category</div><div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal)' }}>{sp.skinCategory || '—'}</div></div>
                       </div>
                       {(sp.concerns || sp.skinConcerns || []).length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>{(sp.concerns || sp.skinConcerns || []).slice(0, 3).map((concern: string, ci: number) => <span key={ci} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{concern}</span>)}</div>}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: 'var(--mu)' }}>{c.orders.length} orders</span>
-                        <button onClick={e => { e.stopPropagation(); generateSkinPDF(c) }} style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 7, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>ðŸ“„ PDF</button>
+                        <button onClick={e => { e.stopPropagation(); generateSkinPDF(c) }} style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 7, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>📄 PDF</button>
                       </div>
                     </div>
                   )
                 })}
-                {allCustomers.filter(c => c.skinProfile).length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--mu)' }}><div style={{ fontSize: 36, marginBottom: 12 }}>ðŸŒ¿</div><div style={{ fontSize: 14 }}>No skin profiles yet</div></div>}
+                {allCustomers.filter(c => c.skinProfile).length === 0 && <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--mu)' }}><div style={{ fontSize: 36, marginBottom: 12 }}>🌿</div><div style={{ fontSize: 14 }}>No skin profiles yet</div></div>}
               </div>
             </div>
           )}
@@ -409,17 +409,17 @@ export default function CustomersPage() {
             <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0, position: 'sticky', top: 0, background: 'var(--s1)', zIndex: 10 }}>
               <div>
                 <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>{selectedCustomer.name}</div>
-                <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{selectedCustomer.phone} {selectedCustomer.email ? 'Â· ' + selectedCustomer.email : ''}</div>
+                <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{selectedCustomer.phone} {selectedCustomer.email ? '· ' + selectedCustomer.email : ''}</div>
               </div>
-              <button onClick={() => setSelectedCustomer(null)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', cursor: 'pointer', color: 'var(--mu2)', fontSize: 16 }}>âœ•</button>
+              <button onClick={() => setSelectedCustomer(null)} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--s2)', border: '1px solid var(--b1)', cursor: 'pointer', color: 'var(--mu2)', fontSize: 16 }}>✕</button>
             </div>
 
             <div style={{ padding: '16px 20px', flex: 1 }}>
               {/* Basic Info */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
                 {[
-                  { label: 'City',         value: selectedCustomer.city || 'â€”' },
-                  { label: 'State',        value: selectedCustomer.state || 'â€”' },
+                  { label: 'City',         value: selectedCustomer.city || '—' },
+                  { label: 'State',        value: selectedCustomer.state || '—' },
                   { label: 'Total Orders', value: selectedCustomer.orders.length },
                   { label: 'Total Spent',  value: 'Rs.' + selectedCustomer.totalSpent.toLocaleString('en-IN') },
                 ].map((item, i) => (
@@ -452,15 +452,15 @@ export default function CustomersPage() {
               {selectedCustomer.skinProfile ? (
                 <div style={{ background: 'rgba(0,151,167,0.06)', border: '1px solid rgba(0,151,167,0.2)', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                    <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>ðŸŒ¿ Skin Profile</div>
-                    <button onClick={() => generateSkinPDF(selectedCustomer)} style={{ padding: '5px 12px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>ðŸ“„ Download PDF</button>
+                    <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>🌿 Skin Profile</div>
+                    <button onClick={() => generateSkinPDF(selectedCustomer)} style={{ padding: '5px 12px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>📄 Download PDF</button>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
                     {[
-                      { l: 'Skin Type',   v: selectedCustomer.skinProfile.skinType || 'â€”' },
-                      { l: 'Score',       v: (selectedCustomer.skinProfile.skinScore || 'â€”') + '/100', color: 'var(--teal)' },
-                      { l: 'Category',    v: selectedCustomer.skinProfile.skinCategory || 'â€”', color: 'var(--teal)' },
-                      { l: 'Recommended', v: selectedCustomer.skinProfile.recommendedRange || 'â€”', color: 'var(--gold)' },
+                      { l: 'Skin Type',   v: selectedCustomer.skinProfile.skinType || '—' },
+                      { l: 'Score',       v: (selectedCustomer.skinProfile.skinScore || '—') + '/100', color: 'var(--teal)' },
+                      { l: 'Category',    v: selectedCustomer.skinProfile.skinCategory || '—', color: 'var(--teal)' },
+                      { l: 'Recommended', v: selectedCustomer.skinProfile.recommendedRange || '—', color: 'var(--gold)' },
                     ].map((item, i) => (
                       <div key={i}>
                         <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>{item.l}</div>
@@ -489,7 +489,7 @@ export default function CustomersPage() {
 
               {/* Order History */}
               <div>
-                <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12 }}>ðŸ“¦ Order History ({selectedCustomer.orders.length})</div>
+                <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12 }}>📦 Order History ({selectedCustomer.orders.length})</div>
                 {selectedCustomer.orders.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: 20, color: 'var(--mu)', fontSize: 12, background: 'var(--s2)', borderRadius: 8 }}>No orders yet</div>
                 ) : selectedCustomer.orders
@@ -499,7 +499,7 @@ export default function CustomersPage() {
                       const isDelivered = status === 'delivered'
                       const isCancelled = ['cancelled','canceled','rto'].includes(status)
                       const src = getSourceConfig(getSource(o))
-                      const products = o.products || (o.items || []).map((it: any) => it.productSnapshot?.name || it.name || '').filter(Boolean).join(', ') || 'â€”'
+                      const products = o.products || (o.items || []).map((it: any) => it.productSnapshot?.name || it.name || '').filter(Boolean).join(', ') || '—'
                       return (
                         <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 10, border: '1px solid var(--b1)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -512,7 +512,7 @@ export default function CustomersPage() {
                               <span style={{ fontFamily: 'DM Mono', fontWeight: 700, fontSize: 14, color: 'var(--green)' }}>Rs.{o.amount || 0}</span>
                               <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 20, background: src.bg, color: src.color, fontWeight: 600 }}>{src.label}</span>
                             </div>
-                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : 'â€”'}</span>
+                            <span style={{ fontSize: 11, color: 'var(--mu)' }}>{o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : '—'}</span>
                           </div>
                         </div>
                       )

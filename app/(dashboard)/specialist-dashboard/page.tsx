@@ -461,7 +461,7 @@ export default function SpecialistDashboard() {
     } catch { toast.error('Error') }
   }
 
-  // âœ… UPDATED: Create or Update skin profile
+  // ✅ UPDATED: Create or Update skin profile
   async function updateSkinProfile() {
     const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
     if (!url || !editSkinProfile) return
@@ -895,7 +895,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 </table>
               </div>
 
-              {/* âœ… Detail Panel with new buttons */}
+              {/* ✅ Detail Panel with new buttons */}
               {selectedCons && (
                 <div style={{ position: 'sticky', top: 20, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14, padding: '18px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -939,7 +939,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
 
-                    {/* Accept / Reject â€” only for pending */}
+                    {/* Accept / Reject — only for pending */}
                     {selectedCons.status === 'pending' && (
                       <div style={{ display: 'flex', gap: 8 }}>
                         <button style={{ flex: 1, padding: '9px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 8, color: 'var(--green)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}
@@ -953,7 +953,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       </div>
                     )}
 
-                    {/* âœ… START CONSULTATION â€” accepted or scheduled */}
+                    {/* ✅ START CONSULTATION — accepted or scheduled */}
                     {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (
                       <button
                         onClick={() => {
@@ -1521,7 +1521,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
         </div>
       )}
 
-      {/* âœ… Skin Profile Edit/Create Modal */}
+      {/* ✅ Skin Profile Edit/Create Modal */}
       {editSkinProfile && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 460, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
