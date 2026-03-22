@@ -37,6 +37,20 @@ const DEFAULT_TEMPLATES: Record<string, { label: string; category: string; color
     needsLink: 'joinLink',
     text: `Hi {name}! ⏰\n\n*Aapki consultation aaj/kal hai!* 🌿\n\n✅ Saaf chehra tayar karein\n✅ Achhi lighting wali jagah chuno\n✅ Skin concerns note kar lein\n\n*Join link:*\n👉 {joinLink}\n\nSee you soon! 🌿\n~{specialist}`,
   },
+  consultation_5min: {
+    label: '🚨 Join Now — 5 Min Left',
+    category: 'Consultation',
+    color: 'var(--red)',
+    needsLink: 'joinLink',
+    text: `Hi {name}! 🚨\n\n*Sirf 5 minute baad aapki consultation hai!* ⏰\n\n👩‍⚕️ *{specialist}* aapka intezaar kar rahi hain!\n\n*Abhi join karein:*\n👉 {joinLink}\n\n⚠️ rabtnaturals.com pe login zaroor karein pehle.\n\n~Rabt Naturals 🌿`,
+  },
+  consultation_time_now: {
+    label: '🟢 Time Ho Gayi — Join Karo!',
+    category: 'Consultation',
+    color: 'var(--green)',
+    needsLink: 'joinLink',
+    text: `Hi {name}! 🟢\n\n*Aapki consultation ka waqt aa gaya!* 🎉\n\n👩‍⚕️ *{specialist}* live hain — *ABHI join karein:*\n👉 {joinLink}\n\n⚠️ Join ke liye rabtnaturals.com pe login karein.\n\n~Rabt Naturals 🌿`,
+  },
 
   // ── No Show Sequence ──
   no_show_1: {

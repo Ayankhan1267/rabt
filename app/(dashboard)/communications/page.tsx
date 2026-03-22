@@ -15,6 +15,8 @@ const TRIGGER_TYPES = [
   // ── Consultation Journey ──
   { id: 'consultation_booked',   label: 'Consultation Booked + Join Link', icon: '📅', desc: 'Booking confirm + video join link bhejo', group: 'Consultation' },
   { id: 'consultation_reminder', label: 'Consultation Reminder (1 day)',   icon: '⏰', desc: '1 din pehle reminder', group: 'Consultation' },
+  { id: 'consultation_5min',     label: 'Join Now — 5 Min Left',          icon: '🚨', desc: '5 minute pehle urgent join reminder', group: 'Consultation' },
+  { id: 'consultation_time_now', label: 'Time Ho Gayi — Join Karo!',      icon: '🟢', desc: 'Exact time pe — abhi join karo', group: 'Consultation' },
   { id: 'consultation_no_show_1',label: 'No Show — Day 1',    icon: '😔', desc: 'Missed consultation — soft reschedule', group: 'No Show Sequence (4-5x)' },
   { id: 'consultation_no_show_2',label: 'No Show — Day 3',    icon: '😔', desc: 'Follow up reschedule Day 3', group: 'No Show Sequence (4-5x)' },
   { id: 'consultation_no_show_3',label: 'No Show — Day 5',    icon: '😔', desc: 'Urgency + free slot offer Day 5', group: 'No Show Sequence (4-5x)' },
@@ -118,6 +120,30 @@ Join link: {{joinLink}}
 
 See you tomorrow! 🌿
 ~Rabt Naturals`,
+
+  consultation_5min: `Hi {{name}}! 🚨
+
+*Sirf 5 minute baad aapki consultation hai!* ⏰
+
+👩‍⚕️ *{{specialist}}* aapka intezaar kar rahi hain!
+
+*Abhi join karein:*
+👉 {{joinLink}}
+
+⚠️ rabtnaturals.com pe login zaroor karein pehle.
+
+~Rabt Naturals 🌿`,
+
+  consultation_time_now: `Hi {{name}}! 🟢
+
+*Aapki consultation ka waqt aa gaya!* 🎉
+
+👩‍⚕️ *{{specialist}}* live hain — *ABHI join karein:*
+👉 {{joinLink}}
+
+⚠️ Join ke liye rabtnaturals.com pe login karein.
+
+~Rabt Naturals 🌿`,
 
   consultation_no_show_1: `Hi {{name}}! 🌿
 
