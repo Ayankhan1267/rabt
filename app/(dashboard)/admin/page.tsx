@@ -9,13 +9,46 @@ export default function AdminPage() {
   const [profiles, setProfiles] = useState<any[]>([])
   const [leads, setLeads] = useState<any[]>([])
   const [tasks, setTasks] = useState<any[]>([])
-  const [tab, setTab] = useState<'users' | 'leads' | 'tasks' | 'perms'>('users')
+  const [tab, setTab] = useState<'users' | 'leads' | 'tasks' | 'perms' | 'wa'>('users')
   const [showAdd, setShowAdd] = useState(false)
   const [adding, setAdding] = useState(false)
   const [newCredentials, setNewCredentials] = useState<any>(null)
   const [form, setForm] = useState({ name: '', email: '', role: 'support' as UserRole, phone: '' })
+  const [waStatus, setWaStatus] = useState<any>(null)
+  const [waLoading, setWaLoading] = useState(false)
 
   useEffect(() => { loadAll() }, [])
+
+  async function loadWaStatus() {
+    setWaLoading(true)
+    try {
+      const res = await fetch('/api/wa/status')
+      const data = await res.json()
+      setWaStatus(data)
+    } catch { setWaStatus({ status: 'error' }) }
+    setWaLoading(false)
+  }
+
+  async function initWa() {
+    setWaLoading(true)
+    try {
+      const res = await fetch('/api/wa/init', { method: 'POST' })
+      const data = await res.json()
+      setWaStatus(data)
+    } catch { toast.error('WA init failed') }
+    setWaLoading(false)
+  }
+
+  async function logoutWa() {
+    if (!confirm('WhatsApp logout karein?')) return
+    setWaLoading(true)
+    try {
+      await fetch('/api/wa/logout', { method: 'POST' })
+      setWaStatus({ status: 'disconnected', qr: null, phone: null })
+      toast.success('WhatsApp logged out')
+    } catch { toast.error('Logout failed') }
+    setWaLoading(false)
+  }
 
   async function loadAll() {
     const [profRes, leadsRes, tasksRes] = await Promise.all([
@@ -123,8 +156,9 @@ export default function AdminPage() {
           { id: 'leads', label: '🎯 Assign Leads' },
           { id: 'tasks', label: '✓ Assign Tasks' },
           { id: 'perms', label: '🔒 Permissions' },
+          { id: 'wa', label: '💬 WhatsApp' },
         ].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id as any)} style={{
+          <button key={t.id} onClick={() => { setTab(t.id as any); if (t.id === 'wa') loadWaStatus() }} style={{
             padding: '7px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit',
             background: tab === t.id ? 'var(--gL)' : 'transparent',
             color: tab === t.id ? 'var(--gold)' : 'var(--mu2)',
@@ -236,6 +270,67 @@ export default function AdminPage() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {tab === 'wa' && (
+        <div style={{ maxWidth: 480 }}>
+          <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 16, padding: '24px' }}>
+            <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 4 }}>💬 WhatsApp Bridge</div>
+            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 20 }}>OTP login aur notifications ke liye WhatsApp connect karen</div>
+
+            {waLoading && <div style={{ textAlign: 'center', padding: 30, color: 'var(--mu)', fontSize: 13 }}>Loading...</div>}
+
+            {!waLoading && !waStatus && (
+              <button onClick={loadWaStatus} style={{ width: '100%', padding: 11, background: 'var(--gL)', border: '1px solid rgba(212,168,83,0.3)', borderRadius: 8, color: 'var(--gold)', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                Check Status
+              </button>
+            )}
+
+            {!waLoading && waStatus && (
+              <>
+                {/* Status badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, padding: '12px 14px', background: 'var(--s2)', borderRadius: 10, border: '1px solid var(--b1)' }}>
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', flexShrink: 0, background: waStatus.status === 'connected' ? 'var(--green)' : waStatus.status === 'scanning' ? 'var(--gold)' : 'var(--red)' }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, textTransform: 'capitalize' }}>{waStatus.status}</div>
+                    {waStatus.phone && <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono' }}>+{waStatus.phone}</div>}
+                  </div>
+                </div>
+
+                {/* QR Code */}
+                {waStatus.status === 'scanning' && waStatus.qr && (
+                  <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                    <div style={{ fontSize: 12, color: 'var(--gold)', fontWeight: 600, marginBottom: 10 }}>
+                      WhatsApp open karein → Linked Devices → Link a Device → QR scan karein
+                    </div>
+                    <img src={waStatus.qr} alt="WA QR" style={{ width: 220, height: 220, borderRadius: 12, border: '2px solid var(--b2)' }} />
+                    <div style={{ marginTop: 10 }}>
+                      <button onClick={loadWaStatus} style={{ padding: '7px 18px', background: 'var(--gL)', border: '1px solid rgba(212,168,83,0.3)', borderRadius: 8, color: 'var(--gold)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                        Refresh Status
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {waStatus.status !== 'connected' && (
+                    <button onClick={initWa} disabled={waLoading} style={{ flex: 1, padding: 10, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                      {waStatus.status === 'scanning' ? 'Reinitialize' : 'Connect WhatsApp'}
+                    </button>
+                  )}
+                  {waStatus.status === 'connected' && (
+                    <button onClick={logoutWa} style={{ flex: 1, padding: 10, background: 'var(--rdL)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, color: 'var(--red)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                      Logout WhatsApp
+                    </button>
+                  )}
+                  <button onClick={loadWaStatus} style={{ padding: '10px 16px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu)', fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                    Refresh
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
