@@ -1065,34 +1065,59 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
                     {/* Customer Join Link — share with patient */}
                     {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (() => {
-                      const joinLink = selectedCons.sessionUrl || selectedCons.session_url || ('https://rabtnaturals.com/consultation/join/' + selectedCons._id)
-                      const phone = (selectedCons.phone || '').replace(/\D/g, '')
-                      const waMsg = encodeURIComponent('Namaste! 🌿 Aapki Rabt Naturals skin consultation confirm ho gayi hai.\n\nApna video call join karne ke liye yeh link use karein:\n' + joinLink + '\n\nKoi bhi browser me kholein — no signup needed!')
+                      const session = getSessionForCons(selectedCons)
+                      const joinLink = session?.sessionUrl || null
+                      const phone = (selectedCons.phone || selectedCons.user?.phone || '').replace(/\D/g, '')
+                      const scheduledDate = selectedCons.scheduledDate
+                        ? new Date(selectedCons.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                        : ''
+                      const scheduledTime = selectedCons.scheduledTime || ''
+                      const waMsg = encodeURIComponent(
+                        `Namaste! 🌿 Aapki Rabt Naturals skin consultation confirm ho gayi hai.\n\n` +
+                        (scheduledDate ? `📅 Date: ${scheduledDate}${scheduledTime ? ' at ' + scheduledTime : ''}\n\n` : '') +
+                        `Video call join karne ke liye:\n👉 ${joinLink}\n\n` +
+                        `⚠️ Join karne ke liye rabtnaturals.com account se login karein.\n\n` +
+                        `_Rabt Naturals Skin Consultation_`
+                      )
                       return (
-                        <div style={{ background: 'rgba(26,155,160,0.07)', border: '1px solid rgba(26,155,160,0.25)', borderRadius: 8, padding: '11px 13px' }}>
-                          <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 6 }}>Customer Join Link</div>
-                          {selectedCons.sessionUrl || selectedCons.session_url ? (
+                        <div style={{ background: 'rgba(26,155,160,0.07)', border: '1px solid rgba(26,155,160,0.25)', borderRadius: 10, padding: '13px 14px' }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+                            🔗 Customer Join Link
+                          </div>
+
+                          {joinLink ? (
                             <>
-                              <div style={{ fontSize: 10.5, color: 'var(--mu2)', wordBreak: 'break-all', marginBottom: 8, fontFamily: 'DM Mono', background: 'rgba(26,155,160,0.05)', padding: '6px 8px', borderRadius: 5 }}>{joinLink}</div>
-                              <div style={{ display: 'flex', gap: 6 }}>
-                                <button onClick={() => { navigator.clipboard.writeText(joinLink); toast.success('Link copied!') }}
-                                  style={{ flex: 1, padding: '7px', background: 'var(--teal)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+                              {/* Link display */}
+                              <div style={{ fontSize: 11, color: 'var(--mu2)', wordBreak: 'break-all', marginBottom: 10, fontFamily: 'DM Mono', background: 'rgba(26,155,160,0.08)', padding: '8px 10px', borderRadius: 7, border: '1px solid rgba(26,155,160,0.15)', lineHeight: 1.5 }}>
+                                {joinLink}
+                              </div>
+
+                              {/* Action buttons */}
+                              <div style={{ display: 'flex', gap: 7 }}>
+                                <button
+                                  onClick={() => { navigator.clipboard.writeText(joinLink); toast.success('Link copied!') }}
+                                  style={{ flex: 1, padding: '8px', background: 'var(--teal)', border: 'none', borderRadius: 7, color: '#fff', fontSize: 11.5, cursor: 'pointer', fontWeight: 700, fontFamily: 'Outfit' }}>
                                   📋 Copy Link
                                 </button>
                                 {phone && (
-                                  <button onClick={() => window.open('https://wa.me/' + phone + '?text=' + waMsg, '_blank')}
-                                    style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
-                                    💬 WhatsApp
+                                  <button
+                                    onClick={() => window.open('https://wa.me/91' + phone.slice(-10) + '?text=' + waMsg, '_blank')}
+                                    style={{ flex: 1, padding: '8px', background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 7, color: '#22C55E', fontSize: 11.5, cursor: 'pointer', fontWeight: 700, fontFamily: 'Outfit' }}>
+                                    💬 Send on WhatsApp
                                   </button>
                                 )}
                               </div>
+
+                              {/* Login note */}
+                              <div style={{ marginTop: 8, fontSize: 10.5, color: 'var(--orange)', background: 'rgba(251,146,60,0.08)', padding: '6px 9px', borderRadius: 6, border: '1px solid rgba(251,146,60,0.2)' }}>
+                                ⚠️ Customer ko rabtnaturals.com pe login hona zaroori hai video call join karne ke liye
+                              </div>
                             </>
                           ) : (
-                            <div style={{ fontSize: 11, color: 'var(--mu)', background: 'rgba(26,155,160,0.05)', padding: '8px 10px', borderRadius: 6 }}>
-                              ⏳ Session link generate hogi jab aap "Start Consultation" click karenge
+                            <div style={{ fontSize: 11.5, color: 'var(--mu)', background: 'rgba(26,155,160,0.05)', padding: '10px 12px', borderRadius: 7, border: '1px dashed rgba(26,155,160,0.2)' }}>
+                              ⏳ "Accept" karne ke baad session link yahan aayegi
                             </div>
                           )}
-                          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 5 }}>Stream.io se generate link — customer browser me khol sakta hai</div>
                         </div>
                       )
                     })()}
