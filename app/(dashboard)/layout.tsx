@@ -23,6 +23,7 @@ const NAV: NavSection[] = [
       { id: 'admin', label: 'Admin Panel', icon: '🛡️', href: '/admin', roles: ['founder', 'admin'] },
       { id: 'kanban', label: 'Kanban', icon: '⬜', href: '/kanban', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
       { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar' },
+      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub' },
     ]
   },
   {
@@ -82,7 +83,6 @@ const NAV: NavSection[] = [
       { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
       { id: 'hr', label: 'HR', icon: '👥', href: '/hr', roles: ['founder','admin','manager','hr'] },
-      { id: 'team-hub', label: 'Team Hub', icon: '💬', href: '/team-hub' },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
     ]
   },
