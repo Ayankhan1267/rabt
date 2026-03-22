@@ -1285,17 +1285,17 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
-                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, flex: 1, minWidth: isMobile ? '100%' : 200 }} />
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', width: isMobile ? '100%' : 'auto' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+                <input value={patientSearch} onChange={e => setPatientSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, width: '100%', marginBottom: 0 }} />
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {(['all', 'online', 'offline'] as const).map(f => (
                     <button key={f} onClick={() => setPatientFilter(f)}
-                      style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--gold)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), flex: isMobile ? 1 : 'none' }}>
+                      style={{ flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: patientFilter === f ? 'rgba(1,151,166,0.15)' : 'rgba(255,255,255,0.05)', color: patientFilter === f ? 'var(--teal)' : 'var(--mu)', border: '1px solid ' + (patientFilter === f ? 'rgba(1,151,166,0.4)' : 'var(--b1)') }}>
                       {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                   ))}
                   <button onClick={() => setShowAddLead(true)}
-                    style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap', width: isMobile ? '100%' : 'auto' }}>
+                    style={{ flex: isMobile ? '1 1 100%' : '0 0 auto', padding: '8px 16px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
                     + Add Lead
                   </button>
                 </div>
@@ -1319,11 +1319,11 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                             </span>
                           )}
                         </div>
-                        <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-                          {p.skinType && <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'capitalize' }}>{p.skinType}</div>}
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Consults: <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{p.consults}</span></div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Orders: <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{p.orders}</span></div>
-                          <div style={{ fontSize: 11, color: 'var(--mu)' }}>Spent: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : 'Rs.0'}</span></div>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+                          {p.skinType && <div style={{ fontSize: 11, color: 'var(--gold)', fontWeight: 700, textTransform: 'capitalize', background: 'var(--gL)', padding: '2px 8px', borderRadius: 20 }}>{p.skinType}</div>}
+                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>💬 <span style={{ color: 'var(--teal)', fontWeight: 700 }}>{p.consults}</span></div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>📦 <span style={{ color: 'var(--blue)', fontWeight: 700 }}>{p.orders}</span></div>
+                          <div style={{ fontSize: 11, color: 'var(--mu)', background: 'var(--s1)', padding: '2px 8px', borderRadius: 20 }}>Rs.<span style={{ color: 'var(--green)', fontWeight: 700 }}>{p.spent > 0 ? p.spent.toLocaleString('en-IN') : '0'}</span></div>
                         </div>
                         <div style={{ display: 'flex', gap: 6 }}>
                           {p.phone && (
