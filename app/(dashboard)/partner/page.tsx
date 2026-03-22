@@ -28,7 +28,7 @@ export default function PartnerPortalPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
 
   // Withdraw
-  const [withdrawForm, setWithdrawForm]     = useState({ amount: '', upi_id: '', upi_name: '' })
+  const [withdrawForm, setWithdrawForm]     = useState({ amount: '', upi_id: '', upi_name: '', bank_account: '', bank_ifsc: '', bank_name: '', bank_holder: '', method: 'upi' as 'upi'|'bank' })
   const [withdrawSubmitting, setWithdrawSubmitting] = useState(false)
 
   // Products & Coupons
@@ -249,17 +249,24 @@ export default function PartnerPortalPage() {
   async function submitWithdraw() {
     const amt = Number(withdrawForm.amount)
     if (!amt || amt <= 0) { toast.error('Valid amount enter karo'); return }
-    if (!withdrawForm.upi_id) { toast.error('UPI ID required'); return }
+    if (withdrawForm.method === 'upi' && !withdrawForm.upi_id) { toast.error('UPI ID required'); return }
+    if (withdrawForm.method === 'bank' && (!withdrawForm.bank_account || !withdrawForm.bank_ifsc)) { toast.error('Bank account aur IFSC required'); return }
     if (amt > (partner?.pending_payout || 0)) { toast.error(`Max ₹${partner?.pending_payout || 0} withdraw kar sakte ho`); return }
     setWithdrawSubmitting(true)
     try {
       await supabase.from('partner_withdrawal_requests').insert({
         partner_id: partner?.id, amount: amt,
-        upi_id: withdrawForm.upi_id, upi_name: withdrawForm.upi_name,
+        upi_id: withdrawForm.method === 'upi' ? withdrawForm.upi_id : null,
+        upi_name: withdrawForm.method === 'upi' ? withdrawForm.upi_name : null,
+        bank_account: withdrawForm.method === 'bank' ? withdrawForm.bank_account : null,
+        bank_ifsc: withdrawForm.method === 'bank' ? withdrawForm.bank_ifsc : null,
+        bank_name: withdrawForm.method === 'bank' ? withdrawForm.bank_name : null,
+        bank_holder: withdrawForm.method === 'bank' ? withdrawForm.bank_holder : null,
+        payment_method: withdrawForm.method,
         status: 'pending',
       })
       toast.success('Withdraw request submitted! HQ process karega.')
-      setWithdrawForm({ amount: '', upi_id: '', upi_name: '' })
+      setWithdrawForm({ amount: '', upi_id: '', upi_name: '', bank_account: '', bank_ifsc: '', bank_name: '', bank_holder: '', method: 'upi' })
       setView('dashboard')
       loadAll()
     } catch { toast.error('Request failed') }
@@ -493,13 +500,37 @@ export default function PartnerPortalPage() {
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Amount *</label>
                 <input type="number" value={withdrawForm.amount} onChange={e=>setWithdrawForm(p=>({...p,amount:e.target.value}))} placeholder={`Max ₹${partner?.pending_payout||0}`} max={partner?.pending_payout||0} style={inp} />
 
-                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>UPI ID *</label>
-                <input value={withdrawForm.upi_id} onChange={e=>setWithdrawForm(p=>({...p,upi_id:e.target.value}))} placeholder="yourname@upi" style={inp} />
+                {/* Payment Method Toggle */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                  {(['upi','bank'] as const).map(m => (
+                    <button key={m} onClick={()=>setWithdrawForm(p=>({...p,method:m}))}
+                      style={{ flex:1, padding:'8px', borderRadius:8, border:'1px solid '+(withdrawForm.method===m?'var(--teal)':'var(--b1)'), background:withdrawForm.method===m?'rgba(0,151,167,0.1)':'var(--s2)', color:withdrawForm.method===m?'var(--teal)':'var(--mu2)', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+                      {m === 'upi' ? '📲 UPI' : '🏦 Bank Transfer'}
+                    </button>
+                  ))}
+                </div>
 
-                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>UPI Name</label>
-                <input value={withdrawForm.upi_name} onChange={e=>setWithdrawForm(p=>({...p,upi_name:e.target.value}))} placeholder="Account holder name" style={inp} />
+                {withdrawForm.method === 'upi' ? (
+                  <>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>UPI ID *</label>
+                    <input value={withdrawForm.upi_id} onChange={e=>setWithdrawForm(p=>({...p,upi_id:e.target.value}))} placeholder="yourname@upi" style={inp} />
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Account Holder Name</label>
+                    <input value={withdrawForm.upi_name} onChange={e=>setWithdrawForm(p=>({...p,upi_name:e.target.value}))} placeholder="Name on UPI account" style={inp} />
+                  </>
+                ) : (
+                  <>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Account Holder Name *</label>
+                    <input value={withdrawForm.bank_holder} onChange={e=>setWithdrawForm(p=>({...p,bank_holder:e.target.value}))} placeholder="Name as on bank account" style={inp} />
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Bank Account Number *</label>
+                    <input value={withdrawForm.bank_account} onChange={e=>setWithdrawForm(p=>({...p,bank_account:e.target.value}))} placeholder="Account number" style={inp} />
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>IFSC Code *</label>
+                    <input value={withdrawForm.bank_ifsc} onChange={e=>setWithdrawForm(p=>({...p,bank_ifsc:e.target.value.toUpperCase()}))} placeholder="IFSC0001234" style={inp} />
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Bank Name</label>
+                    <input value={withdrawForm.bank_name} onChange={e=>setWithdrawForm(p=>({...p,bank_name:e.target.value}))} placeholder="e.g. SBI, HDFC" style={inp} />
+                  </>
+                )}
 
-                <button onClick={submitWithdraw} disabled={withdrawSubmitting} style={{ width: '100%', padding: '14px', background: withdrawSubmitting?'var(--s2)':'linear-gradient(135deg,#16A34A,#15803D)', border: 'none', borderRadius: 9, color: withdrawSubmitting?'var(--mu)':'#fff', fontWeight: 800, fontSize: 15, cursor: withdrawSubmitting?'default':'pointer', fontFamily: 'Outfit' }}>
+                <button onClick={submitWithdraw} disabled={withdrawSubmitting} style={{ width: '100%', padding: '14px', background: withdrawSubmitting?'var(--s2)':'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 9, color: withdrawSubmitting?'var(--mu)':'#fff', fontWeight: 800, fontSize: 15, cursor: withdrawSubmitting?'default':'pointer', fontFamily: 'Outfit' }}>
                   {withdrawSubmitting ? 'Submitting...' : '💸 Submit Withdraw Request'}
                 </button>
               </div>

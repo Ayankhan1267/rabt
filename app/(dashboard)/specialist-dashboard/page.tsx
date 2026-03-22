@@ -87,7 +87,7 @@ export default function SpecialistDashboard() {
 
   // Payout
   const [payoutModal, setPayoutModal] = useState(false)
-  const [payoutForm, setPayoutForm] = useState({ amount: '', upiId: '', upiName: '', method: 'upi' })
+  const [payoutForm, setPayoutForm] = useState({ amount: '', upiId: '', upiName: '', method: 'upi' as 'upi'|'bank', bankAccount: '', bankIfsc: '', bankName: '', bankHolder: '' })
   const [payoutLoading, setPayoutLoading] = useState(false)
 
   // Offline POS
@@ -641,7 +641,9 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
   }
 
   async function requestPayout() {
-    if (!payoutForm.amount || !payoutForm.upiId) { toast.error('Amount aur UPI ID required'); return }
+    if (!payoutForm.amount) { toast.error('Amount required'); return }
+    if (payoutForm.method === 'upi' && !payoutForm.upiId) { toast.error('UPI ID required'); return }
+    if (payoutForm.method === 'bank' && (!payoutForm.bankAccount || !payoutForm.bankIfsc)) { toast.error('Bank account aur IFSC required'); return }
     if (Number(payoutForm.amount) > totalEarnings) { toast.error('Amount earnings se zyada nahi ho sakta'); return }
     setPayoutLoading(true)
     try {
@@ -649,9 +651,17 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
       if (!url) { toast.error('MongoDB URL not found'); setPayoutLoading(false); return }
       const res = await fetch(url + '/api/payouts', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ specialistId: mongoSpec?._id, amount: Number(payoutForm.amount), paymentMethod: payoutForm.method, upiId: payoutForm.upiId, upiName: payoutForm.upiName })
+        body: JSON.stringify({
+          specialistId: mongoSpec?._id, amount: Number(payoutForm.amount), paymentMethod: payoutForm.method,
+          upiId: payoutForm.method === 'upi' ? payoutForm.upiId : null,
+          upiName: payoutForm.method === 'upi' ? payoutForm.upiName : null,
+          bankAccount: payoutForm.method === 'bank' ? payoutForm.bankAccount : null,
+          bankIfsc: payoutForm.method === 'bank' ? payoutForm.bankIfsc : null,
+          bankName: payoutForm.method === 'bank' ? payoutForm.bankName : null,
+          bankHolder: payoutForm.method === 'bank' ? payoutForm.bankHolder : null,
+        })
       })
-      if (res.ok) { toast.success('Payout request sent! Manager approve karega.'); setPayoutModal(false); setPayoutForm({ amount: '', upiId: '', upiName: '', method: 'upi' }) }
+      if (res.ok) { toast.success('Payout request sent! Manager approve karega.'); setPayoutModal(false); setPayoutForm({ amount: '', upiId: '', upiName: '', method: 'upi', bankAccount: '', bankIfsc: '', bankName: '', bankHolder: '' }) }
       else toast.error('Payout request failed')
     } catch { toast.error('Error') }
     setPayoutLoading(false)
@@ -971,26 +981,34 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
 
                     {/* Customer Join Link — share with patient */}
                     {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (() => {
-                      const joinLink = 'https://meet.jit.si/RabtSkin-' + selectedCons._id?.slice(-8)
+                      const joinLink = selectedCons.sessionUrl || selectedCons.session_url || ('https://rabtnaturals.com/consultation/join/' + selectedCons._id)
                       const phone = (selectedCons.phone || '').replace(/\D/g, '')
-                      const waMsg = encodeURIComponent('Namaste! 🌿 Aapki Rabt Naturals skin consultation confirm ho gayi hai.\n\nJoin karne ke liye yeh link use karein:\n' + joinLink + '\n\nKoi bhi browser me kholein — no app needed!')
+                      const waMsg = encodeURIComponent('Namaste! 🌿 Aapki Rabt Naturals skin consultation confirm ho gayi hai.\n\nApna video call join karne ke liye yeh link use karein:\n' + joinLink + '\n\nKoi bhi browser me kholein — no signup needed!')
                       return (
                         <div style={{ background: 'rgba(26,155,160,0.07)', border: '1px solid rgba(26,155,160,0.25)', borderRadius: 8, padding: '11px 13px' }}>
                           <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 6 }}>Customer Join Link</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--mu2)', wordBreak: 'break-all', marginBottom: 8, fontFamily: 'DM Mono', background: 'rgba(26,155,160,0.05)', padding: '6px 8px', borderRadius: 5 }}>{joinLink}</div>
-                          <div style={{ display: 'flex', gap: 6 }}>
-                            <button onClick={() => { navigator.clipboard.writeText(joinLink); toast.success('Link copied!') }}
-                              style={{ flex: 1, padding: '7px', background: 'var(--teal)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
-                              📋 Copy Link
-                            </button>
-                            {phone && (
-                              <button onClick={() => window.open('https://wa.me/' + phone + '?text=' + waMsg, '_blank')}
-                                style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
-                                💬 Send WhatsApp
-                              </button>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 5 }}>Customer ko yeh link share karo — browser me khul jayega, no signup needed</div>
+                          {selectedCons.sessionUrl || selectedCons.session_url ? (
+                            <>
+                              <div style={{ fontSize: 10.5, color: 'var(--mu2)', wordBreak: 'break-all', marginBottom: 8, fontFamily: 'DM Mono', background: 'rgba(26,155,160,0.05)', padding: '6px 8px', borderRadius: 5 }}>{joinLink}</div>
+                              <div style={{ display: 'flex', gap: 6 }}>
+                                <button onClick={() => { navigator.clipboard.writeText(joinLink); toast.success('Link copied!') }}
+                                  style={{ flex: 1, padding: '7px', background: 'var(--teal)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+                                  📋 Copy Link
+                                </button>
+                                {phone && (
+                                  <button onClick={() => window.open('https://wa.me/' + phone + '?text=' + waMsg, '_blank')}
+                                    style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+                                    💬 WhatsApp
+                                  </button>
+                                )}
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ fontSize: 11, color: 'var(--mu)', background: 'rgba(26,155,160,0.05)', padding: '8px 10px', borderRadius: 6 }}>
+                              ⏳ Session link generate hogi jab aap "Start Consultation" click karenge
+                            </div>
+                          )}
+                          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 5 }}>Stream.io se generate link — customer browser me khol sakta hai</div>
                         </div>
                       )
                     })()}
@@ -1574,19 +1592,51 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 420, maxWidth: '94vw' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Request Payout</div>
             <div style={{ fontSize: 12.5, color: 'var(--mu)', marginBottom: 20 }}>Available: <strong style={{ color: 'var(--gold)' }}>Rs.{totalEarnings.toLocaleString('en-IN')}</strong></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
               <div>
-                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Amount*</label>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Amount *</label>
                 <input value={payoutForm.amount} onChange={e => setPayoutForm(p => ({ ...p, amount: e.target.value }))} placeholder={'Max Rs.' + totalEarnings} style={inp} type="number" />
               </div>
-              <div>
-                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>UPI ID*</label>
-                <input value={payoutForm.upiId} onChange={e => setPayoutForm(p => ({ ...p, upiId: e.target.value }))} placeholder="yourname@upi" style={inp} />
+              {/* Payment Method */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['upi','bank'] as const).map(m => (
+                  <button key={m} onClick={() => setPayoutForm(p => ({ ...p, method: m }))}
+                    style={{ flex:1, padding:'8px', borderRadius:8, border:'1px solid '+(payoutForm.method===m?'var(--teal)':'var(--b2)'), background:payoutForm.method===m?'rgba(0,151,167,0.1)':'transparent', color:payoutForm.method===m?'var(--teal)':'var(--mu2)', fontWeight:700, fontSize:11.5, cursor:'pointer', fontFamily:'Outfit' }}>
+                    {m === 'upi' ? '📲 UPI' : '🏦 Bank Transfer'}
+                  </button>
+                ))}
               </div>
-              <div>
-                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Account Name</label>
-                <input value={payoutForm.upiName} onChange={e => setPayoutForm(p => ({ ...p, upiName: e.target.value }))} placeholder="Your full name" style={inp} />
-              </div>
+              {payoutForm.method === 'upi' ? (
+                <>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>UPI ID *</label>
+                    <input value={payoutForm.upiId} onChange={e => setPayoutForm(p => ({ ...p, upiId: e.target.value }))} placeholder="yourname@upi" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Account Holder Name</label>
+                    <input value={payoutForm.upiName} onChange={e => setPayoutForm(p => ({ ...p, upiName: e.target.value }))} placeholder="Your full name" style={inp} />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Account Holder Name *</label>
+                    <input value={payoutForm.bankHolder} onChange={e => setPayoutForm(p => ({ ...p, bankHolder: e.target.value }))} placeholder="Name as on bank account" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Bank Account Number *</label>
+                    <input value={payoutForm.bankAccount} onChange={e => setPayoutForm(p => ({ ...p, bankAccount: e.target.value }))} placeholder="Account number" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>IFSC Code *</label>
+                    <input value={payoutForm.bankIfsc} onChange={e => setPayoutForm(p => ({ ...p, bankIfsc: e.target.value.toUpperCase() }))} placeholder="IFSC0001234" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Bank Name</label>
+                    <input value={payoutForm.bankName} onChange={e => setPayoutForm(p => ({ ...p, bankName: e.target.value }))} placeholder="e.g. SBI, HDFC" style={inp} />
+                  </div>
+                </>
+              )}
             </div>
             <div style={{ display: 'flex', gap: 9 }}>
               <button onClick={() => setPayoutModal(false)} style={{ flex: 1, padding: 10, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Cancel</button>

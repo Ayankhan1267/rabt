@@ -64,6 +64,7 @@ export default function FinancePage() {
   const [consultations, setConsultations] = useState<any[]>([])
   const [payouts, setPayouts] = useState<any[]>([])
   const [partnerPayouts, setPartnerPayouts] = useState<any[]>([])
+  const [pendingWithdrawals, setPendingWithdrawals] = useState<any[]>([])
   const [expenses, setExpenses] = useState<any[]>([])
   const [settings, setSettings] = useState({
     gstRate: 18,
@@ -78,7 +79,7 @@ export default function FinancePage() {
   })
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
-  const [tab, setTab] = useState<'overview'|'pl'|'expenses'|'shipping'|'analytics'|'settings'>('overview')
+  const [tab, setTab] = useState<'overview'|'pl'|'expenses'|'shipping'|'analytics'|'settings'|'payroll'>('overview')
   const [expenseForm, setExpenseForm] = useState({ title: '', amount: 0, category: 'Marketing', date: new Date().toISOString().split('T')[0], notes: '', recurring: false })
   const [showAddExpense, setShowAddExpense] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
@@ -112,8 +113,12 @@ export default function FinancePage() {
         setOrders(Array.isArray(ordRes) ? ordRes : [])
         setConsultations(Array.isArray(consRes) ? consRes : [])
         setPayouts(Array.isArray(payRes) ? payRes : [])
-        const { data: pw } = await supabase.from('partner_withdrawal_requests').select('*').eq('status','approved')
-        setPartnerPayouts(pw || [])
+        const [pwRes, pendingPartnerRes] = await Promise.all([
+          supabase.from('partner_withdrawal_requests').select('*, profiles(name, email, role)').eq('status','approved'),
+          supabase.from('partner_withdrawal_requests').select('*, profiles(name, email, role)').eq('status','pending').order('created_at', { ascending: false }),
+        ])
+        setPartnerPayouts(pwRes.data || [])
+        setPendingWithdrawals(pendingPartnerRes.data || [])
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
@@ -152,8 +157,8 @@ export default function FinancePage() {
   const cancelledValue  = cancelledOrders.reduce((s, o) => s + (o.amount || 0), 0)
 
   const completedCons     = consultations.filter(c => c.status === 'completed').length
-  const consultationRevenue = completedCons * 30
-  const totalRevenue      = grossRevenue + consultationRevenue
+  const consultationCost  = completedCons * 500  // avg specialist fee per consultation (we pay this)
+  const totalRevenue      = grossRevenue
 
   const gstCollected  = Math.round(grossRevenue * settings.gstRate / (100 + settings.gstRate))
   const revenueExGST  = grossRevenue - gstCollected
@@ -175,15 +180,17 @@ export default function FinancePage() {
   const shippingCOD     = codOrders.reduce((s, o) => s + calcShipping(getWeightFromOrder(o, settings.defaultWeight), getZoneFromOrder(o), 'cod', settings.codCharge, settings.fuelSurcharge), 0)
   const shippingPrepaid = prepaidOrders.reduce((s, o) => s + calcShipping(getWeightFromOrder(o, settings.defaultWeight), getZoneFromOrder(o), 'prepaid', settings.codCharge, settings.fuelSurcharge), 0)
   const totalShipping  = shippingCOD + shippingPrepaid
+  // Razorpay 2% fee on prepaid orders
+  const razorpayFee = Math.round(prepaidOrders.reduce((s, o) => s + (o.amount || 0) * 0.02, 0))
 
   const partnerCommissions = partnerPayouts.reduce((s, p) => s + (p.amount || 0), 0)
   const specialistCommissions = payouts.filter(p => p.status === 'completed').reduce((s, p) => s + (p.amount || 0), 0)
   const pendingCommissions     = payouts.filter(p => p.status === 'pending').reduce((s, p) => s + (p.amount || 0), 0)
   const totalExpenses  = expenses.reduce((s, e) => s + (e.amount || 0), 0)
-  const totalCOGS      = productionCost + packagingCost + totalShipping + specialistCommissions + partnerCommissions
-  const grossProfit    = revenueExGST - productionCost + consultationRevenue
-  const operatingProfit = grossProfit - packagingCost - totalShipping - specialistCommissions - partnerCommissions
-  const netProfit      = operatingProfit - totalExpenses
+  const totalCOGS       = productionCost + packagingCost + totalShipping + razorpayFee + specialistCommissions + partnerCommissions + consultationCost
+  const grossProfit     = revenueExGST - productionCost
+  const operatingProfit = grossProfit - packagingCost - totalShipping - razorpayFee - specialistCommissions - partnerCommissions - consultationCost
+  const netProfit       = operatingProfit - totalExpenses
   const grossMargin    = revenueExGST > 0 ? Math.round(grossProfit / revenueExGST * 100) : 0
   const netMargin      = totalRevenue > 0 ? Math.round(netProfit / totalRevenue * 100) : 0
 
@@ -239,7 +246,7 @@ export default function FinancePage() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 5, marginBottom: 20, flexWrap: 'wrap' }}>
-        {[{id:'overview',l:'📊 Overview'},{id:'pl',l:'📋 P&L'},{id:'expenses',l:'💸 Expenses'},{id:'shipping',l:'🚚 Shipping'},{id:'analytics',l:'📈 Analytics'},{id:'settings',l:'⚙️ Settings'}].map(t => (
+        {[{id:'overview',l:'📊 Overview'},{id:'pl',l:'📋 P&L'},{id:'expenses',l:'💸 Expenses'},{id:'shipping',l:'🚚 Shipping'},{id:'analytics',l:'📈 Analytics'},{id:'settings',l:'⚙️ Settings'},{id:'payroll',l:'💰 Payroll'}].map(t => (
           <button key={t.id} onClick={() => setTab(t.id as any)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: tab === t.id ? 'var(--gL)' : 'rgba(255,255,255,0.05)', color: tab === t.id ? 'var(--gold)' : 'var(--mu2)', border: '1px solid ' + (tab === t.id ? 'rgba(212,168,83,0.3)' : 'var(--b1)') }}>
             {t.l}
           </button>
@@ -251,12 +258,14 @@ export default function FinancePage() {
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 10, marginBottom: 20 }}>
             {[
-              { label: 'Total Revenue', value: '₹' + totalRevenue.toLocaleString('en-IN'), sub: deliveredOrders.length + ' orders + ' + completedCons + ' consults', color: 'var(--green)' },
+              { label: 'Total Revenue', value: '₹' + totalRevenue.toLocaleString('en-IN'), sub: deliveredOrders.length + ' orders delivered', color: 'var(--green)' },
               { label: 'Gross Profit', value: '₹' + grossProfit.toLocaleString('en-IN'), sub: grossMargin + '% margin', color: 'var(--teal)' },
               { label: 'Net Profit', value: '₹' + netProfit.toLocaleString('en-IN'), sub: netMargin + '% net margin', color: netProfit >= 0 ? 'var(--gold)' : 'var(--red)' },
               { label: 'Shipping Cost', value: '₹' + totalShipping.toLocaleString('en-IN'), sub: codOrders.length + ' COD · ' + prepaidOrders.length + ' Prepaid', color: 'var(--orange)' },
               { label: 'Total Expenses', value: '₹' + totalExpenses.toLocaleString('en-IN'), sub: 'Ops expenses', color: 'var(--purple)' },
               { label: 'GST Collected', value: '₹' + gstCollected.toLocaleString('en-IN'), sub: settings.gstRate + '% rate', color: 'var(--mu)' },
+              { label: 'Consultation Cost', value: '₹' + consultationCost.toLocaleString('en-IN'), sub: completedCons + ' sessions × ₹500', color: 'var(--orange)' },
+              { label: 'Razorpay Fee', value: '₹' + razorpayFee.toLocaleString('en-IN'), sub: prepaidOrders.length + ' prepaid × 2%', color: 'var(--red)' },
             ].map((s, i) => (
               <div key={i} className="card">
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>{s.label}</div>
@@ -326,8 +335,7 @@ export default function FinancePage() {
               { l: 'Product Sales (Gross)', v: grossRevenue, bold: false },
               { l: 'Less: GST (' + settings.gstRate + '%)', v: -gstCollected, color: 'var(--mu)', indent: true },
               { l: 'Net Product Revenue', v: revenueExGST, bold: true, color: 'var(--teal)' },
-              { l: 'Consultation Revenue (' + completedCons + ' × ₹30)', v: consultationRevenue, color: 'var(--teal)' },
-              { l: 'TOTAL REVENUE', v: revenueExGST + consultationRevenue, bold: true, big: true, color: 'var(--green)' },
+              { l: 'TOTAL REVENUE', v: revenueExGST, bold: true, big: true, color: 'var(--green)' },
             ].map((row, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: row.big ? '10px 0 4px' : '6px 0', borderTop: row.big ? '2px solid var(--b1)' : 'none', marginLeft: row.indent ? 20 : 0 }}>
                 <span style={{ fontSize: row.big ? 13 : 12.5, fontWeight: row.bold ? 700 : 400, color: (row as any).color || 'var(--tx)' }}>{row.l}</span>
@@ -346,6 +354,8 @@ export default function FinancePage() {
               { l: 'Packaging (' + deliveredOrders.length + ' orders × ₹' + settings.packagingPerOrder + ')', v: packagingCost },
               { l: 'Shipping — COD (' + codOrders.length + ' orders)', v: shippingCOD, sub: true },
               { l: 'Shipping — Prepaid (' + prepaidOrders.length + ' orders)', v: shippingPrepaid, sub: true },
+              { l: 'Razorpay Fee (2% prepaid)', v: razorpayFee, sub: true, note: prepaidOrders.length + ' prepaid orders' },
+              { l: 'Consultation Cost (Specialist)', v: consultationCost, sub: true, note: completedCons + ' sessions' },
               { l: 'Specialist Commissions', v: specialistCommissions },
               { l: 'Partner Commissions', v: partnerCommissions },
               { l: 'TOTAL COGS', v: totalCOGS, bold: true, big: true, color: 'var(--orange)' },
@@ -545,10 +555,9 @@ export default function FinancePage() {
               <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 14 }}>Revenue Breakdown</div>
               {[
                 { l: 'Gross Revenue', v: grossRevenue, c: 'var(--green)' },
-                { l: 'Consultation Rev', v: consultationRevenue, c: 'var(--teal)' },
                 { l: 'Pending Revenue', v: pendingRevenue, c: 'var(--orange)' },
               ].map((s,i) => {
-                const pct = Math.round(s.v / Math.max(grossRevenue + consultationRevenue, 1) * 100)
+                const pct = Math.round(s.v / Math.max(grossRevenue, 1) * 100)
                 return (
                   <div key={i} style={{ marginBottom: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
@@ -701,6 +710,104 @@ export default function FinancePage() {
             <button onClick={saveSettings} disabled={savingSettings} style={{ width: '100%', padding: 12, background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 9, color: '#08090C', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>
               {savingSettings ? 'Saving...' : '💾 Save All Settings'}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* PAYROLL TAB */}
+      {tab === 'payroll' && (
+        <div>
+          {/* Summary Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 10, marginBottom: 20 }}>
+            {[
+              { label: 'Specialist Commissions', value: '₹' + specialistCommissions.toLocaleString('en-IN'), sub: 'Paid payouts', color: 'var(--teal)' },
+              { label: 'Partner Commissions', value: '₹' + partnerCommissions.toLocaleString('en-IN'), sub: 'Approved payouts', color: 'var(--purple)' },
+              { label: 'Consultation Cost', value: '₹' + consultationCost.toLocaleString('en-IN'), sub: completedCons + ' completed sessions', color: 'var(--orange)' },
+              { label: 'Pending Requests', value: (pendingWithdrawals.length + payouts.filter((p:any) => p.status === 'pending').length).toString(), sub: 'Awaiting approval', color: 'var(--red)' },
+            ].map((s, i) => (
+              <div key={i} className="card">
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>{s.label}</div>
+                <div style={{ fontFamily: 'Syne', fontSize: 20, fontWeight: 800, color: s.color, marginBottom: 3 }}>{s.value}</div>
+                <div style={{ fontSize: 10, color: 'var(--mu)' }}>{s.sub}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Partner Withdrawal Requests */}
+          <div className="card" style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>🤝 Partner Withdrawal Requests</div>
+            {pendingWithdrawals.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 30, color: 'var(--mu)', fontSize: 13 }}>✅ Koi pending partner request nahi</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--b1)' }}>
+                    {['Partner', 'Amount', 'UPI / Bank', 'Requested', 'Action'].map(h => (
+                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingWithdrawals.map((w: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }}>
+                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600 }}>{w.profiles?.name || w.partner_id?.slice(0,8)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontSize: 12, color: 'var(--green)', fontWeight: 700 }}>₹{(w.amount||0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--mu2)' }}>
+                        {w.upi_id || w.bank_account || '—'}
+                        {w.bank_ifsc && <div style={{ fontSize: 10, color: 'var(--mu)' }}>IFSC: {w.bank_ifsc}</div>}
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--mu)' }}>{new Date(w.created_at).toLocaleDateString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button onClick={async () => {
+                            const { error } = await supabase.from('partner_withdrawal_requests').update({ status: 'approved' }).eq('id', w.id)
+                            if (!error) { toast.success('Approved!'); loadAll() } else toast.error(error.message)
+                          }} style={{ padding: '5px 12px', background: 'var(--grL)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontWeight: 700 }}>✓ Approve</button>
+                          <button onClick={async () => {
+                            const { error } = await supabase.from('partner_withdrawal_requests').update({ status: 'rejected' }).eq('id', w.id)
+                            if (!error) { toast.success('Rejected'); loadAll() } else toast.error(error.message)
+                          }} style={{ padding: '5px 10px', background: 'var(--rdL)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 6, color: 'var(--red)', fontSize: 11, cursor: 'pointer' }}>✗</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+
+          {/* Specialist Payout Requests */}
+          <div className="card">
+            <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>🌿 Specialist Payout Requests</div>
+            {payouts.filter((p:any) => p.status === 'pending').length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 30, color: 'var(--mu)', fontSize: 13 }}>✅ Koi pending specialist payout nahi</div>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid var(--b1)' }}>
+                    {['Specialist', 'Amount', 'UPI / Bank', 'Requested', 'Status'].map(h => (
+                      <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {payouts.filter((p:any) => p.status === 'pending').map((p: any, i: number) => (
+                    <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }}>
+                      <td style={{ padding: '10px 12px', fontSize: 12, fontWeight: 600 }}>{p.specialistName || p.specialist_name || p.specialistId?.toString().slice(0,8)}</td>
+                      <td style={{ padding: '10px 12px', fontFamily: 'DM Mono', fontSize: 12, color: 'var(--green)', fontWeight: 700 }}>₹{(p.amount||0).toLocaleString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--mu2)' }}>
+                        {p.upiId || p.upi_id || p.bank_account || '—'}
+                        {(p.bankIfsc || p.bank_ifsc) && <div style={{ fontSize: 10, color: 'var(--mu)' }}>IFSC: {p.bankIfsc || p.bank_ifsc}</div>}
+                      </td>
+                      <td style={{ padding: '10px 12px', fontSize: 11, color: 'var(--mu)' }}>{new Date(p.createdAt || p.created_at).toLocaleDateString('en-IN')}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 20, background: 'var(--orL)', color: 'var(--orange)', fontWeight: 700 }}>Pending</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       )}

@@ -4,9 +4,9 @@
 @tailwind utilities;
 :root {
   /* ── Rabt Naturals Brand Teal (exact match to rabtnaturals.com) ── */
-  --teal:  #1A9BA0;
-  --teal2: #157F84;
-  --teal3: #0E6368;
+  --teal:  #0097A7;
+  --teal2: #007A87;
+  --teal3: #005F6A;
   --teal4: #A8DADC;
   --teal5: #D4F0F2;
   --teal6: #EBF9FA;
@@ -14,9 +14,9 @@
   --tlL2:  rgba(26,155,160,0.18);
 
   /* ── Rabt alias ── */
-  --rabt:  #1A9BA0;
+  --rabt:  #0097A7;
   --rabtL: rgba(26,155,160,0.10);
-  --rabtD: #0E6368;
+  --rabtD: #005F6A;
 
   /* ── Backgrounds ── */
   --bg:  #F8FAFA;

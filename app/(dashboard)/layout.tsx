@@ -185,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     supabase.channel('notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, (payload) => {
         const notif = payload.new as any
-        playNotificationSound(notif.type || 'default')
+        playNotificationSound()
         setNotifications(prev => [notif, ...prev])
         setUnreadCount(prev => prev + 1)
         const userRole = (window as any).__profile?.role || ''

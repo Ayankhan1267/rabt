@@ -78,6 +78,12 @@ export default function TeamHubPage() {
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const [dmUser, setDmUser]         = useState<any>(null)  // selected DM target user
+  const [dmMessages, setDmMessages] = useState<any[]>([])
+  const [dmMessage, setDmMessage]   = useState('')
+  const [dmSending, setDmSending]   = useState(false)
+  const messagesEndRef2 = useRef<HTMLDivElement>(null)
+
   const [meetingForm, setMeetingForm] = useState({
     title: '', description: '', meeting_link: '', platform: 'google_meet',
     scheduled_at: '', duration_mins: 30, attendees: [] as string[], audience: 'all',
@@ -141,6 +147,47 @@ export default function TeamHubPage() {
   }
 
   function scrollToBottom() { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }
+
+  function getDMChannelId(id1: string, id2: string) {
+    return 'dm_' + [id1, id2].sort().join('_')
+  }
+
+  async function openDM(user: any) {
+    setDmUser(user)
+    setTab('chat')
+    if (!profile) return
+    const dmCh = getDMChannelId(profile.id, user.id)
+    const { data } = await supabase.from('team_messages').select('*')
+      .eq('channel', dmCh).order('created_at', { ascending: true }).limit(100)
+    setDmMessages(data || [])
+    // subscribe to DM channel
+    supabase.channel('dm_rt_' + dmCh)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'team_messages',
+        filter: 'channel=eq.' + dmCh }, (payload) => {
+        setDmMessages(prev => [...prev, payload.new])
+      }).subscribe()
+  }
+
+  async function sendDM() {
+    if (!dmMessage.trim() || !profile || !dmUser) return
+    setDmSending(true)
+    const dmCh = getDMChannelId(profile.id, dmUser.id)
+    await supabase.from('team_messages').insert({
+      channel: dmCh, sender_id: profile.id,
+      sender_name: profile.name || profile.email,
+      sender_role: profile.role || 'team', message: dmMessage.trim(),
+      dm_to: dmUser.id,
+    })
+    setDmMessage('')
+    setDmSending(false)
+    // notification to DM recipient
+    await supabase.from('notifications').insert({
+      user_id: dmUser.id,
+      title: '💬 DM from ' + (profile.name || 'Team'),
+      message: dmMessage.trim().substring(0, 80),
+      type: 'dm', is_read: false,
+    })
+  }
 
   async function sendMessage() {
     if (!message.trim() || !profile) return
@@ -306,13 +353,31 @@ export default function TeamHubPage() {
           <div style={{ padding: '12px 8px 0', flex: 1, overflowY: 'auto' }}>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 6 }}>Channels</div>
             {accessibleChannels.map(ch => (
-              <div key={ch.id} onClick={() => setActiveChannel(ch.id)} style={{
+              <div key={ch.id} onClick={() => { setActiveChannel(ch.id); setDmUser(null); setDmMessages([]) }} style={{
                 padding: '7px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
-                background: activeChannel === ch.id ? 'rgba(0,151,167,0.12)' : 'transparent',
-                color: activeChannel === ch.id ? 'var(--teal)' : 'var(--mu)',
-                fontWeight: activeChannel === ch.id ? 700 : 400, fontSize: 12.5,
+                background: activeChannel === ch.id && !dmUser ? 'rgba(0,151,167,0.12)' : 'transparent',
+                color: activeChannel === ch.id && !dmUser ? 'var(--teal)' : 'var(--mu)',
+                fontWeight: activeChannel === ch.id && !dmUser ? 700 : 400, fontSize: 12.5,
               }}>{ch.icon} {ch.label}</div>
             ))}
+            {/* Direct Messages */}
+            <div style={{ padding: '8px 8px 4px', borderTop: '1px solid var(--b1)', marginTop: 4 }}>
+              <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', padding: '4px 6px 6px', letterSpacing: '0.08em' }}>Direct Messages</div>
+              {members.filter(m => m.id !== profile?.id).slice(0, 8).map(m => (
+                <div key={m.id} onClick={() => openDM(m)}
+                  style={{
+                    padding: '6px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 1,
+                    background: dmUser?.id === m.id ? 'rgba(0,151,167,0.12)' : 'transparent',
+                    color: dmUser?.id === m.id ? 'var(--teal)' : 'var(--mu2)',
+                    fontSize: 12, display: 'flex', alignItems: 'center', gap: 6,
+                  }}>
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: ROLE_COLORS[m.role] || 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, color: '#fff', fontWeight: 700, flexShrink: 0 }}>
+                    {(m.name || m.email || '?')[0].toUpperCase()}
+                  </div>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{m.name || m.email}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
         <div style={{ padding: '10px 8px', borderTop: '1px solid var(--b1)', marginTop: 'auto' }}>
@@ -335,64 +400,125 @@ export default function TeamHubPage() {
         {/* CHAT */}
         {tab === 'chat' && (
           <>
-            <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-              <div style={{ fontSize: 18 }}>{CHANNELS.find(c => c.id === activeChannel)?.icon}</div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}># {activeChannel}</div>
-                <div style={{ fontSize: 11, color: 'var(--mu)' }}>{CHANNELS.find(c => c.id === activeChannel)?.desc}</div>
-              </div>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
-                  <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-                  <div style={{ fontSize: 14 }}>#{activeChannel} mein koi message nahi</div>
+            {dmUser ? (
+              <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,151,167,0.04)', flexShrink: 0 }}>
+                <button onClick={() => { setDmUser(null); setDmMessages([]) }} style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontSize: 16, padding: 0 }}>←</button>
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: ROLE_COLORS[dmUser.role] || 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700 }}>
+                  {(dmUser.name || '?')[0].toUpperCase()}
                 </div>
-              )}
-              {messages.map((msg, i) => {
-                const isMe = msg.sender_id === profile?.id
-                const prevMsg = messages[i - 1]
-                const showHeader = !prevMsg || prevMsg.sender_id !== msg.sender_id || new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000
-                const roleColor = ROLE_COLORS[msg.sender_role] || '#0097A7'
-                const isMeeting = msg.type === 'meeting' || msg.type === 'announcement'
-                return (
-                  <div key={msg.id} style={{ marginTop: showHeader ? 12 : 2 }}>
-                    {showHeader && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: roleColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-                          {(msg.sender_name || '?').charAt(0).toUpperCase()}
-                        </div>
-                        <span style={{ fontSize: 13, fontWeight: 700 }}>{msg.sender_name}</span>
-                        <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: roleColor + '22', color: roleColor, fontWeight: 700 }}>{msg.sender_role}</span>
-                        <span style={{ fontSize: 10, color: 'var(--mu)' }}>{new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
-                      </div>
-                    )}
-                    <div style={{ paddingLeft: showHeader ? 0 : 36 }}>
-                      <div style={{
-                        display: 'inline-block', maxWidth: '80%',
-                        background: isMeeting ? 'rgba(0,151,167,0.08)' : isMe ? 'rgba(0,151,167,0.1)' : 'var(--s2)',
-                        border: isMeeting ? '1px solid rgba(0,151,167,0.2)' : '1px solid var(--b1)',
-                        borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                        padding: '8px 12px', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
-                      }}>{msg.message}</div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{dmUser.name || dmUser.email}</div>
+                  <div style={{ fontSize: 10, color: 'var(--mu)' }}>{dmUser.role}</div>
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                <div style={{ fontSize: 18 }}>{CHANNELS.find(c => c.id === activeChannel)?.icon}</div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}># {activeChannel}</div>
+                  <div style={{ fontSize: 11, color: 'var(--mu)' }}>{CHANNELS.find(c => c.id === activeChannel)?.desc}</div>
+                </div>
+              </div>
+            )}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {dmUser ? (
+                <>
+                  {dmMessages.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
+                      <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
+                      <div style={{ fontSize: 14 }}>Start a conversation with {dmUser.name || dmUser.email}</div>
                     </div>
-                  </div>
-                )
-              })}
-              <div ref={messagesEndRef} />
+                  )}
+                  {dmMessages.map((msg, i) => {
+                    const isMe = msg.sender_id === profile?.id
+                    const prevMsg = dmMessages[i - 1]
+                    const showHeader = !prevMsg || prevMsg.sender_id !== msg.sender_id || new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000
+                    const roleColor = ROLE_COLORS[msg.sender_role] || '#0097A7'
+                    return (
+                      <div key={msg.id} style={{ marginTop: showHeader ? 12 : 2 }}>
+                        {showHeader && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: roleColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                              {(msg.sender_name || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>{msg.sender_name}</span>
+                            <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: roleColor + '22', color: roleColor, fontWeight: 700 }}>{msg.sender_role}</span>
+                            <span style={{ fontSize: 10, color: 'var(--mu)' }}>{new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        )}
+                        <div style={{ paddingLeft: showHeader ? 0 : 36 }}>
+                          <div style={{
+                            display: 'inline-block', maxWidth: '80%',
+                            background: isMe ? 'rgba(0,151,167,0.1)' : 'var(--s2)',
+                            border: '1px solid var(--b1)',
+                            borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                            padding: '8px 12px', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                          }}>{msg.message}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef2} />
+                </>
+              ) : (
+                <>
+                  {messages.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--mu)' }}>
+                      <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
+                      <div style={{ fontSize: 14 }}>#{activeChannel} mein koi message nahi</div>
+                    </div>
+                  )}
+                  {messages.map((msg, i) => {
+                    const isMe = msg.sender_id === profile?.id
+                    const prevMsg = messages[i - 1]
+                    const showHeader = !prevMsg || prevMsg.sender_id !== msg.sender_id || new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000
+                    const roleColor = ROLE_COLORS[msg.sender_role] || '#0097A7'
+                    const isMeeting = msg.type === 'meeting' || msg.type === 'announcement'
+                    return (
+                      <div key={msg.id} style={{ marginTop: showHeader ? 12 : 2 }}>
+                        {showHeader && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: roleColor, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                              {(msg.sender_name || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700 }}>{msg.sender_name}</span>
+                            <span style={{ fontSize: 10, padding: '1px 7px', borderRadius: 20, background: roleColor + '22', color: roleColor, fontWeight: 700 }}>{msg.sender_role}</span>
+                            <span style={{ fontSize: 10, color: 'var(--mu)' }}>{new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                        )}
+                        <div style={{ paddingLeft: showHeader ? 0 : 36 }}>
+                          <div style={{
+                            display: 'inline-block', maxWidth: '80%',
+                            background: isMeeting ? 'rgba(0,151,167,0.08)' : isMe ? 'rgba(0,151,167,0.1)' : 'var(--s2)',
+                            border: isMeeting ? '1px solid rgba(0,151,167,0.2)' : '1px solid var(--b1)',
+                            borderRadius: isMe ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                            padding: '8px 12px', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                          }}>{msg.message}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={messagesEndRef} />
+                </>
+              )}
             </div>
             <div style={{ padding: '12px 16px', borderTop: '1px solid var(--b1)', display: 'flex', gap: 10, flexShrink: 0 }}>
-              <input value={message} onChange={e => setMessage(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
-                placeholder={`Message #${activeChannel}...`}
+              <input
+                value={dmUser ? dmMessage : message}
+                onChange={e => dmUser ? setDmMessage(e.target.value) : setMessage(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); dmUser ? sendDM() : sendMessage() } }}
+                placeholder={dmUser ? `Message ${dmUser.name || dmUser.email}...` : `Message #${activeChannel}...`}
                 style={{ flex: 1, background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 10, padding: '10px 14px', color: 'var(--tx)', fontSize: 13, fontFamily: 'Outfit', outline: 'none' }}
               />
-              <button onClick={sendMessage} disabled={sending || !message.trim()} style={{
-                padding: '10px 18px', borderRadius: 10, border: 'none',
-                background: message.trim() ? 'linear-gradient(135deg,#0097A7,#005F6A)' : 'var(--s2)',
-                color: message.trim() ? '#fff' : 'var(--mu)', fontWeight: 700, fontSize: 13,
-                cursor: message.trim() ? 'pointer' : 'not-allowed', fontFamily: 'Outfit',
-              }}>Send</button>
+              <button
+                onClick={dmUser ? sendDM : sendMessage}
+                disabled={dmUser ? (dmSending || !dmMessage.trim()) : (sending || !message.trim())}
+                style={{
+                  padding: '10px 18px', borderRadius: 10, border: 'none',
+                  background: (dmUser ? dmMessage.trim() : message.trim()) ? 'linear-gradient(135deg,#0097A7,#005F6A)' : 'var(--s2)',
+                  color: (dmUser ? dmMessage.trim() : message.trim()) ? '#fff' : 'var(--mu)', fontWeight: 700, fontSize: 13,
+                  cursor: (dmUser ? dmMessage.trim() : message.trim()) ? 'pointer' : 'not-allowed', fontFamily: 'Outfit',
+                }}>Send</button>
             </div>
           </>
         )}
