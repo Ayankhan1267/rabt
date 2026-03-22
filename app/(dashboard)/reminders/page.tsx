@@ -1,5 +1,6 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
@@ -94,8 +95,25 @@ async function callWhatsAppAPI(phone: string, message: string, cfg: { apiKey: st
   return data
 }
 
-async function sendWhatsApp(phone: string, message: string, cfg?: { apiKey: string; phoneNumberId: string }) {
+async function sendWhatsApp(phone: string, message: string, cfg?: { apiKey: string; phoneNumberId: string }, bridgeEndpoint?: string) {
   const clean = phone.replace(/[^0-9]/g, '')
+  // 1. Try WA Bridge (scan & connect)
+  if (bridgeEndpoint) {
+    try {
+      const r = await fetch(bridgeEndpoint + '/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message }),
+        signal: AbortSignal.timeout(8000),
+      })
+      const d = await r.json()
+      if (d.success) {
+        await supabase.from('whatsapp_logs').insert({ to_number: phone, message: message.substring(0, 500), status: 'sent_bridge', type: 'bridge' })
+        return
+      }
+    } catch {}
+  }
+  // 2. Try Meta Cloud API
   if (cfg?.apiKey && cfg?.phoneNumberId) {
     try {
       await callWhatsAppAPI(phone, message, cfg)
@@ -105,12 +123,14 @@ async function sendWhatsApp(phone: string, message: string, cfg?: { apiKey: stri
       toast.error('WA API failed: ' + e.message + ' — opening wa.me')
     }
   }
+  // 3. Fallback to wa.me link
   window.open(`https://wa.me/${clean}?text=${encodeURIComponent(message)}`, '_blank')
   await supabase.from('whatsapp_logs').insert({ to_number: phone, message: message.substring(0, 500), status: 'opened', type: 'manual' })
 }
 
 // ── COMPONENT ────────────────────────────────────────────────────────────────
 export default function RemindersPage() {
+  const searchParams = useSearchParams()
   const [mongoSpec, setMongoSpec]               = useState<any>(null)
   const [myProfile, setMyProfile]               = useState<any>(null)
   const [patients, setPatients]                 = useState<any[]>([])
@@ -137,11 +157,47 @@ export default function RemindersPage() {
   const [editingTemplate, setEditingTemplate] = useState<string|null>(null)
   const [editTemplateText, setEditTemplateText] = useState('')
 
-  // WA Business config
+  // WA Business API config (Meta Cloud)
   const [waConfig, setWaConfig]       = useState({ apiKey: '', phoneNumberId: '' })
   const [savingWa, setSavingWa]       = useState(false)
 
-  useEffect(() => { setMounted(true); loadAll(); loadConfig() }, [])
+  // WA Bridge (scan & connect)
+  const [bridgeUrl, setBridgeUrl]     = useState('http://localhost:3001')
+  const [bridgeStatus, setBridgeStatus] = useState<'disconnected'|'scanning'|'connected'|'logged_out'>('disconnected')
+  const [bridgePhone, setBridgePhone] = useState<string|null>(null)
+  const [bridgeQR, setBridgeQR]       = useState<string|null>(null)
+  const [bridgeLoading, setBridgeLoading] = useState(false)
+  const qrPollRef = useRef<any>(null)
+
+  useEffect(() => {
+    setMounted(true)
+    loadAll()
+    loadConfig()
+    const tab = searchParams?.get('tab')
+    if (tab === 'followup') setPageTab('followup')
+    else if (tab === 'settings') setPageTab('settings')
+    else if (tab === 'logs') setPageTab('logs')
+  }, [])
+
+  // Poll QR while scanning
+  useEffect(() => {
+    if (bridgeStatus === 'scanning') {
+      qrPollRef.current = setInterval(async () => {
+        try {
+          const r = await fetch(bridgeUrl + '/qr')
+          const d = await r.json()
+          if (d.qr) setBridgeQR(d.qr)
+          if (d.status !== bridgeStatus) {
+            setBridgeStatus(d.status)
+            if (d.status === 'connected') { setBridgePhone(d.phone); setBridgeQR(null) }
+          }
+        } catch {}
+      }, 2000)
+    } else {
+      if (qrPollRef.current) { clearInterval(qrPollRef.current); qrPollRef.current = null }
+    }
+    return () => { if (qrPollRef.current) clearInterval(qrPollRef.current) }
+  }, [bridgeStatus, bridgeUrl])
 
   useEffect(() => {
     if (selectedPerson) {
@@ -157,10 +213,22 @@ export default function RemindersPage() {
   }, [selectedPerson, selectedTemplate, templates])
 
   async function loadConfig() {
-    const { data: waCfg } = await supabase.from('app_settings').select('*').eq('key', 'wa_business_config').single()
-    if (waCfg?.value) { try { setWaConfig(JSON.parse(waCfg.value)) } catch {} }
-    const { data: tmplData } = await supabase.from('app_settings').select('*').eq('key', 'reminder_templates').single()
-    if (tmplData?.value) { try { setTemplates(t => ({ ...t, ...JSON.parse(tmplData.value) })) } catch {} }
+    const [waCfgRow, bridgeCfgRow, tmplRow] = await Promise.all([
+      supabase.from('app_settings').select('*').eq('key', 'wa_business_config').single(),
+      supabase.from('app_settings').select('*').eq('key', 'wa_bridge_url').single(),
+      supabase.from('app_settings').select('*').eq('key', 'reminder_templates').single(),
+    ])
+    if (waCfgRow.data?.value) { try { setWaConfig(JSON.parse(waCfgRow.data.value)) } catch {} }
+    const savedUrl = bridgeCfgRow.data?.value ? bridgeCfgRow.data.value.replace(/^"|"$/g, '') : 'http://localhost:3001'
+    setBridgeUrl(savedUrl)
+    if (tmplRow.data?.value) { try { setTemplates(t => ({ ...t, ...JSON.parse(tmplRow.data!.value) })) } catch {} }
+    // Check bridge status
+    try {
+      const r = await fetch(savedUrl + '/status', { signal: AbortSignal.timeout(3000) })
+      const d = await r.json()
+      setBridgeStatus(d.status)
+      if (d.phone) setBridgePhone(d.phone)
+    } catch {}
   }
 
   async function saveWaConfig() {
@@ -168,6 +236,52 @@ export default function RemindersPage() {
     await supabase.from('app_settings').upsert({ key: 'wa_business_config', value: JSON.stringify(waConfig) })
     toast.success('WhatsApp Business config saved!')
     setSavingWa(false)
+  }
+
+  async function saveBridgeUrl() {
+    await supabase.from('app_settings').upsert({ key: 'wa_bridge_url', value: JSON.stringify(bridgeUrl) })
+    toast.success('Bridge URL saved!')
+  }
+
+  async function initBridge() {
+    setBridgeLoading(true)
+    try {
+      const r = await fetch(bridgeUrl + '/init', { method: 'POST', signal: AbortSignal.timeout(8000) })
+      const d = await r.json()
+      setBridgeStatus(d.status === 'connected' ? 'connected' : 'scanning')
+      if (d.phone) setBridgePhone(d.phone)
+    } catch (e: any) {
+      toast.error('Bridge not reachable at ' + bridgeUrl + ' — is it running?')
+    }
+    setBridgeLoading(false)
+  }
+
+  async function checkBridgeStatus() {
+    setBridgeLoading(true)
+    try {
+      const r = await fetch(bridgeUrl + '/status', { signal: AbortSignal.timeout(4000) })
+      const d = await r.json()
+      setBridgeStatus(d.status)
+      if (d.phone) setBridgePhone(d.phone)
+      if (d.status === 'scanning') {
+        const qr = await fetch(bridgeUrl + '/qr')
+        const qd = await qr.json()
+        if (qd.qr) setBridgeQR(qd.qr)
+      }
+      toast.success('Bridge status: ' + d.status)
+    } catch { toast.error('Bridge offline') }
+    setBridgeLoading(false)
+  }
+
+  async function logoutBridge() {
+    if (!confirm('WhatsApp se disconnect karein?')) return
+    try {
+      await fetch(bridgeUrl + '/logout', { method: 'POST', signal: AbortSignal.timeout(8000) })
+      setBridgeStatus('disconnected')
+      setBridgePhone(null)
+      setBridgeQR(null)
+      toast.success('WhatsApp disconnected!')
+    } catch { toast.error('Logout failed') }
   }
 
   async function saveTemplate(key: string) {
@@ -282,7 +396,7 @@ export default function RemindersPage() {
 
   async function handleSend(phone: string, msg: string) {
     if (!phone) { toast.error('Phone number required'); return }
-    await sendWhatsApp(phone, msg, waConfig.apiKey ? waConfig : undefined)
+    await sendWhatsApp(phone, msg, waConfig.apiKey ? waConfig : undefined, bridgeStatus === 'connected' ? bridgeUrl : undefined)
     toast.success('Message sent!')
     loadAll()
   }
@@ -295,7 +409,7 @@ export default function RemindersPage() {
     for (const p of targets) {
       const sp = skinProfiles.find((s: any) => s.phone === p.phone || s.name?.toLowerCase() === p.name?.toLowerCase())
       const msg = fillTemplate(tmpl.text, { name: p.name, specialist: mongoSpec?.name || 'Your Specialist', skinType: sp?.skinType || p.skinType || '' })
-      await sendWhatsApp(p.phone, msg, waConfig.apiKey ? waConfig : undefined)
+      await sendWhatsApp(p.phone, msg, waConfig.apiKey ? waConfig : undefined, bridgeStatus === 'connected' ? bridgeUrl : undefined)
       sent++
       await new Promise(r => setTimeout(r, 600))
     }
@@ -430,7 +544,7 @@ export default function RemindersPage() {
           { label: 'Not Purchased',  value: notPurchasedLeads.length,   color: 'var(--orange)' },
           { label: 'Not Booked',     value: notBookedLeads.length,      color: 'var(--red)'    },
           { label: 'Messages Sent',  value: logs.length,                color: 'var(--gold)'   },
-          { label: 'WA Status',      value: waConfig.apiKey ? '🟢 API' : '🔗 Link', color: waConfig.apiKey ? 'var(--green)' : 'var(--mu)', txt: true },
+          { label: 'WA Status', value: bridgeStatus === 'connected' ? '🟢 Bridge' : waConfig.apiKey ? '🟡 API' : '🔗 Link', color: bridgeStatus === 'connected' ? 'var(--green)' : waConfig.apiKey ? 'var(--gold)' : 'var(--mu)', txt: true },
         ].map((s, i) => (
           <div key={i} className="card">
             <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>{s.label}</div>
@@ -628,11 +742,99 @@ export default function RemindersPage() {
 
       {/* ── SETTINGS ───────────────────────────────────────────────────────── */}
       {pageTab === 'settings' && (
-        <div style={{ maxWidth: 560 }}>
-          <div className="card" style={{ marginBottom: 20 }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 4 }}>📱 WhatsApp Business API</div>
+        <div style={{ maxWidth: 580, display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* ── WA SCAN & CONNECT ── */}
+          <div className="card">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>📱 WhatsApp Business App — Scan & Connect</div>
+              <span style={{ fontSize: 10, padding: '2px 9px', borderRadius: 20, fontWeight: 700,
+                background: bridgeStatus === 'connected' ? 'var(--grL)' : bridgeStatus === 'scanning' ? 'rgba(212,168,83,0.15)' : 'var(--s2)',
+                color: bridgeStatus === 'connected' ? 'var(--green)' : bridgeStatus === 'scanning' ? 'var(--gold)' : 'var(--mu)' }}>
+                {bridgeStatus === 'connected' ? '🟢 Connected' : bridgeStatus === 'scanning' ? '🟡 Scanning…' : '⚫ Disconnected'}
+              </span>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 14, lineHeight: 1.6 }}>
+              Apna WhatsApp Business account QR code scan karke connect karo. Messages directly aapke number se jayenge bina Meta API ke.
+            </div>
+
+            {/* Bridge URL */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', marginBottom: 4 }}>Bridge Server URL</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input value={bridgeUrl} onChange={e => setBridgeUrl(e.target.value)}
+                  placeholder="http://localhost:3001"
+                  style={{ ...inp, flex: 1, fontFamily: 'DM Mono', fontSize: 11 }} />
+                <button onClick={saveBridgeUrl}
+                  style={{ padding: '8px 14px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  Save URL
+                </button>
+              </div>
+            </div>
+
+            {/* Connected state */}
+            {bridgeStatus === 'connected' && (
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '12px 14px', background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 10, marginBottom: 12 }}>
+                <div style={{ fontSize: 24 }}>✅</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--green)' }}>WhatsApp Connected!</div>
+                  {bridgePhone && <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono', marginTop: 2 }}>{bridgePhone}</div>}
+                  <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>Ab sare messages is number se direct jayenge</div>
+                </div>
+                <button onClick={logoutBridge}
+                  style={{ padding: '7px 14px', background: 'var(--rdL)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: 'var(--red)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  Disconnect
+                </button>
+              </div>
+            )}
+
+            {/* QR Code */}
+            {bridgeStatus === 'scanning' && (
+              <div style={{ textAlign: 'center', padding: '20px 0', marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)', marginBottom: 12 }}>📲 WhatsApp Business app kholo → Linked Devices → Link a Device → QR scan karo</div>
+                {bridgeQR ? (
+                  <div style={{ display: 'inline-block', padding: 12, background: '#fff', borderRadius: 14, border: '3px solid rgba(212,168,83,0.4)' }}>
+                    <img src={bridgeQR} alt="WhatsApp QR" style={{ width: 220, height: 220, display: 'block' }} />
+                  </div>
+                ) : (
+                  <div style={{ width: 220, height: 220, background: 'var(--s2)', borderRadius: 14, border: '2px dashed var(--b2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: 'var(--mu)', fontSize: 12 }}>
+                    QR generating…
+                  </div>
+                )}
+                <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 10 }}>QR 60 seconds mein expire ho jata hai — automatically refresh hoga</div>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              {bridgeStatus !== 'connected' && (
+                <button onClick={initBridge} disabled={bridgeLoading}
+                  style={{ flex: 1, padding: '11px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                  {bridgeLoading ? 'Connecting…' : bridgeStatus === 'scanning' ? '🔄 QR Refresh' : '📱 Connect WhatsApp'}
+                </button>
+              )}
+              <button onClick={checkBridgeStatus} disabled={bridgeLoading}
+                style={{ padding: '11px 16px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                {bridgeLoading ? '…' : '↻ Check'}
+              </button>
+            </div>
+
+            {/* Setup instructions */}
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--s2)', borderRadius: 8, fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.8 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--tx)' }}>⚙️ Setup (ek baar):</div>
+              <div>1. Project ke <span style={{ fontFamily: 'DM Mono', color: 'var(--teal)' }}>whatsapp-bridge/</span> folder mein jao</div>
+              <div>2. Run karo: <span style={{ fontFamily: 'DM Mono', color: 'var(--gold)', background: 'rgba(212,168,83,0.1)', padding: '1px 6px', borderRadius: 4 }}>npm install && npm start</span></div>
+              <div>3. Bridge <span style={{ color: 'var(--teal)', fontWeight: 600 }}>localhost:3001</span> par start ho jayega</div>
+              <div>4. Upar "Connect WhatsApp" dabao aur QR scan karo</div>
+              <div style={{ marginTop: 6, color: 'var(--blue)' }}>💡 Server always running rehna chahiye — PM2 ya startup script use karo production mein</div>
+            </div>
+          </div>
+
+          {/* ── META CLOUD API ── */}
+          <div className="card">
+            <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 4 }}>☁️ Meta WhatsApp Cloud API (Optional)</div>
             <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 16, lineHeight: 1.6 }}>
-              Meta WhatsApp Cloud API se direct messages bhejo bina wa.me link ke. Empty raho toh wa.me link automatically use hoga.
+              Official Meta API. Bridge available hote hue use nahi hoga. Backup ke liye configure karo.
             </div>
             <div style={{ display: 'grid', gap: 12 }}>
               <div>
@@ -647,24 +849,19 @@ export default function RemindersPage() {
                   placeholder="123456789012345"
                   style={{ ...inp, width: '100%', fontFamily: 'DM Mono', fontSize: 11 }} />
               </div>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '10px 14px', background: 'var(--s2)', borderRadius: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: waConfig.apiKey && waConfig.phoneNumberId ? 'var(--green)' : 'var(--mu)', flexShrink: 0 }} />
-                <div style={{ fontSize: 12.5, color: waConfig.apiKey && waConfig.phoneNumberId ? 'var(--green)' : 'var(--mu)' }}>
-                  {waConfig.apiKey && waConfig.phoneNumberId ? '✅ WhatsApp Business API configured' : 'Not configured — will use wa.me links'}
-                </div>
-              </div>
               <button onClick={saveWaConfig} disabled={savingWa}
                 style={{ padding: '10px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>
-                {savingWa ? 'Saving...' : '💾 Save WhatsApp Config'}
+                {savingWa ? 'Saving...' : '💾 Save API Config'}
               </button>
             </div>
-            <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--s2)', borderRadius: 8, fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.7 }}>
-              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--tx)' }}>How to get credentials:</div>
-              <div>1. Go to <span style={{ color: 'var(--teal)', fontWeight: 600 }}>developers.facebook.com</span></div>
-              <div>2. Create a WhatsApp Business app → WhatsApp → API Setup</div>
-              <div>3. Copy <strong>Temporary access token</strong> and <strong>Phone number ID</strong></div>
-              <div style={{ marginTop: 6, color: 'var(--orange)' }}>⚠️ For production, use a permanent System User token from Business Manager</div>
-            </div>
+          </div>
+
+          {/* Message priority info */}
+          <div style={{ padding: '14px 16px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 10, fontSize: 12, color: 'var(--mu)', lineHeight: 1.8 }}>
+            <div style={{ fontWeight: 700, color: 'var(--blue)', marginBottom: 6 }}>📶 Message Sending Priority:</div>
+            <div>1️⃣ <strong>Bridge (Scan)</strong> — agar connected hai (aapke number se)</div>
+            <div>2️⃣ <strong>Meta Cloud API</strong> — agar configured hai</div>
+            <div>3️⃣ <strong>wa.me Link</strong> — manual fallback (browser mein khulega)</div>
           </div>
         </div>
       )}

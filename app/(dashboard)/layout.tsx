@@ -104,6 +104,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  // Reminder widget state (specialist)
+  const [reminderCount, setReminderCount] = useState(0)
+  const [todaySent, setTodaySent]         = useState(0)
   const pathname = usePathname()
   const router = useRouter()
 
@@ -150,6 +153,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loadNotifications(user.id)
     setupRealtime(user.id)
     registerPushNotifications()
+    if (['specialist', 'specialist_manager'].includes(prof?.role || '')) loadReminderStats()
   }
 
   async function registerPushNotifications() {
@@ -229,6 +233,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
   }
 
+  async function loadReminderStats() {
+    try {
+      const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0)
+      const { count } = await supabase
+        .from('whatsapp_logs')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', todayStart.toISOString())
+      setTodaySent(count || 0)
+      // reminder count = all logs total (proxy for follow-up list size)
+      const { count: total } = await supabase.from('whatsapp_logs').select('*', { count: 'exact', head: true })
+      setReminderCount(total || 0)
+    } catch {}
+  }
+
   async function logout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -306,6 +324,46 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )
         })}
       </nav>
+
+      {/* Reminder Widget — specialist only */}
+      {profile && ['specialist', 'specialist_manager'].includes(profile.role) && (
+        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--b1)', background: 'rgba(212,168,83,0.03)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: '0.09em' }}>📲 Reminders</div>
+            <a href="/reminders" style={{ fontSize: 9, color: 'var(--teal)', textDecoration: 'none', fontWeight: 600 }}>View All →</a>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
+            <div style={{ background: 'var(--s2)', borderRadius: 7, padding: '7px 10px', border: '1px solid var(--b1)' }}>
+              <div style={{ fontSize: 8.5, color: 'var(--mu)', marginBottom: 3 }}>Today Sent</div>
+              <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--green)' }}>{todaySent}</div>
+            </div>
+            <div style={{ background: 'var(--s2)', borderRadius: 7, padding: '7px 10px', border: '1px solid var(--b1)' }}>
+              <div style={{ fontSize: 8.5, color: 'var(--mu)', marginBottom: 3 }}>Total Msgs</div>
+              <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{reminderCount}</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {[
+              { href: '/reminders', icon: '👥', label: 'My Patients', desc: 'Send reminders' },
+              { href: '/reminders?tab=followup', icon: '🔄', label: 'Follow Up', desc: 'Not purchased / booked' },
+              { href: '/reminders?tab=settings', icon: '⚙️', label: 'WA Setup', desc: 'Scan & connect' },
+            ].map((item, i) => (
+              <a key={i} href={item.href} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px',
+                borderRadius: 7, textDecoration: 'none', color: 'var(--mu2)',
+                background: pathname.startsWith('/reminders') ? 'rgba(26,155,160,0.06)' : 'transparent',
+                border: '1px solid transparent', fontSize: 11,
+              }}>
+                <span style={{ fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--tx)' }}>{item.label}</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--mu)' }}>{item.desc}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div style={{ padding: '11px 13px', borderTop: '1px solid var(--b1)', flexShrink: 0 }}>
