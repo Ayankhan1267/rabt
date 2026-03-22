@@ -356,7 +356,7 @@ export default function TeamHubPage() {
             { id: 'chat',          l: '💬 Chat',          badge: 0 },
             { id: 'meetings',      l: '📅 Meetings',      badge: upcomingMeetings.length },
             { id: 'announcements', l: '📢 Announcements', badge: visibleAnnouncements.filter(a => a.priority === 'urgent').length },
-            ...(!CHAT_ONLY_ROLES.includes(userRole) ? [{ id: 'members', l: '👥 Members', badge: 0 }] : []),
+            ...(CAN_SEE_ALL_MEMBERS.includes(userRole) ? [{ id: 'members', l: '👥 Members', badge: 0 }] : []),
           ].map((t: any) => (
             <div key={t.id} onClick={() => setTab(t.id as any)} style={{
               padding: '8px 10px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
@@ -401,18 +401,20 @@ export default function TeamHubPage() {
             </div>
           </div>
         )}
-        <div style={{ padding: '10px 8px', borderTop: '1px solid var(--b1)', marginTop: 'auto' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 6 }}>Online</div>
-          {members.slice(0, 5).map((m, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 6 }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: ROLE_COLORS[m.role] || '#0097A7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
-                {(m.name || m.email || '?').charAt(0).toUpperCase()}
+        {CAN_SEE_ALL_MEMBERS.includes(userRole) && (
+          <div style={{ padding: '10px 8px', borderTop: '1px solid var(--b1)', marginTop: 'auto' }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.1em', padding: '0 8px', marginBottom: 6 }}>Online</div>
+            {members.slice(0, 5).map((m, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderRadius: 6 }}>
+                <div style={{ width: 24, height: 24, borderRadius: '50%', background: ROLE_COLORS[m.role] || '#0097A7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, color: '#fff', flexShrink: 0 }}>
+                  {(m.name || m.email || '?').charAt(0).toUpperCase()}
+                </div>
+                <div style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--mu2)' }}>{m.name || m.email}</div>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', marginLeft: 'auto', flexShrink: 0 }} />
               </div>
-              <div style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--mu2)' }}>{m.name || m.email}</div>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)', marginLeft: 'auto', flexShrink: 0 }} />
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* MAIN CONTENT */}
