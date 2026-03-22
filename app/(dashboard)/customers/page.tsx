@@ -44,10 +44,10 @@ export default function CustomersPage() {
         fetch(url + '/api/users').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/specialists').then(r => r.ok ? r.json() : []),
       ])
-      setOrders(Array.isArray(ordRes) ? ordRes : [])
-      setSkinProfiles(Array.isArray(skinRes) ? skinRes : [])
-      setUsers(Array.isArray(userRes) ? userRes : [])
-      setSpecialists(Array.isArray(specRes) ? specRes : [])
+      setOrders(Array.isArray(ordRes) ? ordRes.filter(Boolean) : [])
+      setSkinProfiles(Array.isArray(skinRes) ? skinRes.filter(Boolean) : [])
+      setUsers(Array.isArray(userRes) ? userRes.filter(Boolean) : [])
+      setSpecialists(Array.isArray(specRes) ? specRes.filter(Boolean) : [])
     } catch { toast.error('Failed to load') }
     setLoading(false)
   }
@@ -55,6 +55,7 @@ export default function CustomersPage() {
   const customerMap: Record<string, any> = {}
 
   users.forEach(u => {
+    if (!u) return
     const phone = u.phoneNumber || u.phone || ''
     const key = phone || u.email || u._id?.toString()
     if (!key) return
@@ -72,6 +73,7 @@ export default function CustomersPage() {
   })
 
   orders.forEach(o => {
+    if (!o) return
     const phone = o.customerPhone || o.shippingAddress?.contactPhone || ''
     const key = phone || o.customerName || o._id
     if (!key) return
@@ -87,7 +89,7 @@ export default function CustomersPage() {
     }
     customerMap[key].orders.push(o)
     customerMap[key].sources.add(getSource(o))
-    customerMap[key].totalSpent += o.amount || 0
+    customerMap[key].totalSpent += Number(o.amount) || 0
     if (!customerMap[key].city && (o.city || o.shippingAddress?.city))
       customerMap[key].city = o.city || o.shippingAddress?.city || ''
     if (!customerMap[key].state && (o.state || o.shippingAddress?.state))
@@ -95,6 +97,7 @@ export default function CustomersPage() {
   })
 
   skinProfiles.forEach(sp => {
+    if (!sp) return
     const phone = sp.phone || sp.customerPhone || ''
     if (phone && customerMap[phone]) customerMap[phone].skinProfile = sp
   })
@@ -134,7 +137,7 @@ export default function CustomersPage() {
   const topConcerns = Object.entries(concernMap).sort((a:any, b:any) => b[1] - a[1]).slice(0, 6)
 
   function getSpecialistName(id: string) {
-    const sp = specialists.find((s:any) => s._id?.toString() === id?.toString())
+    const sp = specialists.find((s:any) => s && s._id?.toString() === id?.toString())
     return sp ? (sp.name || sp.firstName + ' ' + (sp.lastName || '')) : '—'
   }
 
