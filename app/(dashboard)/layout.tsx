@@ -195,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div style={{ fontWeight: 700, fontSize: 13 }}>🌿 New Consultation!</div>
               <div style={{ fontSize: 12, color: '#555' }}>{notif.message || 'New consultation request'}</div>
               <div style={{ display: 'flex', gap: 6 }}>
-                <button onClick={() => { window.location.href = '/specialist-dashboard'; toast.dismiss(t.id) }} style={{ padding: '5px 12px', background: '#0097A7', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✓ Accept</button>
+                <button onClick={() => { window.location.href = '/specialist-dashboard'; toast.dismiss(t.id) }} style={{ padding: '5px 12px', background: 'var(--teal)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✓ Accept</button>
                 <button onClick={() => { window.location.href = '/consultations'; toast.dismiss(t.id) }} style={{ padding: '5px 10px', background: '#f0f0f0', border: 'none', borderRadius: 6, color: '#333', fontSize: 11, cursor: 'pointer' }}>View</button>
                 <button onClick={() => toast.dismiss(t.id)} style={{ padding: '5px 10px', background: '#fee', border: 'none', borderRadius: 6, color: '#e44', fontSize: 11, cursor: 'pointer' }}>✕</button>
               </div>
@@ -252,14 +252,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Brand */}
       <div style={{ padding: '16px 16px 12px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 10, overflow: 'hidden', background: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(0,151,167,0.2)' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, overflow: 'hidden', background: '#fff', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(26,155,160,0.2)' }}>
             <img src="https://rabtnaturals.com/images/logo.png" alt="Rabt" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: 4 }}
-              onError={(e: any) => { e.target.style.display='none'; e.target.parentElement.innerHTML='<span style="font-family:Georgia,serif;font-style:italic;font-size:18px;font-weight:900;color:#0097A7">r</span>' }} />
+              onError={(e: any) => { e.target.style.display='none'; e.target.parentElement.innerHTML='<span style="font-family:Georgia,serif;font-style:italic;font-size:18px;font-weight:900;color:var(--teal)">r</span>' }} />
           </div>
           <div>
             <div style={{ lineHeight: 1.2 }}>
-              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 15, fontWeight: 900, color: '#0097A7', letterSpacing: '-0.3px' }}>rabt </span>
-              <span style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 15, fontWeight: 900, color: 'var(--teal)', letterSpacing: '-0.3px' }}>rabt </span>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
             </div>
             <div style={{ fontSize: 9, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: 2 }}>HQ � AI Business OS</div>
           </div>
@@ -288,11 +288,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <a key={item.id} href={item.href} style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '8px 9px', borderRadius: 8, cursor: 'pointer',
-                    color: active ? '#0097A7' : 'var(--mu2)',
-                    background: active ? 'rgba(0,151,167,0.12)' : 'transparent',
+                    color: active ? 'var(--teal)' : 'var(--mu2)',
+                    background: active ? 'rgba(26,155,160,0.12)' : 'transparent',
                     fontWeight: active ? 600 : 400, fontSize: 13,
                     transition: 'all 0.13s', marginBottom: 1, textDecoration: 'none',
-                    borderLeft: active ? '2px solid #0097A7' : '2px solid transparent',
+                    borderLeft: active ? '2px solid var(--teal)' : '2px solid transparent',
                   }}>
                     <span style={{ fontSize: 15, width: 18, textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
                     <span style={{ flex: 1 }}>{item.label}</span>
@@ -310,14 +310,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Footer */}
       <div style={{ padding: '11px 13px', borderTop: '1px solid var(--b1)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg,#0097A7,#005F6A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Syne', fontSize: 12, fontWeight: 800, color: '#fff' }}>{profile?.name?.charAt(0).toUpperCase() || '?'}</div>
+          <div style={{ width: 28, height: 28, borderRadius: 8, flexShrink: 0, background: 'linear-gradient(135deg,var(--teal),#005F6A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Cormorant Garamond, serif', fontSize: 12, fontWeight: 800, color: '#fff' }}>{profile?.name?.charAt(0).toUpperCase() || '?'}</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.name || 'Loading...'}</div>
             <div style={{ fontSize: 10, color: 'var(--mu)' }}>{roleConfig?.label || '🔔'}</div>
           </div>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--green)' }} />
         </div>
-        <button onClick={logout} style={{ width: '100%', marginTop: 9, padding: '6px', background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', borderRadius: 8, color: '#0097A7', fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 600 }}>? Sign Out</button>
+        <button onClick={logout} style={{ width: '100%', marginTop: 9, padding: '6px', background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', borderRadius: 8, color: 'var(--teal)', fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>? Sign Out</button>
       </div>
     </>
   )
@@ -352,7 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Hamburger on mobile */}
           {isMobile && profile?.role !== 'partner' && (
-            <button onClick={() => setSidebarOpen(true)} style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}>
+            <button onClick={() => setSidebarOpen(true)} style={{ width: 36, height: 36, borderRadius: 8, background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0 }}>
               <div style={{ width: 16, height: 2, background: 'var(--teal)', borderRadius: 1 }} />
               <div style={{ width: 16, height: 2, background: 'var(--teal)', borderRadius: 1 }} />
               <div style={{ width: 16, height: 2, background: 'var(--teal)', borderRadius: 1 }} />
@@ -362,17 +362,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {/* Logo on mobile topbar */}
           {isMobile && profile?.role !== 'partner' && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, fontWeight: 900, color: '#0097A7' }}>rabt </span>
-              <span style={{ fontFamily: 'Outfit', fontWeight: 800, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
+              <span style={{ fontFamily: 'Georgia, serif', fontStyle: 'italic', fontSize: 14, fontWeight: 900, color: 'var(--teal)' }}>rabt </span>
+              <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--tx)' }}>NATURALS</span>
             </div>
           )}
 
-          {!isMobile && <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>{currentTitle}</div>}
+          {!isMobile && <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontWeight: 800 }}>{currentTitle}</div>}
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
-              <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(0,151,167,0.08)', border: '1px solid rgba(0,151,167,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>🔔</button>
+              <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>🔔</button>
               {unreadCount > 0 && (
                 <span style={{ position: 'absolute', top: 3, right: 3, width: 14, height: 14, borderRadius: '50%', background: 'var(--red)', border: '2px solid var(--bg)', fontSize: 8, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
               )}
@@ -380,7 +380,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Date � hide on small mobile */}
             {!isMobile && (
-              <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono', padding: '5px 10px', background: 'rgba(0,151,167,0.06)', border: '1px solid rgba(0,151,167,0.15)', borderRadius: 6 }}>
+              <div style={{ fontSize: 11, color: 'var(--mu)', fontFamily: 'DM Mono', padding: '5px 10px', background: 'rgba(26,155,160,0.06)', border: '1px solid rgba(26,155,160,0.15)', borderRadius: 6 }}>
                 {new Date().toLocaleDateString('en-IN', { weekday: 'short', month: 'short', day: 'numeric' })}
               </div>
             )}
@@ -391,7 +391,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {showNotif && (
           <div style={{ position: 'fixed', top: 52, right: 0, width: isMobile ? '100vw' : 320, height: 'calc(100vh - 52px)', background: 'var(--s1)', borderLeft: '1px solid var(--b2)', zIndex: 500, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>Notifications</span>
+              <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 14, fontWeight: 800 }}>Notifications</span>
               <button onClick={() => setShowNotif(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 14 }}>✕</button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px' }}>
@@ -401,7 +401,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div style={{ fontSize: 13 }}>No notifications yet</div>
                 </div>
               ) : notifications.map(n => (
-                <div key={n.id} style={{ background: 'var(--s2)', border: `1px solid ${n.is_read ? 'var(--b1)' : 'rgba(0,151,167,0.3)'}`, borderLeft: n.is_read ? '1px solid var(--b1)' : '3px solid #0097A7', borderRadius: 8, padding: '11px 13px', marginBottom: 8, cursor: 'pointer' }}>
+                <div key={n.id} style={{ background: 'var(--s2)', border: `1px solid ${n.is_read ? 'var(--b1)' : 'rgba(26,155,160,0.3)'}`, borderLeft: n.is_read ? '1px solid var(--b1)' : '3px solid var(--teal)', borderRadius: 8, padding: '11px 13px', marginBottom: 8, cursor: 'pointer' }}>
                   <div style={{ fontWeight: 600, fontSize: 12.5, marginBottom: 2 }}>{n.title}</div>
                   <div style={{ fontSize: 11.5, color: 'var(--mu2)', lineHeight: 1.45 }}>{n.message}</div>
                   <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 4 }}>{new Date(n.created_at).toLocaleString('en-IN')}</div>
@@ -423,7 +423,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {NAV.flatMap(s => s.items).filter(item => hasAccess(item)).slice(0, 4).map(item => {
               const active = isActive(item.href)
               return (
-                <a key={item.id} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '6px 10px', borderRadius: 10, background: active ? 'rgba(0,151,167,0.1)' : 'transparent', minWidth: 56 }}>
+                <a key={item.id} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '6px 10px', borderRadius: 10, background: active ? 'rgba(26,155,160,0.1)' : 'transparent', minWidth: 56 }}>
                   <span style={{ fontSize: 20 }}>{item.icon}</span>
                   <span style={{ fontSize: 9, fontWeight: active ? 700 : 400, color: active ? 'var(--teal)' : 'var(--mu)', textAlign: 'center', lineHeight: 1.2 }}>{item.label.split(' ')[0]}</span>
                 </a>

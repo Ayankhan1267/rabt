@@ -11,7 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
-        <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
       </head>
       <body>
         {children}
@@ -19,15 +19,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           position="bottom-center"
           toastOptions={{
             style: {
-              background: '#151820',
-              color: '#EEEAE3',
-              border: '1px solid rgba(255,255,255,0.11)',
+              background: '#FFFFFF',
+              color: '#0A1414',
+              border: '1px solid rgba(26,155,160,0.20)',
               borderRadius: '10px',
               fontSize: '12.5px',
-              fontFamily: 'Outfit, sans-serif',
+              fontFamily: 'DM Sans, sans-serif',
+              boxShadow: '0 4px 20px rgba(26,155,160,0.12)',
             },
-            success: { iconTheme: { primary: '#22C55E', secondary: '#151820' } },
-            error: { iconTheme: { primary: '#EF4444', secondary: '#151820' } },
+            success: { iconTheme: { primary: '#16A34A', secondary: '#FFFFFF' } },
+            error:   { iconTheme: { primary: '#DC2626', secondary: '#FFFFFF' } },
           }}
         />
       </body>

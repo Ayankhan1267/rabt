@@ -8,13 +8,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        gold: '#D4A853',
-        'gold-light': 'rgba(212,168,83,0.13)',
+        teal: '#1A9BA0',
+        'teal-light': 'rgba(26,155,160,0.10)',
+        gold: '#B8860B',
+        'gold-light': 'rgba(184,134,11,0.10)',
       },
       fontFamily: {
-        syne: ['Syne', 'sans-serif'],
-        outfit: ['Outfit', 'sans-serif'],
-        mono: ['DM Mono', 'monospace'],
+        syne:    ['Cormorant Garamond', 'serif'],
+        outfit:  ['DM Sans', 'sans-serif'],
+        sans:    ['DM Sans', 'sans-serif'],
+        mono:    ['DM Mono', 'monospace'],
       },
     },
   },
