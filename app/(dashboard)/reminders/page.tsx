@@ -268,6 +268,8 @@ function RemindersContent() {
   const [logs, setLogs]                         = useState<any[]>([])
   const [loading, setLoading]                   = useState(true)
   const [mounted, setMounted]                   = useState(false)
+  const [isMobile, setIsMobile]                 = useState(false)
+  const [showPreviewPanel, setShowPreviewPanel] = useState(false)
 
   const [pageTab, setPageTab]       = useState<'patients'|'followup'|'logs'|'settings'>('patients')
   const [followupTab, setFollowupTab] = useState<'not_purchased'|'not_booked'>('not_purchased')
@@ -340,12 +342,16 @@ function RemindersContent() {
 
   useEffect(() => {
     setMounted(true)
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
     loadAll()
     loadConfig()
     const tab = searchParams?.get('tab')
     if (tab === 'followup') setPageTab('followup')
     else if (tab === 'settings') setPageTab('settings')
     else if (tab === 'logs') setPageTab('logs')
+    return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
   // Poll QR while scanning
@@ -797,16 +803,16 @@ function RemindersContent() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
         <div>
-          <h1 style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800 }}>Reminders & <span style={{ color: 'var(--gold)' }}>Follow-Up</span></h1>
+          <h1 style={{ fontFamily: 'Syne', fontSize: isMobile ? 18 : 22, fontWeight: 800 }}>Reminders & <span style={{ color: 'var(--gold)' }}>Follow-Up</span></h1>
           <p style={{ color: 'var(--mu)', fontSize: 12.5, marginTop: 4 }}>WhatsApp Business · Bulk Broadcast · Lead Follow-Up System</p>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => setBulkMode(!bulkMode)} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: bulkMode ? 'rgba(0,151,167,0.15)' : 'var(--s2)', color: bulkMode ? 'var(--teal)' : 'var(--mu)', border: '1px solid var(--b1)' }}>
+        <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : undefined }}>
+          <button onClick={() => setBulkMode(!bulkMode)} style={{ padding: '8px 14px', borderRadius: 8, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', background: bulkMode ? 'rgba(0,151,167,0.15)' : 'var(--s2)', color: bulkMode ? 'var(--teal)' : 'var(--mu)', border: '1px solid var(--b1)', flex: isMobile ? 1 : undefined }}>
             {bulkMode ? '✓ Bulk ON' : '📢 Bulk Broadcast'}
           </button>
-          <button onClick={loadAll} style={{ padding: '8px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>🔄 Refresh</button>
+          <button onClick={loadAll} style={{ padding: '8px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit', flex: isMobile ? 1 : undefined }}>🔄 Refresh</button>
         </div>
       </div>
 
@@ -842,10 +848,20 @@ function RemindersContent() {
 
       {/* ── MY PATIENTS ────────────────────────────────────────────────────── */}
       {pageTab === 'patients' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 340px', gap: 14 }}>
-          <TemplateSidebar />
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '220px 1fr 340px', gap: 14 }}>
+          {!isMobile && <TemplateSidebar />}
 
           <div>
+            {/* Mobile template chips */}
+            {isMobile && (
+              <div style={{ overflowX: 'auto', display: 'flex', gap: 6, marginBottom: 10, paddingBottom: 4 }}>
+                {Object.entries(templates).slice(0, 8).map(([key, tmpl]) => (
+                  <button key={key} onClick={() => setSelectedTemplate(key)} style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 20, fontSize: 10.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: selectedTemplate === key ? tmpl.color + '18' : 'var(--s2)', color: selectedTemplate === key ? tmpl.color : 'var(--mu)', border: `1px solid ${selectedTemplate === key ? tmpl.color + '44' : 'var(--b1)'}`, whiteSpace: 'nowrap' }}>
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Patients ({filteredPatients.length})</div>
               {bulkMode && bulkSelected.length > 0 && (
@@ -870,6 +886,7 @@ function RemindersContent() {
                         setSelectedPerson(next)
                         if (next?.joinLink) setExtraVars(v => ({ ...v, joinLink: next.joinLink }))
                         else if (!isSelected) setExtraVars(v => ({ ...v, joinLink: '' }))
+                        if (isMobile && next) setShowPreviewPanel(true)
                       }
                     }} style={{ background: isSelected || isBulk ? 'var(--gL)' : 'var(--s1)', border: `1px solid ${isSelected || isBulk ? 'rgba(212,168,83,0.4)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
                       {bulkMode && (
@@ -898,7 +915,7 @@ function RemindersContent() {
             )}
           </div>
 
-          <PreviewPanel />
+          {!isMobile && <PreviewPanel />}
         </div>
       )}
 
@@ -910,14 +927,14 @@ function RemindersContent() {
               { id: 'not_purchased', l: '🛒 Not Purchased', count: notPurchasedLeads.length, color: 'var(--orange)' },
               { id: 'not_booked',    l: '📅 Not Booked',    count: notBookedLeads.length,    color: 'var(--red)'    },
             ].map(t => (
-              <button key={t.id} onClick={() => setFollowupTab(t.id as any)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid ' + (followupTab === t.id ? t.color + '55' : 'var(--b1)'), background: followupTab === t.id ? t.color + '15' : 'transparent', color: followupTab === t.id ? t.color : 'var(--mu2)', fontWeight: followupTab === t.id ? 700 : 400, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+              <button key={t.id} onClick={() => setFollowupTab(t.id as any)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid ' + (followupTab === t.id ? t.color + '55' : 'var(--b1)'), background: followupTab === t.id ? t.color + '15' : 'transparent', color: followupTab === t.id ? t.color : 'var(--mu2)', fontWeight: followupTab === t.id ? 700 : 400, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', flex: isMobile ? 1 : undefined }}>
                 {t.l} <span style={{ fontSize: 10, background: t.color + '22', color: t.color, padding: '1px 7px', borderRadius: 20, marginLeft: 4 }}>{t.count}</span>
               </button>
             ))}
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inp, width: 180 }} />
+            <div style={{ width: isMobile ? '100%' : undefined, marginLeft: isMobile ? 0 : 'auto', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search..." style={{ ...inp, width: isMobile ? '100%' : 180 }} />
               {bulkMode && (
-                <button onClick={() => handleBulkSend(followupList)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer' }}>
+                <button onClick={() => handleBulkSend(followupList)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 8, color: '#fff', fontSize: 12.5, fontWeight: 700, cursor: 'pointer', width: isMobile ? '100%' : undefined }}>
                   📢 Broadcast All ({followupList.filter(l => l.phone).length})
                 </button>
               )}
@@ -925,10 +942,10 @@ function RemindersContent() {
           </div>
 
           {/* Quick template bar */}
-          <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8, overflowX: isMobile ? 'auto' : undefined, flexWrap: isMobile ? 'nowrap' : 'wrap' }}>
             <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--mu)', flexShrink: 0 }}>Template:</span>
             {(['purchase_reminder','book_consultation','skin_profile_view','followup_7day'] as const).map(key => (
-              <button key={key} onClick={() => setSelectedTemplate(key)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: selectedTemplate === key ? 'rgba(0,151,167,0.15)' : 'transparent', color: selectedTemplate === key ? 'var(--teal)' : 'var(--mu2)', border: '1px solid ' + (selectedTemplate === key ? 'rgba(0,151,167,0.35)' : 'var(--b1)') }}>
+              <button key={key} onClick={() => setSelectedTemplate(key)} style={{ padding: '5px 12px', borderRadius: 20, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit', background: selectedTemplate === key ? 'rgba(0,151,167,0.15)' : 'transparent', color: selectedTemplate === key ? 'var(--teal)' : 'var(--mu2)', border: '1px solid ' + (selectedTemplate === key ? 'rgba(0,151,167,0.35)' : 'var(--b1)'), whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {templates[key]?.label || key}
               </button>
             ))}
@@ -939,9 +956,9 @@ function RemindersContent() {
             ⚠️ <strong>{followupList.length} leads</strong> — {followupTab === 'not_purchased' ? 'inhe purchase reminder bhejo' : 'inhe consultation book karwao'}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: 14 }}>
             {loading ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--mu)' }}>Loading...</div> : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(260px,1fr))', gap: 8, alignContent: 'start' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(260px,1fr))', gap: 8, alignContent: 'start' }}>
                 {followupList.map((lead: any, i: number) => {
                   const isSelected = selectedPerson?.phone === lead.phone
                   const isBulk = bulkSelected.includes(lead.phone)
@@ -953,6 +970,7 @@ function RemindersContent() {
                         setSelectedPerson(next)
                         if (next?.joinLink) setExtraVars(v => ({ ...v, joinLink: next.joinLink }))
                         else if (!isSelected) setExtraVars(v => ({ ...v, joinLink: '' }))
+                        if (isMobile && next) setShowPreviewPanel(true)
                       }
                     }} style={{ background: isSelected || isBulk ? 'rgba(0,151,167,0.1)' : 'var(--s1)', border: `1px solid ${isSelected || isBulk ? 'rgba(0,151,167,0.3)' : 'var(--b1)'}`, borderRadius: 10, padding: '12px 14px', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
                       {bulkMode && (
@@ -990,7 +1008,7 @@ function RemindersContent() {
                 )}
               </div>
             )}
-            <PreviewPanel />
+            {!isMobile && <PreviewPanel />}
           </div>
         </div>
       )}
@@ -1002,9 +1020,9 @@ function RemindersContent() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {logs.map((log, i) => (
               <div key={i} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 10, padding: '12px 16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
                   <span style={{ fontSize: 13, fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--teal)' }}>{log.to_number}</span>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: log.type === 'api' ? 'var(--grL)' : 'var(--blL)', color: log.type === 'api' ? 'var(--green)' : 'var(--blue)', fontWeight: 700 }}>
                       {log.type === 'api' ? '🟢 WA Business API' : '🔗 WA Link'}
                     </span>
@@ -1025,8 +1043,21 @@ function RemindersContent() {
       )}
 
       {/* ── SETTINGS ───────────────────────────────────────────────────────── */}
+      {/* MOBILE PREVIEW PANEL — bottom sheet */}
+      {isMobile && showPreviewPanel && (
+        <div onClick={() => setShowPreviewPanel(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 900 }}>
+          <div onClick={e => e.stopPropagation()} style={{ position: 'fixed', bottom: 0, left: 0, width: '100vw', maxHeight: '90vh', borderRadius: '16px 16px 0 0', background: 'var(--s1)', overflowY: 'auto', padding: '20px 16px', zIndex: 901, boxShadow: '0 -8px 32px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>Preview & Send</div>
+              <button onClick={() => setShowPreviewPanel(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0 }}>✕</button>
+            </div>
+            <PreviewPanel />
+          </div>
+        </div>
+      )}
+
       {pageTab === 'settings' && (
-        <div style={{ maxWidth: 580, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ maxWidth: isMobile ? '100%' : 580, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* ── WA SCAN & CONNECT ── */}
           <div className="card">

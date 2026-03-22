@@ -90,6 +90,8 @@ export default function TeamHubPage() {
   const [message, setMessage]             = useState('')
   const [sending, setSending]             = useState(false)
   const [mounted, setMounted]             = useState(false)
+  const [isMobile, setIsMobile]           = useState(false)
+  const [showSidebar, setShowSidebar]     = useState(false)
   const [showMeetingModal, setShowMeetingModal]           = useState(false)
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -108,7 +110,14 @@ export default function TeamHubPage() {
     title: '', message: '', priority: 'normal', audience: 'all',
   })
 
-  useEffect(() => { setMounted(true); loadAll() }, [])
+  useEffect(() => {
+    setMounted(true)
+    const checkMobile = () => setIsMobile(window.innerWidth <= 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    loadAll()
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
   useEffect(() => { if (tab === 'chat') loadMessages() }, [activeChannel, tab])
   useEffect(() => { scrollToBottom() }, [messages])
 
@@ -343,13 +352,29 @@ export default function TeamHubPage() {
   if (!mounted) return null
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100vh - 100px)', gap: 0 }}>
+    <div style={{ display: 'flex', height: isMobile ? 'calc(100vh - 60px)' : 'calc(100vh - 100px)', gap: 0, position: 'relative' }}>
+
+      {/* MOBILE SIDEBAR OVERLAY */}
+      {isMobile && showSidebar && (
+        <div onClick={() => setShowSidebar(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 200 }} />
+      )}
 
       {/* LEFT SIDEBAR */}
-      <div style={{ width: 220, flexShrink: 0, background: 'var(--s2)', borderRadius: '12px 0 0 12px', border: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--b1)' }}>
-          <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>🏢 Team Hub</div>
-          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 2 }}>{members.length} members</div>
+      <div style={{
+        width: 220, flexShrink: 0, background: 'var(--s2)',
+        borderRadius: isMobile ? 0 : '12px 0 0 12px',
+        border: '1px solid var(--b1)', display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        ...(isMobile ? {
+          position: 'fixed', top: 0, left: showSidebar ? 0 : -240, bottom: 0, zIndex: 201,
+          transition: 'left 0.25s ease', boxShadow: showSidebar ? '4px 0 24px rgba(0,0,0,0.3)' : 'none',
+        } : {}),
+      }}>
+        <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>🏢 Team Hub</div>
+            <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 2 }}>{members.length} members</div>
+          </div>
+          {isMobile && <button onClick={() => setShowSidebar(false)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18, padding: 0 }}>✕</button>}
         </div>
         <div style={{ padding: '8px 8px 0' }}>
           {[
@@ -418,13 +443,14 @@ export default function TeamHubPage() {
       </div>
 
       {/* MAIN CONTENT */}
-      <div style={{ flex: 1, border: '1px solid var(--b1)', borderLeft: 'none', borderRadius: '0 12px 12px 0', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--s1)' }}>
+      <div style={{ flex: 1, border: '1px solid var(--b1)', borderLeft: isMobile ? '1px solid var(--b1)' : 'none', borderRadius: isMobile ? 12 : '0 12px 12px 0', display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--s1)', width: isMobile ? '100%' : undefined }}>
 
         {/* CHAT */}
         {tab === 'chat' && (
           <>
             {dmUser ? (
               <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,151,167,0.04)', flexShrink: 0 }}>
+                {isMobile && <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0, marginRight: 4 }}>☰</button>}
                 <button onClick={() => { setDmUser(null); setDmMessages([]) }} style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontSize: 16, padding: 0 }}>←</button>
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: ROLE_COLORS[dmUser.role] || 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700 }}>
                   {(dmUser.name || '?')[0].toUpperCase()}
@@ -436,6 +462,7 @@ export default function TeamHubPage() {
               </div>
             ) : (
               <div style={{ padding: '12px 18px', borderBottom: '1px solid var(--b1)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                {isMobile && <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0 }}>☰</button>}
                 <div style={{ fontSize: 18 }}>{CHANNELS.find(c => c.id === activeChannel)?.icon}</div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: 14 }}># {activeChannel}</div>
@@ -548,14 +575,17 @@ export default function TeamHubPage() {
 
         {/* MEETINGS */}
         {tab === 'meetings' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 12px' : '18px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0, marginBottom: 20 }}>
               <div>
-                <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>📅 Meetings</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {isMobile && <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0 }}>☰</button>}
+                  <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>📅 Meetings</div>
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>{upcomingMeetings.length} upcoming</div>
               </div>
               {CAN_CREATE_MEETING.includes(userRole) && (
-                <button onClick={() => setShowMeetingModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Meeting</button>
+                <button onClick={() => setShowMeetingModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', width: isMobile ? '100%' : undefined }}>+ New Meeting</button>
               )}
             </div>
             {upcomingMeetings.length === 0 && pastMeetings.length === 0 ? (
@@ -618,11 +648,14 @@ export default function TeamHubPage() {
 
         {/* ANNOUNCEMENTS */}
         {tab === 'announcements' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>📢 Announcements</div>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 12px' : '18px 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                {isMobile && <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0 }}>☰</button>}
+                <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>📢 Announcements</div>
+              </div>
               {CAN_ANNOUNCE.includes(userRole) && (
-                <button onClick={() => setShowAnnouncementModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Announcement</button>
+                <button onClick={() => setShowAnnouncementModal(true)} style={{ padding: '9px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit', width: isMobile ? '100%' : undefined }}>+ New Announcement</button>
               )}
             </div>
             {visibleAnnouncements.length === 0 ? (
@@ -648,9 +681,12 @@ export default function TeamHubPage() {
 
         {/* MEMBERS */}
         {tab === 'members' && (
-          <div style={{ flex: 1, overflowY: 'auto', padding: '18px 20px' }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 20 }}>👥 Team Members ({members.length})</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(220px,1fr))', gap: 12 }}>
+          <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px 12px' : '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
+              {isMobile && <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 20, padding: 0 }}>☰</button>}
+              <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800 }}>👥 Team Members ({members.length})</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill,minmax(220px,1fr))', gap: 12 }}>
               {(CAN_SEE_ALL_MEMBERS.includes(userRole) ? members : members.filter(m => !CHAT_ONLY_ROLES.includes(m.role))).map((m, i) => {
                 const roleColor = ROLE_COLORS[m.role] || '#0097A7'
                 return (
@@ -675,8 +711,8 @@ export default function TeamHubPage() {
 
       {/* MEETING MODAL */}
       {showMeetingModal && (
-        <div onClick={() => setShowMeetingModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--s1)', borderRadius: 16, padding: '24px 28px', width: 540, maxWidth: '94vw', maxHeight: '92vh', overflowY: 'auto' }}>
+        <div onClick={() => setShowMeetingModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, backdropFilter: 'blur(4px)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--s1)', borderRadius: isMobile ? '16px 16px 0 0' : 16, padding: '24px 28px', width: isMobile ? '100vw' : 540, maxWidth: isMobile ? '100vw' : '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 20 }}>📅 Schedule Meeting</div>
 
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Title*</label>
@@ -723,16 +759,16 @@ export default function TeamHubPage() {
             </div>
 
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Platform</label>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
               {PLATFORMS.map(p => (
-                <button key={p.id} onClick={() => setMeetingForm(prev => ({ ...prev, platform: p.id }))} style={{ flex: 1, padding: '8px 4px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit', border: '1.5px solid ' + (meetingForm.platform === p.id ? p.color : 'var(--b1)'), background: meetingForm.platform === p.id ? p.color + '22' : 'var(--s2)', color: meetingForm.platform === p.id ? p.color : 'var(--mu)' }}>{p.icon} {p.label}</button>
+                <button key={p.id} onClick={() => setMeetingForm(prev => ({ ...prev, platform: p.id }))} style={{ flex: isMobile ? '1 1 calc(50% - 4px)' : 1, padding: '8px 4px', borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'Outfit', border: '1.5px solid ' + (meetingForm.platform === p.id ? p.color : 'var(--b1)'), background: meetingForm.platform === p.id ? p.color + '22' : 'var(--s2)', color: meetingForm.platform === p.id ? p.color : 'var(--mu)' }}>{p.icon} {p.label}</button>
               ))}
             </div>
 
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Meeting Link</label>
             <input value={meetingForm.meeting_link} onChange={e => setMeetingForm(p => ({ ...p, meeting_link: e.target.value }))} placeholder="https://meet.google.com/..." style={inp} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
               <div>
                 <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Date & Time*</label>
                 <input type="datetime-local" value={meetingForm.scheduled_at} onChange={e => setMeetingForm(p => ({ ...p, scheduled_at: e.target.value }))} style={inp} />
@@ -759,8 +795,8 @@ export default function TeamHubPage() {
 
       {/* ANNOUNCEMENT MODAL */}
       {showAnnouncementModal && (
-        <div onClick={() => setShowAnnouncementModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--s1)', borderRadius: 16, padding: '24px 28px', width: 480, maxWidth: '94vw' }}>
+        <div onClick={() => setShowAnnouncementModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, backdropFilter: 'blur(4px)', display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--s1)', borderRadius: isMobile ? '16px 16px 0 0' : 16, padding: '24px 28px', width: isMobile ? '100vw' : 480, maxWidth: isMobile ? '100vw' : '94vw', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, marginBottom: 20 }}>📢 New Announcement</div>
             <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', marginBottom: 5, display: 'block' }}>Title*</label>
             <input value={announcementForm.title} onChange={e => setAnnouncementForm(p => ({ ...p, title: e.target.value }))} placeholder="Announcement title..." style={inp} />
