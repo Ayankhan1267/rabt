@@ -424,19 +424,29 @@ function RemindersContent() {
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (!url) { setLoading(false); return }
 
-      const [specRes, consRes, ordRes, skinRes, userRes] = await Promise.all([
+      const [specRes, consRes, ordRes, skinRes, userRes, sessionRes] = await Promise.all([
         fetch(url + '/api/specialists').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/consultations').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/orders').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/skinprofiles').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/users').then(r => r.ok ? r.json() : []),
+        fetch(url + '/api/sessions').then(r => r.ok ? r.json() : []),
       ])
 
-      const allSpecs  = Array.isArray(specRes)  ? specRes.filter(Boolean)  : []
-      const allCons   = Array.isArray(consRes)   ? consRes.filter(Boolean)  : []
-      const allOrders = Array.isArray(ordRes)    ? ordRes.filter(Boolean)   : []
-      const allSkins  = Array.isArray(skinRes)   ? skinRes.filter(Boolean)  : []
-      const allUsers  = Array.isArray(userRes)   ? userRes.filter(Boolean)  : []
+      const allSpecs    = Array.isArray(specRes)    ? specRes.filter(Boolean)    : []
+      const allCons     = Array.isArray(consRes)    ? consRes.filter(Boolean)    : []
+      const allOrders   = Array.isArray(ordRes)     ? ordRes.filter(Boolean)     : []
+      const allSkins    = Array.isArray(skinRes)    ? skinRes.filter(Boolean)    : []
+      const allUsers    = Array.isArray(userRes)    ? userRes.filter(Boolean)    : []
+      const allSessions = Array.isArray(sessionRes) ? sessionRes.filter(Boolean) : []
+
+      // Build sessionUrl lookup: consultationId → sessionUrl
+      const sessionByConsId = new Map<string, string>()
+      allSessions.forEach((s: any) => {
+        if (s.consultation && s.sessionUrl) {
+          sessionByConsId.set(s.consultation.toString(), s.sessionUrl)
+        }
+      })
 
       const mySpec = allSpecs.find((s: any) => s.email?.toLowerCase() === prof?.email?.toLowerCase())
       setMongoSpec(mySpec)
@@ -489,6 +499,17 @@ function RemindersContent() {
           patientMap[key] = { name: l.name || 'Lead', phone, skinType: '', consultations: [], orders: [], crmStage: l.stage }
         } else {
           patientMap[key].crmStage = l.stage
+        }
+      })
+
+      // Attach joinLink to each patient from their latest accepted/booked consultation
+      Object.values(patientMap).forEach((p: any) => {
+        const acceptedCons = p.consultations.find((c: any) =>
+          ['accepted', 'booked', 'confirmed', 'in_progress'].includes(c.status?.toLowerCase())
+        ) || p.consultations[p.consultations.length - 1]
+        if (acceptedCons) {
+          const url = sessionByConsId.get(acceptedCons._id?.toString())
+          if (url) p.joinLink = url
         }
       })
 
@@ -627,8 +648,11 @@ function RemindersContent() {
                     value={extraVars[f.key]}
                     onChange={e => setExtraVars(v => ({ ...v, [f.key]: e.target.value }))}
                     placeholder={f.placeholder}
-                    style={{ ...inp, marginBottom: 0, fontSize: 11.5, fontFamily: 'DM Mono', padding: '7px 10px' }}
+                    style={{ ...inp, marginBottom: 0, fontSize: 11.5, fontFamily: 'DM Mono', padding: '7px 10px', borderColor: f.key === 'joinLink' && extraVars.joinLink && selectedPerson?.joinLink === extraVars.joinLink ? 'rgba(37,211,102,0.5)' : undefined }}
                   />
+                  {f.key === 'joinLink' && extraVars.joinLink && selectedPerson?.joinLink === extraVars.joinLink && (
+                    <div style={{ fontSize: 9.5, color: '#25D366', marginTop: 3 }}>✓ Auto-populated from session</div>
+                  )}
                 </div>
               ))}
               {tmpl.text?.includes('{concern}') && (
@@ -754,7 +778,12 @@ function RemindersContent() {
                   return (
                     <div key={i} onClick={() => {
                       if (bulkMode) setBulkSelected(prev => prev.includes(p.phone) ? prev.filter(x => x !== p.phone) : [...prev, p.phone])
-                      else setSelectedPerson(isSelected ? null : p)
+                      else {
+                        const next = isSelected ? null : p
+                        setSelectedPerson(next)
+                        if (next?.joinLink) setExtraVars(v => ({ ...v, joinLink: next.joinLink }))
+                        else if (!isSelected) setExtraVars(v => ({ ...v, joinLink: '' }))
+                      }
                     }} style={{ background: isSelected || isBulk ? 'var(--gL)' : 'var(--s1)', border: `1px solid ${isSelected || isBulk ? 'rgba(212,168,83,0.4)' : 'var(--b1)'}`, borderRadius: 10, padding: '10px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
                       {bulkMode && (
                         <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isBulk ? 'var(--gold)' : 'var(--b2)'}`, background: isBulk ? 'var(--gold)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -832,7 +861,12 @@ function RemindersContent() {
                   return (
                     <div key={i} onClick={() => {
                       if (bulkMode) setBulkSelected(prev => prev.includes(lead.phone) ? prev.filter(x => x !== lead.phone) : [...prev, lead.phone])
-                      else setSelectedPerson(isSelected ? null : lead)
+                      else {
+                        const next = isSelected ? null : lead
+                        setSelectedPerson(next)
+                        if (next?.joinLink) setExtraVars(v => ({ ...v, joinLink: next.joinLink }))
+                        else if (!isSelected) setExtraVars(v => ({ ...v, joinLink: '' }))
+                      }
                     }} style={{ background: isSelected || isBulk ? 'rgba(0,151,167,0.1)' : 'var(--s1)', border: `1px solid ${isSelected || isBulk ? 'rgba(0,151,167,0.3)' : 'var(--b1)'}`, borderRadius: 10, padding: '12px 14px', cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
                       {bulkMode && (
                         <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${isBulk ? 'var(--teal)' : 'var(--b2)'}`, background: isBulk ? 'var(--teal)' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
