@@ -99,6 +99,8 @@ export default function SettingsPage() {
     TWILIO_WHATSAPP_NUMBER: '',
     TWILIO_PHONE_NUMBER: '',
     OTP_METHOD: 'wa_bridge',
+    SHIPROCKET_EMAIL: '',
+    SHIPROCKET_PASSWORD: '',
   })
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
   const [savingKeys, setSavingKeys] = useState(false)
@@ -555,6 +557,10 @@ export default function SettingsPage() {
                 { key: 'TWILIO_AUTH_TOKEN',       label: 'Twilio Auth Token',        placeholder: 'xxxxxxxx',              hint: 'Twilio console → Auth Token' },
                 { key: 'TWILIO_PHONE_NUMBER',     label: 'Twilio Phone (SMS OTP)',   placeholder: '+12015551234',          hint: 'Twilio number for SMS — e.g. +12015551234' },
                 { key: 'TWILIO_WHATSAPP_NUMBER',  label: 'Twilio WA Number',         placeholder: 'whatsapp:+14155238886', hint: 'Twilio sandbox WA number' },
+              ]},
+              { group: '🚚 Shiprocket (Order Tracking)', keys: [
+                { key: 'SHIPROCKET_EMAIL',    label: 'Shiprocket Email',    placeholder: 'you@email.com', hint: 'Shiprocket login email' },
+                { key: 'SHIPROCKET_PASSWORD', label: 'Shiprocket Password', placeholder: '••••••••',      hint: 'Shiprocket login password' },
               ]},
             ] as { group: string; keys: { key: string; label: string; placeholder: string; hint: string }[] }[]).map(section => (
               <div key={section.group} style={{ marginBottom: 24 }}>

@@ -28,6 +28,9 @@ export interface AppConfig {
   TWILIO_PHONE_NUMBER: string     // for SMS OTP (+1234567890)
   // OTP delivery method
   OTP_METHOD: 'wa_bridge' | 'twilio_sms' | 'twilio_wa'
+  // Shiprocket
+  SHIPROCKET_EMAIL: string
+  SHIPROCKET_PASSWORD: string
 }
 
 let cache: AppConfig | null = null
@@ -54,6 +57,8 @@ export async function getConfig(): Promise<AppConfig> {
     TWILIO_WHATSAPP_NUMBER: process.env.TWILIO_WHATSAPP_NUMBER  || 'whatsapp:+14155238886',
     TWILIO_PHONE_NUMBER:    process.env.TWILIO_PHONE_NUMBER     || '',
     OTP_METHOD:             (process.env.OTP_METHOD as AppConfig['OTP_METHOD']) || 'wa_bridge',
+    SHIPROCKET_EMAIL:       process.env.SHIPROCKET_EMAIL    || '',
+    SHIPROCKET_PASSWORD:    process.env.SHIPROCKET_PASSWORD || '',
   }
 
   try {

@@ -51,13 +51,45 @@ export default function OrdersPage() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showDetail, setShowDetail] = useState<any>(null)
   const [showAnalytics, setShowAnalytics] = useState(false)
+  const [dateFilter, setDateFilter] = useState('all')
+  const [srSyncing, setSrSyncing] = useState(false)
+  const [srLastSync, setSrLastSync] = useState<string|null>(null)
+  const [trackingDetail, setTrackingDetail] = useState<any>(null)
+  const [trackingLoading, setTrackingLoading] = useState(false)
   const [form, setForm] = useState({
     customer_name: '', customer_phone: '', customer_email: '',
     address: '', city: '', state: '', pincode: '',
     courier: '', status: 'New', payment_method: 'Prepaid', notes: ''
   })
 
-  useEffect(() => { setMounted(true); loadOrders() }, [])
+  useEffect(() => { setMounted(true); loadOrders(); loadSrLastSync() }, [])
+
+  async function loadSrLastSync() {
+    const { data } = await supabase.from('hq_settings').select('value').eq('key', 'shiprocket_last_sync').single()
+    if (data?.value) { try { const v = JSON.parse(data.value); setSrLastSync(v.at) } catch {} }
+  }
+
+  async function syncShiprocket() {
+    setSrSyncing(true)
+    try {
+      const r = await fetch('/api/shiprocket/sync', { method: 'POST' })
+      const d = await r.json()
+      if (d.error) toast.error('Shiprocket: ' + d.error)
+      else { toast.success(`Synced! ${d.updated} orders updated from Shiprocket`); setSrLastSync(new Date().toISOString()); loadOrders() }
+    } catch (e: any) { toast.error('Sync failed: ' + e.message) }
+    setSrSyncing(false)
+  }
+
+  async function trackAWB(awb: string) {
+    if (!awb) return
+    setTrackingLoading(true)
+    try {
+      const r = await fetch('/api/shiprocket/track?awb=' + awb)
+      const d = await r.json()
+      setTrackingDetail(d)
+    } catch (e: any) { toast.error('Track failed: ' + e.message) }
+    setTrackingLoading(false)
+  }
 
   async function loadOrders() {
     setLoading(true)
@@ -114,16 +146,27 @@ export default function OrdersPage() {
       .map(o => ({ ...o, _source: 'hq' }))
   ]
 
+  function getAWB(o: any) { return o.awbNumber || o.awb_code || o.tracking_id || o.shipments?.[0]?.awb || '' }
+  function getCourier(o: any) { return o.courierName || o.courier_name || o.courier || o.shipments?.[0]?.courier || '' }
+
   const filtered = allOrders.filter(o => {
     if (statusFilter !== 'all' && getRealStatus(o) !== statusFilter) return false
     if (paymentFilter !== 'all' && normalizePayment(o).toLowerCase() !== paymentFilter) return false
     if (sourceFilter !== 'all' && o._source !== sourceFilter) return false
+    if (dateFilter !== 'all') {
+      const d = new Date(o.createdAt || o.created_at || 0)
+      const now = new Date(); const diff = (now.getTime() - d.getTime()) / 86400000
+      if (dateFilter === 'today' && diff > 1) return false
+      if (dateFilter === '7d' && diff > 7) return false
+      if (dateFilter === '30d' && diff > 30) return false
+    }
     if (search) {
       const s = search.toLowerCase()
       const name = (o.customerName || o.customer_name || '').toLowerCase()
       const phone = (o.customerPhone || o.customer_phone || '').toLowerCase()
       const num = (o.orderNumber || o.id || '').toString().toLowerCase()
-      if (!name.includes(s) && !phone.includes(s) && !num.includes(s)) return false
+      const awb = getAWB(o).toLowerCase()
+      if (!name.includes(s) && !phone.includes(s) && !num.includes(s) && !awb.includes(s)) return false
     }
     return true
   })
@@ -337,6 +380,12 @@ export default function OrdersPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => setShowAnalytics(!showAnalytics)} style={{ padding: '8px 14px', background: showAnalytics ? 'var(--gL)' : 'rgba(255,255,255,0.05)', border: '1px solid ' + (showAnalytics ? 'rgba(212,168,83,0.3)' : 'var(--b1)'), borderRadius: 8, color: showAnalytics ? 'var(--gold)' : 'var(--mu)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>&#128202; Analytics</button>
           <button onClick={loadOrders} style={{ padding: '8px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 8, color: 'var(--blue)', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>Refresh</button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+            <button onClick={syncShiprocket} disabled={srSyncing} style={{ padding: '8px 14px', background: srSyncing ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg,#FF6B35,#E0440E)', border: 'none', borderRadius: 8, color: srSyncing ? 'var(--mu)' : '#fff', fontWeight: 700, fontSize: 12.5, cursor: srSyncing ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', whiteSpace: 'nowrap' }}>
+              {srSyncing ? '⏳ Syncing...' : '🚚 Sync Shiprocket'}
+            </button>
+            {srLastSync && <span style={{ fontSize: 9.5, color: 'var(--mu)' }}>Last: {new Date(srLastSync).toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}</span>}
+          </div>
           <button onClick={openPOS} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ New Order</button>
         </div>
       </div>
@@ -458,7 +507,7 @@ export default function OrdersPage() {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, phone, order..." style={{ ...inp, flex: 1, minWidth: 200 }} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, phone, order #, AWB..." style={{ ...inp, flex: 1, minWidth: 200 }} />
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} style={{ ...inp, width: 'auto' }}>
           {statuses.map(s => <option key={s} value={s}>{s === 'all' ? 'All Status' : s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
         </select>
@@ -474,6 +523,12 @@ export default function OrdersPage() {
           <option value="specialist">Specialist</option>
           <option value="partner">Partner</option>
         </select>
+        <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ ...inp, width: 'auto' }}>
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="7d">Last 7 Days</option>
+          <option value="30d">Last 30 Days</option>
+        </select>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -484,7 +539,7 @@ export default function OrdersPage() {
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr>{['Order #', 'Customer', 'Products', 'Amount', 'Payment', 'Status', 'Source', 'Date', 'Actions'].map(h => (
+              <tr>{['Order #', 'Customer', 'Products', 'Amount', 'Payment', 'Status', 'Tracking', 'Source', 'Date', 'Actions'].map(h => (
                 <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.07em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
               ))}</tr>
             </thead>
@@ -516,6 +571,20 @@ export default function OrdersPage() {
                         <select value={getRealStatus(o)} onChange={e => { const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url'); if (url && o._id) fetch(url + '/api/orders/' + o._id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: e.target.value, orderStatus: e.target.value }) }).then(() => { toast.success('Updated!'); loadOrders(); }) }} style={{ background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 6, padding: '4px 8px', color: STATUS_COLORS[getRealStatus(o)] || 'var(--mu2)', fontSize: 11, cursor: 'pointer', outline: 'none', fontFamily: 'Outfit' }}>{HQ_STATUSES.map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}</select>
                       )}
                     </td>
+                    <td style={{ padding: '11px 12px', minWidth: 130 }}>
+                      {getAWB(o) ? (
+                        <div>
+                          <div style={{ fontFamily: 'DM Mono', fontSize: 10.5, color: 'var(--teal)', fontWeight: 700, marginBottom: 2 }}>{getAWB(o)}</div>
+                          <div style={{ fontSize: 10, color: 'var(--mu)', marginBottom: 3 }}>{getCourier(o)}</div>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={() => { setShowDetail(o); trackAWB(getAWB(o)) }} style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(0,151,167,0.12)', border: 'none', borderRadius: 4, color: 'var(--teal)', cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700 }}>Track</button>
+                            <a href={`https://shiprocket.co/tracking/${getAWB(o)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 9, padding: '2px 7px', background: 'rgba(255,107,53,0.1)', border: 'none', borderRadius: 4, color: '#FF6B35', cursor: 'pointer', fontFamily: 'Outfit', fontWeight: 700, textDecoration: 'none' }}>↗</a>
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: 10, color: 'var(--mu)' }}>—</span>
+                      )}
+                    </td>
                     <td style={{ padding: '11px 12px' }}><span style={{ fontSize: 10, color: o._source === 'website' ? 'var(--green)' : o._source === 'specialist' ? 'var(--purple)' : o._source === 'partner' ? 'var(--orange)' : 'var(--mu)' }}>{o._source === 'website' ? 'Website' : o._source === 'specialist' ? 'Specialist' : o._source === 'partner' ? 'Partner' : 'HQ'}</span></td>
                     <td style={{ padding: '11px 12px', fontSize: 11, color: 'var(--mu)', whiteSpace: 'nowrap' }}>{o.createdAt || o.created_at ? new Date(o.createdAt || o.created_at).toLocaleDateString('en-IN') : '-'}</td>
                     <td style={{ padding: '11px 12px' }}>
@@ -527,7 +596,7 @@ export default function OrdersPage() {
                   </tr>
                 )
               })}
-              {filtered.length === 0 && <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No orders found</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={10} style={{ padding: 40, textAlign: 'center', color: 'var(--mu)' }}>No orders found</td></tr>}
             </tbody>
           </table>
         )}
@@ -643,14 +712,14 @@ export default function OrdersPage() {
       )}
 
       {showDetail && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowDetail(null)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(6px)', zIndex: 5000, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => { setShowDetail(null); setTrackingDetail(null) }}>
           <div style={{ background: 'var(--s1)', border: '1px solid var(--b2)', borderRadius: 16, padding: '26px 30px', width: 540, maxWidth: '94vw', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>#{(showDetail.orderNumber || showDetail.id || '').toString().slice(-8)}</div>
                 <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 2 }}>{showDetail.createdAt ? new Date(showDetail.createdAt).toLocaleString('en-IN') : ''}</div>
               </div>
-              <button onClick={() => setShowDetail(null)} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 16 }}>&#x2715;</button>
+              <button onClick={() => { setShowDetail(null); setTrackingDetail(null) }} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 16 }}>&#x2715;</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 14 }}>
               {[
@@ -663,7 +732,8 @@ export default function OrdersPage() {
                 { label: 'City', value: showDetail.city || '-' },
                 { label: 'Pincode', value: showDetail.pincode || '-' },
                 { label: 'State', value: showDetail.state || '-' },
-                { label: 'Courier', value: showDetail.courier || '-' },
+                { label: 'Courier', value: getCourier(showDetail) || '-' },
+                { label: 'AWB / Tracking', value: getAWB(showDetail) || '-' },
               ].map((item, i) => (
                 <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px' }}>
                   <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 3 }}>{item.label}</div>
@@ -671,6 +741,37 @@ export default function OrdersPage() {
                 </div>
               ))}
             </div>
+            {/* Tracking section */}
+            {getAWB(showDetail) && (
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>🚚 Shipment Tracking</div>
+                  <a href={`https://shiprocket.co/tracking/${getAWB(showDetail)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(255,107,53,0.12)', border: 'none', borderRadius: 4, color: '#FF6B35', fontWeight: 700, textDecoration: 'none' }}>↗ Open on Shiprocket</a>
+                  {!trackingDetail && <button onClick={() => trackAWB(getAWB(showDetail))} disabled={trackingLoading} style={{ fontSize: 10, padding: '2px 8px', background: 'var(--blL)', border: 'none', borderRadius: 4, color: 'var(--blue)', fontWeight: 700, cursor: 'pointer' }}>{trackingLoading ? '...' : 'Load Status'}</button>}
+                </div>
+                <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '10px 12px', fontSize: 11, fontFamily: 'DM Mono' }}>
+                  <div style={{ color: 'var(--mu)', marginBottom: 4 }}>AWB: <strong style={{ color: 'var(--teal)' }}>{getAWB(showDetail)}</strong></div>
+                  {getCourier(showDetail) && <div style={{ color: 'var(--mu)' }}>Courier: <strong style={{ color: 'var(--tx)' }}>{getCourier(showDetail)}</strong></div>}
+                </div>
+                {trackingLoading && <div style={{ textAlign: 'center', padding: 12, color: 'var(--mu)', fontSize: 12 }}>Loading tracking...</div>}
+                {trackingDetail && !trackingLoading && (
+                  <div style={{ marginTop: 8, maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {(trackingDetail?.tracking_data?.shipment_track_activities || []).slice(0, 10).map((act: any, i: number) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, padding: '7px 10px', background: i === 0 ? 'rgba(0,151,167,0.08)' : 'var(--s2)', borderRadius: 7, border: i === 0 ? '1px solid rgba(0,151,167,0.2)' : '1px solid var(--b1)' }}>
+                        <div style={{ width: 6, height: 6, borderRadius: 3, background: i === 0 ? 'var(--teal)' : 'var(--mu)', flexShrink: 0, marginTop: 5 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11.5, fontWeight: i === 0 ? 700 : 500, color: i === 0 ? 'var(--teal)' : 'var(--tx)' }}>{act['sr-status-label'] || act.activity || act.description}</div>
+                          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 1 }}>{act.date} {act.time} {act.location ? '· ' + act.location : ''}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {(trackingDetail?.tracking_data?.shipment_track_activities || []).length === 0 && (
+                      <div style={{ textAlign: 'center', color: 'var(--mu)', fontSize: 12, padding: 12 }}>No tracking events yet</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             {showDetail.couponCode && <div style={{ background: 'var(--gL)', borderRadius: 8, padding: '8px 12px', marginBottom: 12, fontSize: 12 }}>Coupon: <strong>{showDetail.couponCode}</strong> &middot; Discount: Rs.{showDetail.couponDiscount || 0}</div>}
             {showDetail.items?.length > 0 && (
               <div style={{ marginBottom: 14 }}>
