@@ -30,7 +30,7 @@ export default function AdsManagerPage() {
 
   async function loadSavedCreds() {
     try {
-      const { data } = await supabase.from('app_settings').select('*').eq('key', 'ads_credentials').single()
+      const { data } = await supabase.from('hq_settings').select('*').eq('key', 'ads_credentials').single()
       if (data?.value) {
         const creds = JSON.parse(data.value)
         if (creds.meta) { setMetaCreds(creds.meta); if (creds.meta.accessToken) setMetaConnected(true) }
@@ -43,7 +43,7 @@ export default function AdsManagerPage() {
     setSavingCreds(true)
     try {
       const val = JSON.stringify({ meta: metaCreds, google: googleCreds })
-      await supabase.from('app_settings').upsert({ key: 'ads_credentials', value: val })
+      await supabase.from('hq_settings').upsert({ key: 'ads_credentials', value: val }, { onConflict: 'key' })
       if (metaCreds.accessToken) setMetaConnected(true)
       if (googleCreds.refreshToken) setGoogleConnected(true)
       toast.success('Credentials saved!')
