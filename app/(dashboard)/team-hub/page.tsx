@@ -25,6 +25,22 @@ const CAN_ANNOUNCE        = ['founder','admin','manager','hr']
 const CAN_SEE_ALL_MEMBERS = ['founder','admin','manager','hr']
 const CHAT_ONLY_ROLES     = ['partner']
 
+// Each role can only DM upward — their direct manager roles
+const ALLOWED_DM_ROLES: Record<string, string[]> = {
+  founder:          ['admin', 'manager'],
+  admin:            ['founder', 'manager'],
+  manager:          ['founder', 'admin'],
+  specialist_manager: ['manager', 'founder', 'admin'],
+  specialist:       ['specialist_manager'],
+  support:          ['manager', 'founder', 'admin'],
+  ops:              ['manager', 'founder', 'admin'],
+  partner:          ['manager', 'founder', 'admin'],
+  finance:          ['manager', 'founder', 'admin'],
+  hr:               ['manager', 'founder', 'admin'],
+  content_creator:  ['manager', 'founder', 'admin'],
+  marketing:        ['manager', 'founder', 'admin'],
+}
+
 const CHANNEL_ACCESS: Record<string, string[]> = {
   general:     ['founder','admin','manager','hr','specialist','support','ops','content_creator','marketing','finance','specialist_manager','partner'],
   sales:       ['founder','admin','manager','ops','finance'],
@@ -153,9 +169,14 @@ export default function TeamHubPage() {
   }
 
   async function openDM(user: any) {
+    if (!profile) return
+    const allowed = ALLOWED_DM_ROLES[profile.role] || []
+    if (!allowed.includes(user.role)) {
+      toast.error('Aap sirf apne manager se DM kar sakte hain')
+      return
+    }
     setDmUser(user)
     setTab('chat')
-    if (!profile) return
     const dmCh = getDMChannelId(profile.id, user.id)
     const { data } = await supabase.from('team_messages').select('*')
       .eq('channel', dmCh).order('created_at', { ascending: true }).limit(100)
@@ -363,7 +384,7 @@ export default function TeamHubPage() {
             {/* Direct Messages */}
             <div style={{ padding: '8px 8px 4px', borderTop: '1px solid var(--b1)', marginTop: 4 }}>
               <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', padding: '4px 6px 6px', letterSpacing: '0.08em' }}>Direct Messages</div>
-              {members.filter(m => m.id !== profile?.id).slice(0, 8).map(m => (
+              {members.filter(m => m.id !== profile?.id && (ALLOWED_DM_ROLES[userRole] || []).includes(m.role)).map(m => (
                 <div key={m.id} onClick={() => openDM(m)}
                   style={{
                     padding: '6px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 1,
