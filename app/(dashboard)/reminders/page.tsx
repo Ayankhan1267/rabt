@@ -282,7 +282,41 @@ function RemindersContent() {
   const [extraVars, setExtraVars]               = useState({ joinLink: '', skinProfileLink: '', routineLink: '', concern: '' })
 
   // Automation
-  const [autoSettings, setAutoSettings] = useState({ enabled: false, day_before: true, min5_before: true, time_now: true })
+  const AUTO_TEMPLATE_GROUPS = [
+    { group: 'Pre-Consultation', templates: [
+      { key: 'skin_analysis_pending', label: '🔬 Skin Analysis Pending',       desc: 'User registered, no skin analysis — 24-48h baad' },
+      { key: 'book_consultation',     label: '📅 Book Consultation',           desc: 'Skin analysis ki, consultation nahi booked — 24-48h baad' },
+    ]},
+    { group: 'Consultation', templates: [
+      { key: 'consultation_booked_join', label: '📅 Booking Confirm + Join Link', desc: 'Consultation accept hote hi, 0-2h mein' },
+      { key: 'consultation_reminder',   label: '⏰ 1 Din Pehle Reminder',        desc: '23-25h before scheduled time' },
+      { key: 'consultation_5min',       label: '🚨 5 Minute Pehle',             desc: '3-7 min before scheduled time' },
+      { key: 'consultation_time_now',   label: '🟢 Time Ho Gayi — Join Karo!',  desc: 'Exact scheduled time pe ±3 min' },
+    ]},
+    { group: 'No Show', templates: [
+      { key: 'no_show_1', label: '😔 No Show Day 1',  desc: '0-26h after missed slot' },
+      { key: 'no_show_2', label: '😔 No Show Day 3',  desc: '47-97h after missed slot' },
+      { key: 'no_show_3', label: '😔 No Show Day 5',  desc: '95-145h after missed slot' },
+      { key: 'no_show_4', label: '😔 No Show Day 7',  desc: '143-193h after missed slot' },
+      { key: 'no_show_5', label: '😔 No Show Day 10', desc: '215-265h after missed slot (final)' },
+    ]},
+    { group: 'Post Consultation', templates: [
+      { key: 'consultation_complete',     label: '✅ Consultation Done — Skin Profile', desc: 'Status = completed hote hi' },
+    ]},
+    { group: 'Purchase Sequence', templates: [
+      { key: 'routine_not_purchased_1', label: '🛒 Routine Ready Day 1',        desc: '0-49h after consultation complete, no order' },
+      { key: 'routine_not_purchased_2', label: '🛒 Routine Ready Day 3',        desc: '47-97h after complete, no order' },
+      { key: 'routine_not_purchased_3', label: '🛒 Routine Ready Day 7 (Offer)', desc: '143-193h after complete, no order' },
+      { key: 'routine_not_purchased_4', label: '🛒 Routine Ready Day 14 (Last)', desc: '311-361h after complete, no order' },
+    ]},
+    { group: 'Post Purchase', templates: [
+      { key: 'post_purchase_thankyou',   label: '🎉 Purchase Thank You',    desc: 'Order place hote hi, 0-2h mein' },
+      { key: 'post_purchase_education',  label: '📚 Skin Education + Diet', desc: '40-56h after order (Day 2)' },
+    ]},
+  ]
+  const ALL_TEMPLATE_KEYS = AUTO_TEMPLATE_GROUPS.flatMap(g => g.templates.map(t => t.key))
+  const [autoEnabled, setAutoEnabled]   = useState(false)
+  const [autoTemplates, setAutoTemplates] = useState<Record<string, boolean>>(Object.fromEntries(ALL_TEMPLATE_KEYS.map(k => [k, true])))
   const [autoLastRun, setAutoLastRun]   = useState<string|null>(null)
   const [autoLastSent, setAutoLastSent] = useState<number>(0)
   const [autoRunning, setAutoRunning]   = useState(false)
@@ -365,7 +399,8 @@ function RemindersContent() {
     if (autoRow.data?.value) {
       try {
         const a = JSON.parse(autoRow.data.value)
-        setAutoSettings({ enabled: a.enabled ?? false, day_before: a.day_before ?? true, min5_before: a.min5_before ?? true, time_now: a.time_now ?? true })
+        setAutoEnabled(a.enabled ?? false)
+        if (a.templates) setAutoTemplates(prev => ({ ...prev, ...a.templates }))
         if (a.last_run) setAutoLastRun(a.last_run)
         if (a.last_sent != null) setAutoLastSent(a.last_sent)
       } catch {}
@@ -379,13 +414,12 @@ function RemindersContent() {
     } catch {}
   }
 
-  async function saveAutoSettings(next: typeof autoSettings) {
-    setAutoSettings(next)
+  async function saveAuto(enabled: boolean, templates: Record<string, boolean>) {
     await supabase.from('hq_settings').upsert({
       key: 'reminder_automations',
-      value: JSON.stringify({ ...next, last_run: autoLastRun, last_sent: autoLastSent }),
+      value: JSON.stringify({ enabled, templates, last_run: autoLastRun, last_sent: autoLastSent }),
     })
-    toast.success('Automation settings saved!')
+    toast.success('Saved!')
   }
 
   async function runAutoNow() {
@@ -395,10 +429,9 @@ function RemindersContent() {
       const d = await r.json()
       if (d.error) { toast.error('Error: ' + d.error) }
       else {
-        const sent = d.processed?.filter((x: any) => x.sent).length ?? 0
-        toast.success(`Done! ${sent} message${sent !== 1 ? 's' : ''} sent`)
+        toast.success(`Done! ${d.sent ?? 0} message${d.sent !== 1 ? 's' : ''} sent (${d.processed} checked)`)
         setAutoLastRun(d.started)
-        setAutoLastSent(sent)
+        setAutoLastSent(d.sent ?? 0)
       }
     } catch (e: any) { toast.error('Failed: ' + e.message) }
     setAutoRunning(false)
@@ -1111,41 +1144,55 @@ function RemindersContent() {
 
           {/* ── AUTOMATION ── */}
           <div className="card">
+            {/* Header + master toggle */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>⚡ Consultation Auto-Reminders</div>
-              {/* Master toggle */}
-              <div onClick={() => saveAutoSettings({ ...autoSettings, enabled: !autoSettings.enabled })}
-                style={{ width: 44, height: 24, borderRadius: 12, background: autoSettings.enabled ? 'var(--green)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                <div style={{ position: 'absolute', top: 3, left: autoSettings.enabled ? 22 : 3, width: 18, height: 18, borderRadius: 9, background: '#fff', transition: 'left 0.2s' }} />
+              <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>⚡ Full Journey Automation</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 11, color: autoEnabled ? 'var(--green)' : 'var(--mu)', fontWeight: 700 }}>{autoEnabled ? 'ON' : 'OFF'}</span>
+                <div onClick={() => { const next = !autoEnabled; setAutoEnabled(next); saveAuto(next, autoTemplates) }}
+                  style={{ width: 44, height: 24, borderRadius: 12, background: autoEnabled ? 'var(--green)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                  <div style={{ position: 'absolute', top: 3, left: autoEnabled ? 22 : 3, width: 18, height: 18, borderRadius: 9, background: '#fff', transition: 'left 0.2s' }} />
+                </div>
               </div>
             </div>
             <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 16, lineHeight: 1.6 }}>
-              Consultations ki date/time ke hisaab se automatically WhatsApp reminders jayenge. Enable karne ke baad cron set karo (niche URL hai).
+              Har customer ka status check karke sahi waqt pe sahi template automatically bhejta hai. Cron se har 1-2 min mein run karwao.
             </div>
 
-            {/* Per-type toggles */}
-            {[
-              { key: 'day_before',  icon: '📅', label: '1 Din Pehle',     desc: 'Kal consultation hai — reminder + join link' },
-              { key: 'min5_before', icon: '🚨', label: '5 Minute Pehle',  desc: 'Sirf 5 min baad — urgent join reminder' },
-              { key: 'time_now',    icon: '🟢', label: 'Time Ho Gayi!',   desc: 'Exact time pe — ABHI join karo!' },
-            ].map(({ key, icon, label, desc }) => {
-              const val = autoSettings[key as keyof typeof autoSettings] as boolean
-              return (
-                <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', background: 'var(--s2)', borderRadius: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12.5, fontWeight: 700 }}>{label}</div>
-                    <div style={{ fontSize: 11, color: 'var(--mu)' }}>{desc}</div>
-                  </div>
-                  <div onClick={() => saveAutoSettings({ ...autoSettings, [key]: !val })}
-                    style={{ width: 38, height: 22, borderRadius: 11, background: val ? 'var(--teal)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                    <div style={{ position: 'absolute', top: 3, left: val ? 18 : 3, width: 16, height: 16, borderRadius: 8, background: '#fff', transition: 'left 0.2s' }} />
-                  </div>
+            {/* Per-group per-template toggles */}
+            {AUTO_TEMPLATE_GROUPS.map(grp => (
+              <div key={grp.group} style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {grp.group}
+                  {/* Group select-all */}
+                  <button onClick={() => {
+                    const keys = grp.templates.map(t => t.key)
+                    const allOn = keys.every(k => autoTemplates[k] !== false)
+                    const next = { ...autoTemplates, ...Object.fromEntries(keys.map(k => [k, !allOn])) }
+                    setAutoTemplates(next); saveAuto(autoEnabled, next)
+                  }} style={{ padding: '1px 7px', borderRadius: 10, fontSize: 9, border: '1px solid var(--b1)', background: 'transparent', color: 'var(--mu)', cursor: 'pointer' }}>
+                    {grp.templates.every(t => autoTemplates[t.key] !== false) ? 'Sab OFF' : 'Sab ON'}
+                  </button>
                 </div>
-              )
-            })}
+                {grp.templates.map(({ key, label, desc }) => {
+                  const on = autoTemplates[key] !== false
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 11px', background: on ? 'rgba(0,151,167,0.04)' : 'var(--s2)', border: `1px solid ${on ? 'rgba(0,151,167,0.15)' : 'var(--b1)'}`, borderRadius: 8, marginBottom: 5 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: on ? 'var(--tx)' : 'var(--mu)' }}>{label}</div>
+                        <div style={{ fontSize: 10.5, color: 'var(--mu)', marginTop: 1 }}>{desc}</div>
+                      </div>
+                      <div onClick={() => { const next = { ...autoTemplates, [key]: !on }; setAutoTemplates(next); saveAuto(autoEnabled, next) }}
+                        style={{ width: 36, height: 20, borderRadius: 10, background: on ? 'var(--teal)' : 'var(--s3)', cursor: 'pointer', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+                        <div style={{ position: 'absolute', top: 2, left: on ? 17 : 2, width: 16, height: 16, borderRadius: 8, background: '#fff', transition: 'left 0.2s' }} />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ))}
 
-            {/* Last run status */}
+            {/* Last run */}
             {autoLastRun && (
               <div style={{ padding: '8px 12px', background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 8, fontSize: 11.5, color: 'var(--mu)', marginBottom: 12 }}>
                 ✅ Last run: <strong style={{ color: 'var(--tx)' }}>{new Date(autoLastRun).toLocaleString('en-IN')}</strong>
@@ -1153,7 +1200,7 @@ function RemindersContent() {
               </div>
             )}
 
-            {/* Manual run button */}
+            {/* Manual run */}
             <button onClick={runAutoNow} disabled={autoRunning}
               style={{ width: '100%', padding: '11px', background: autoRunning ? 'var(--s2)' : 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 8, color: autoRunning ? 'var(--mu)' : '#fff', fontSize: 13, fontWeight: 700, cursor: autoRunning ? 'not-allowed' : 'pointer', fontFamily: 'Outfit', marginBottom: 12 }}>
               {autoRunning ? '⏳ Running...' : '▶ Abhi Chalao (Manual Run)'}
@@ -1162,13 +1209,14 @@ function RemindersContent() {
             {/* Cron URL */}
             <div style={{ padding: '12px 14px', background: 'var(--s2)', borderRadius: 8, fontSize: 11.5, lineHeight: 1.8 }}>
               <div style={{ fontWeight: 700, color: 'var(--tx)', marginBottom: 8 }}>🕐 Auto-run ke liye Cron URL:</div>
-              <div style={{ fontFamily: 'DM Mono', fontSize: 11, color: 'var(--teal)', background: 'var(--s3)', padding: '7px 10px', borderRadius: 6, wordBreak: 'break-all', marginBottom: 8 }}>
+              <div style={{ fontFamily: 'DM Mono', fontSize: 10.5, color: 'var(--teal)', background: 'var(--s3)', padding: '7px 10px', borderRadius: 6, wordBreak: 'break-all', marginBottom: 8, cursor: 'pointer' }}
+                onClick={() => { navigator.clipboard.writeText((typeof window !== 'undefined' ? window.location.origin : 'https://admin.rabtnaturals.com') + '/api/automation/reminders'); toast.success('URL copied!') }}>
                 {typeof window !== 'undefined' ? window.location.origin : 'https://admin.rabtnaturals.com'}/api/automation/reminders
               </div>
               <div style={{ color: 'var(--mu)', fontSize: 11 }}>
-                👆 Is URL ko <strong>har 1-2 minute</strong> pe hit karwao:<br />
-                • <strong>Render Cron Job</strong> — dashboard mein "New Cron Job" → */2 * * * *<br />
+                👆 Is URL ko <strong>har 2 minute</strong> pe hit karwao (click karo copy ke liye):<br />
                 • <strong>cron-job.org</strong> (free) — URL dalo, interval: 1 min<br />
+                • <strong>Render Cron Job</strong> → */2 * * * *<br />
                 • <strong>UptimeRobot</strong> — monitor type: HTTP, interval: 5 min
               </div>
             </div>
