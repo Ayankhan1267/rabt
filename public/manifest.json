@@ -1,0 +1,44 @@
+{
+  "name": "Rabt HQ — Specialist Panel",
+  "short_name": "Rabt HQ",
+  "description": "Rabt Naturals Specialist Dashboard",
+  "start_url": "/specialist-dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#08090C",
+  "theme_color": "#0197a6",
+  "categories": ["health", "business"],
+  "icons": [
+    {
+      "src": "/api/pwa-icon?size=192",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/pwa-icon?size=512",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/api/pwa-icon?size=192",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Consultations",
+      "url": "/specialist-dashboard?tab=consultations",
+      "description": "View your consultations"
+    },
+    {
+      "name": "My Patients",
+      "url": "/specialist-dashboard?tab=crm",
+      "description": "View your patients"
+    }
+  ]
+}
