@@ -476,7 +476,7 @@ setInterval(() => pingServer(), 30000)  // every 30s`}
                       </td>
                       <td style={{padding:'10px 14px',fontSize:12,color:'var(--mu2)',maxWidth:180}}><div style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.title}</div></td>
                       <td style={{padding:'10px 14px',fontFamily:'DM Mono',fontSize:13,fontWeight:700,color:'var(--purple)'}}>{p.views.toLocaleString()}</td>
-                      <td style={{padding:'10px 14px',fontFamily:'DM Mono',fontSize:12,color:'var(--gold)'}}>{fmt(p.avgTime)}</td>
+                      <td style={{padding:'10px 14px',fontFamily:'DM Mono',fontSize:12,color:'var(--gold)'}}>{p.avgDuration != null ? fmt(p.avgDuration) : '—'}</td>
                     </tr>
                   )
                 })}</tbody>
