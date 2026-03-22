@@ -18,6 +18,13 @@ function getSource(order: any): string {
 function getSourceConfig(src: string) {
   return SOURCE_CONFIG[src] || SOURCE_CONFIG['website']
 }
+function getConcerns(sp: any): string[] {
+  const raw = sp?.concerns || sp?.skinConcerns
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw.filter(Boolean)
+  if (typeof raw === 'string') return raw.split(',').map((s: string) => s.trim()).filter(Boolean)
+  return []
+}
 
 export default function CustomersPage() {
   const [orders, setOrders]             = useState<any[]>([])
@@ -133,7 +140,7 @@ export default function CustomersPage() {
   const topCities = Object.entries(cityMap).sort((a:any, b:any) => b[1] - a[1]).slice(0, 8)
 
   const concernMap: Record<string, number> = {}
-  skinProfiles.forEach(sp => { (sp.concerns || sp.skinConcerns || []).forEach((c: string) => { concernMap[c] = (concernMap[c] || 0) + 1 }) })
+  skinProfiles.forEach(sp => { getConcerns(sp).forEach((c: string) => { concernMap[c] = (concernMap[c] || 0) + 1 }) })
   const topConcerns = Object.entries(concernMap).sort((a:any, b:any) => b[1] - a[1]).slice(0, 6)
 
   function getSpecialistName(id: string) {
@@ -152,7 +159,7 @@ export default function CustomersPage() {
     <div class="card grid"><div><div class="label">Name</div><div class="value">${customer.name}</div></div><div><div class="label">Phone</div><div class="value">${customer.phone || '—'}</div></div><div><div class="label">City</div><div class="value">${customer.city || '—'}</div></div><div><div class="label">Total Orders</div><div class="value">${customer.orders.length}</div></div></div>
     <div class="section">Skin Analysis</div>
     <div class="card" style="display:flex;gap:20px;align-items:center"><div style="text-align:center"><div class="score">${sp.skinScore || '—'}</div><div style="font-size:11px;color:#666">/100 Skin Score</div></div><div style="flex:1"><div class="label">Skin Type</div><div class="value" style="margin-bottom:8px">${sp.skinType || '—'}</div><div class="label">Category</div><div class="value">${sp.skinCategory || '—'}</div></div></div>
-    ${(sp.concerns || sp.skinConcerns || []).length ? `<div class="section">Skin Concerns</div><div class="card">${(sp.concerns || sp.skinConcerns || []).map((c: string) => `<span class="badge">${c}</span>`).join('')}</div>` : ''}
+    ${getConcerns(sp).length ? `<div class="section">Skin Concerns</div><div class="card">${getConcerns(sp).map((c: string) => `<span class="badge">${c}</span>`).join('')}</div>` : ''}
     ${sp.aiExtractedData ? `<div class='section'>AI Analysis</div><div class='card'><div class='grid'><div><div class='label'>Skin Type</div><div class='value'>${sp.aiExtractedData.skinType || '-'}</div></div><div><div class='label'>Stress Level</div><div class='value'>${sp.aiExtractedData.stressLevel || '-'}</div></div><div><div class='label'>Water Intake</div><div class='value'>${sp.aiExtractedData.waterIntake || '-'}</div></div><div><div class='label'>Diet</div><div class='value'>${sp.aiExtractedData.diet || '-'}</div></div><div><div class='label'>Skin Goals</div><div class='value'>${sp.aiExtractedData.skinGoals || '-'}</div></div><div><div class='label'>Allergies</div><div class='value'>${sp.aiExtractedData.allergies || '-'}</div></div></div></div>` : sp.skinSummary ? `<div class='section'>AI Analysis</div><div class='card'><p>${sp.skinSummary}</p></div>` : ''}
     ${sp.recommendedRange ? `<div class="section">Recommended Range</div><div class="card" style="background:#e8f5e9"><div style="font-size:18px;font-weight:800;color:#2e7d32">${sp.recommendedRange}</div></div>` : ''}
     ${customer.orders.length ? `<div class="section">Order History</div><div class="card"><table style="width:100%;border-collapse:collapse;font-size:12px"><tr style="border-bottom:2px solid #ddd"><th style="text-align:left;padding:6px">Order #</th><th style="text-align:left;padding:6px">Products</th><th style="text-align:right;padding:6px">Amount</th><th style="text-align:left;padding:6px">Status</th></tr>${customer.orders.slice(0,5).map((o: any) => `<tr style="border-bottom:1px solid #eee"><td style="padding:6px;color:#0097A7;font-weight:700">${o.orderNumber || o._id?.toString().slice(-6) || '—'}</td><td style="padding:6px;color:#555">${o.products || o.items?.[0]?.productSnapshot?.name || '—'}</td><td style="padding:6px;text-align:right;font-weight:700">Rs.${o.amount || 0}</td><td style="padding:6px"><span style="background:#e0f7fa;color:#0097A7;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700">${o.status || o.orderStatus || '—'}</span></td></tr>`).join('')}</table></div>` : ''}
@@ -389,7 +396,7 @@ export default function CustomersPage() {
                         <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Skin Type</div><div style={{ fontSize: 12, fontWeight: 700 }}>{sp.skinType || '—'}</div></div>
                         <div style={{ background: 'var(--s2)', borderRadius: 6, padding: '8px 10px' }}><div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 3 }}>Category</div><div style={{ fontSize: 12, fontWeight: 700, color: 'var(--teal)' }}>{sp.skinCategory || '—'}</div></div>
                       </div>
-                      {(sp.concerns || sp.skinConcerns || []).length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>{(sp.concerns || sp.skinConcerns || []).slice(0, 3).map((concern: string, ci: number) => <span key={ci} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{concern}</span>)}</div>}
+                      {getConcerns(sp).length > 0 && <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 10 }}>{getConcerns(sp).slice(0, 3).map((concern: string, ci: number) => <span key={ci} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{concern}</span>)}</div>}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span style={{ fontSize: 11, color: 'var(--mu)' }}>{c.orders.length} orders</span>
                         <button onClick={e => { e.stopPropagation(); generateSkinPDF(c) }} style={{ padding: '6px 12px', background: 'linear-gradient(135deg,#0097A7,#005F6A)', border: 'none', borderRadius: 7, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit' }}>📄 PDF</button>
@@ -471,9 +478,9 @@ export default function CustomersPage() {
                       </div>
                     ))}
                   </div>
-                  {(selectedCustomer.skinProfile.concerns || selectedCustomer.skinProfile.skinConcerns || []).length > 0 && (
+                  {getConcerns(selectedCustomer.skinProfile).length > 0 && (
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {(selectedCustomer.skinProfile.concerns || selectedCustomer.skinProfile.skinConcerns || []).map((c: string, i: number) => (
+                      {getConcerns(selectedCustomer.skinProfile).map((c: string, i: number) => (
                         <span key={i} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{c}</span>
                       ))}
                     </div>
