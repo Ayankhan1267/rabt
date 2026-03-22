@@ -22,7 +22,7 @@ const NAV: NavSection[] = [
       { id: 'specialist-manager', label: 'Specialist Manager', icon: '👩‍⚕️', href: '/specialist-manager', roles: ['specialist_manager', 'admin'] },
       { id: 'admin', label: 'Admin Panel', icon: '🛡️', href: '/admin', roles: ['founder', 'admin'] },
       { id: 'kanban', label: 'Kanban', icon: '⬜', href: '/kanban', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
-      { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar', roles: ['founder', 'manager', 'ops', 'support', 'specialist_manager'] },
+      { id: 'calendar', label: 'Calendar', icon: '📅', href: '/calendar' },
     ]
   },
   {

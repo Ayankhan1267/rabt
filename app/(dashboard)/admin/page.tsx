@@ -84,19 +84,20 @@ export default function AdminPage() {
   }
 
   const PERMS: Record<string, Record<UserRole, boolean>> = {
-    'Dashboard':       { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'Admin Panel':     { founder: true,  manager: false, specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'CRM / Leads':     { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false },
-    'Orders':          { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: true,  ops: true,  partner: false },
-    'Finance':         { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'Marketing':       { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'Consultations':   { founder: true,  manager: false, specialist_manager: true,  specialist: true,  support: false, ops: false, partner: false },
-    'AI Agents':       { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false },
-    'Knowledge Base':  { founder: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: true,  partner: false },
-    'Team':            { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'Goals':           { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
-    'Partner Portal':  { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: true  },
-    'Partner Manager': { founder: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false },
+    'Dashboard':        { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: true,  hr: true,  content_creator: false, marketing: true  },
+    'Admin Panel':      { founder: true,  admin: true,  manager: false, specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: false },
+    'CRM / Leads':      { founder: true,  admin: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: true  },
+    'Orders':           { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: true,  ops: true,  partner: false, finance: true,  hr: false, content_creator: false, marketing: false },
+    'Finance':          { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: true,  hr: false, content_creator: false, marketing: false },
+    'Marketing':        { founder: true,  admin: false, manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: false, hr: false, content_creator: true,  marketing: true  },
+    'Consultations':    { founder: true,  admin: true,  manager: false, specialist_manager: true,  specialist: true,  support: false, ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: false },
+    'AI Agents':        { founder: true,  admin: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: false },
+    'Knowledge Base':   { founder: true,  admin: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: true,  partner: false, finance: true,  hr: true,  content_creator: true,  marketing: true  },
+    'Calendar':         { founder: true,  admin: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: true,  partner: true,  finance: true,  hr: true,  content_creator: true,  marketing: true  },
+    'Team Hub':         { founder: true,  admin: true,  manager: true,  specialist_manager: true,  specialist: true,  support: true,  ops: true,  partner: false, finance: true,  hr: true,  content_creator: true,  marketing: true  },
+    'Goals':            { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: false },
+    'Partner Portal':   { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: true,  finance: false, hr: false, content_creator: false, marketing: false },
+    'Partner Manager':  { founder: true,  admin: true,  manager: true,  specialist_manager: false, specialist: false, support: false, ops: false, partner: false, finance: false, hr: false, content_creator: false, marketing: false },
   }
 
   const inputStyle: any = {
