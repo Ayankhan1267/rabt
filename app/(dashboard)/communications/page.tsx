@@ -28,6 +28,7 @@ const TRIGGER_TYPES = [
   { id: 'routine_not_purchased_2',label: 'Routine Ready — Day 3',  icon: '🛒', desc: 'Benefits remind karo Day 3', group: 'Purchase Sequence (until bought)' },
   { id: 'routine_not_purchased_3',label: 'Routine Ready — Day 7',  icon: '🛒', desc: 'Special offer ke saath Day 7', group: 'Purchase Sequence (until bought)' },
   { id: 'routine_not_purchased_4',label: 'Routine Ready — Day 14', icon: '🛒', desc: 'Last reminder Day 14', group: 'Purchase Sequence (until bought)' },
+  { id: 'order_shipped',          label: 'Order Shipped — Tracking Link', icon: '🚚', desc: 'Order ship hone pe tracking link bhejo', group: 'Post Purchase' },
   { id: 'post_purchase',          label: 'Post Purchase — Thank You', icon: '🎉', desc: 'Order confirm + delivery info', group: 'Post Purchase' },
   { id: 'post_purchase_education',label: 'Skin Education + Diet',   icon: '📚', desc: 'Skin type ke according tips + diet chart', group: 'Post Purchase' },
   // ── Ongoing ──
@@ -263,6 +264,18 @@ Aapki skin analysis aur consultation mein jo concerns saamne aayi thi — unka s
 *Abhi order karein:* {{routineLink}}
 
 Skin results aapki consistency pe depend karti hai — shuru toh karein! 💪
+~Rabt Naturals 🌿`,
+
+  order_shipped: `Hi {{name}}! 🚚
+
+Aapka order ship ho gaya! 🎉
+
+📦 *Courier:* {{courierName}}
+🔍 *Track karo:* {{trackingLink}}
+
+Delivery: 2-4 working days
+
+Koi bhi sawaal ho toh reply karein! 💚
 ~Rabt Naturals 🌿`,
 
   post_purchase: `Hi {{name}}! 🎉

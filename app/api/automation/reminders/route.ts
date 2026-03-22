@@ -103,6 +103,13 @@ export const AUTO_TEMPLATES: Record<string, { label: string; group: string; text
     text: `Hi {name}! 🌿\n\nYeh aapke liye last reminder hai.\n\nAapki skin concerns ka solution aapki routine mein hai!\n\n*Abhi order karein:* {routineLink}\n\n~Rabt Naturals 🌿`,
   },
 
+  // Shipping Update
+  order_shipped: {
+    label: '🚚 Order Shipped — Tracking Link',
+    group: 'Post Purchase',
+    text: `Hi {name}! 🚚\n\nAapka order ship ho gaya! 🎉\n\n📦 *Courier:* {courierName}\n🔍 *Track karo:* {trackingLink}\n\nDelivery: 2-4 working days\n\nKoi bhi sawaal ho toh reply karein! 💚\n~Rabt Naturals 🌿`,
+  },
+
   // Post Purchase
   post_purchase_thankyou: {
     label: '🎉 Purchase Thank You',
@@ -352,13 +359,24 @@ async function runAutomation() {
       const phone = (o.customerPhone || o.phone || '').replace(/[^0-9]/g, '')
       if (!phone || phone.length < 10) continue
 
-      const orderId   = o._id?.toString() || ''
-      const name      = o.customerName || o.name || 'Customer'
-      const specName  = 'Rabt Naturals'
-      const vars      = { name, specialist: specName, joinLink: '', skinProfileLink: 'rabtnaturals.com/skin-profile', routineLink: 'rabtnaturals.com/shop' }
-      const createdAt = o.createdAt ? new Date(o.createdAt) : null
+      const orderId     = o._id?.toString() || ''
+      const name        = o.customerName || o.name || 'Customer'
+      const specName    = 'Rabt Naturals'
+      const awb         = o.awbNumber || o.awb_code || o.tracking_id || o.shipments?.[0]?.awb || ''
+      const trackingLink = awb ? `https://shiprocket.co/tracking/${awb}` : (o.trackUrl || 'rabtnaturals.com/profile')
+      const courierName  = o.courierName || o.courier_name || o.courier || 'Courier'
+      const vars        = { name, specialist: specName, joinLink: '', skinProfileLink: 'rabtnaturals.com/skin-profile', routineLink: 'rabtnaturals.com/shop', trackingLink, courierName }
+      const createdAt   = o.createdAt ? new Date(o.createdAt) : null
       if (!createdAt) continue
       const h = hoursAgo(createdAt, now)
+
+      const orderStatus = (o.status || o.orderStatus || '').toLowerCase()
+
+      // Order shipped → send tracking link (once, as soon as status is shipped/in transit)
+      if (isOn('order_shipped') && awb && ['shipped', 'in transit', 'in_transit', 'picked up', 'picked_up', 'out for delivery', 'out_for_delivery'].some(s => orderStatus.includes(s))) {
+        const r = await sendMsg(phone, fill(AUTO_TEMPLATES.order_shipped.text, vars), `auto_order_shipped_${orderId}`, cfg)
+        results.push({ orderId, name, type: 'order_shipped', ...r })
+      }
 
       // Thank you — within 2h of order
       if (isOn('post_purchase_thankyou') && h >= 0 && h <= 2) {
