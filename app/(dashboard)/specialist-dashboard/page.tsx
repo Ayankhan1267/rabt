@@ -674,9 +674,15 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
             {mongoSpec?.name || profile?.name || 'Specialist'} &middot; {consultations.length} consultations &middot; Rs.{totalEarnings.toLocaleString('en-IN')} earned
           </p>
         </div>
-        <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
-          + Offline Order
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { navigator.clipboard.writeText('https://rabtnaturals.com#book-consultation'); toast.success('Booking link copied! Share with patients 🔗') }}
+            style={{ padding: '10px 16px', background: 'rgba(26,155,160,0.1)', border: '1px solid rgba(26,155,160,0.3)', borderRadius: 10, color: 'var(--teal)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+            🔗 Share Booking Link
+          </button>
+          <button onClick={() => setShowPOS(true)} style={{ padding: '10px 18px', background: 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 10, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>
+            + Offline Order
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -963,7 +969,33 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                       </button>
                     )}
 
-                    {/* âœ… UPDATE / CREATE SKIN PROFILE â€” accepted, scheduled, or completed */}
+                    {/* Customer Join Link — share with patient */}
+                    {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled') && (() => {
+                      const joinLink = 'https://meet.jit.si/RabtSkin-' + selectedCons._id?.slice(-8)
+                      const phone = (selectedCons.phone || '').replace(/\D/g, '')
+                      const waMsg = encodeURIComponent('Namaste! 🌿 Aapki Rabt Naturals skin consultation confirm ho gayi hai.\n\nJoin karne ke liye yeh link use karein:\n' + joinLink + '\n\nKoi bhi browser me kholein — no app needed!')
+                      return (
+                        <div style={{ background: 'rgba(26,155,160,0.07)', border: '1px solid rgba(26,155,160,0.25)', borderRadius: 8, padding: '11px 13px' }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 6 }}>Customer Join Link</div>
+                          <div style={{ fontSize: 10.5, color: 'var(--mu2)', wordBreak: 'break-all', marginBottom: 8, fontFamily: 'DM Mono', background: 'rgba(26,155,160,0.05)', padding: '6px 8px', borderRadius: 5 }}>{joinLink}</div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button onClick={() => { navigator.clipboard.writeText(joinLink); toast.success('Link copied!') }}
+                              style={{ flex: 1, padding: '7px', background: 'var(--teal)', border: 'none', borderRadius: 6, color: '#fff', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+                              📋 Copy Link
+                            </button>
+                            {phone && (
+                              <button onClick={() => window.open('https://wa.me/' + phone + '?text=' + waMsg, '_blank')}
+                                style={{ flex: 1, padding: '7px', background: 'var(--grL)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 6, color: 'var(--green)', fontSize: 11, cursor: 'pointer', fontWeight: 700, fontFamily: 'DM Sans, sans-serif' }}>
+                                💬 Send WhatsApp
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 5 }}>Customer ko yeh link share karo — browser me khul jayega, no signup needed</div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* UPDATE / CREATE SKIN PROFILE — accepted, scheduled, or completed */}
                     {(selectedCons.status === 'accepted' || selectedCons.status === 'scheduled' || selectedCons.status === 'completed') && (
                       <button
                         onClick={() => {
