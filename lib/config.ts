@@ -21,10 +21,13 @@ export interface AppConfig {
   // Endpoints
   NEXT_PUBLIC_MONGO_API_URL: string
   NEXT_PUBLIC_APP_URL: string
-  // Twilio (legacy fallback WA)
+  // Twilio
   TWILIO_ACCOUNT_SID: string
   TWILIO_AUTH_TOKEN: string
-  TWILIO_WHATSAPP_NUMBER: string
+  TWILIO_WHATSAPP_NUMBER: string  // for WA messages (whatsapp:+14155238886)
+  TWILIO_PHONE_NUMBER: string     // for SMS OTP (+1234567890)
+  // OTP delivery method
+  OTP_METHOD: 'wa_bridge' | 'twilio_sms' | 'twilio_wa'
 }
 
 let cache: AppConfig | null = null
@@ -49,6 +52,8 @@ export async function getConfig(): Promise<AppConfig> {
     TWILIO_ACCOUNT_SID:     process.env.TWILIO_ACCOUNT_SID      || '',
     TWILIO_AUTH_TOKEN:      process.env.TWILIO_AUTH_TOKEN       || '',
     TWILIO_WHATSAPP_NUMBER: process.env.TWILIO_WHATSAPP_NUMBER  || 'whatsapp:+14155238886',
+    TWILIO_PHONE_NUMBER:    process.env.TWILIO_PHONE_NUMBER     || '',
+    OTP_METHOD:             (process.env.OTP_METHOD as AppConfig['OTP_METHOD']) || 'wa_bridge',
   }
 
   try {

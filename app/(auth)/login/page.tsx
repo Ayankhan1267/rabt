@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [resendTimer, setResendTimer] = useState(0)
+  const [otpVia, setOtpVia] = useState('WhatsApp')
   const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 
   // Password fallback state
@@ -47,10 +48,11 @@ export default function LoginPage() {
       const data = await res.json()
       if (!res.ok) { toast.error(data.error || 'Failed to send OTP'); return }
       setUserName(data.name || '')
+      setOtpVia(data.via || 'WhatsApp')
       setOtp(['', '', '', '', '', ''])
       setStep('otp')
       setResendTimer(60)
-      toast.success(`OTP sent to WhatsApp`)
+      toast.success(`OTP sent via ${data.via || 'WhatsApp'}`)
     } finally {
       setLoading(false)
     }
@@ -225,7 +227,7 @@ export default function LoginPage() {
               {userName ? `Hi, ${userName.split(' ')[0]}!` : 'Enter OTP'}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--mu)', marginBottom: 24 }}>
-              OTP sent to WhatsApp for +91 {phone.replace(/[^0-9]/g, '').slice(-10)}
+              OTP sent via {otpVia} to +91 {phone.replace(/[^0-9]/g, '').slice(-10)}
             </div>
 
             {/* 6-digit OTP boxes */}

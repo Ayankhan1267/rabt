@@ -97,6 +97,8 @@ export default function SettingsPage() {
     TWILIO_ACCOUNT_SID: '',
     TWILIO_AUTH_TOKEN: '',
     TWILIO_WHATSAPP_NUMBER: '',
+    TWILIO_PHONE_NUMBER: '',
+    OTP_METHOD: 'wa_bridge',
   })
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
   const [savingKeys, setSavingKeys] = useState(false)
@@ -548,10 +550,11 @@ export default function SettingsPage() {
               { group: '🔐 Security', keys: [
                 { key: 'RABT_JWT_SECRET',    label: 'JWT Secret',         placeholder: 'random-long-secret', hint: 'For session tokens' },
               ]},
-              { group: '📱 Twilio WhatsApp (Fallback)', keys: [
-                { key: 'TWILIO_ACCOUNT_SID',     label: 'Twilio Account SID', placeholder: 'ACxxxxxx', hint: 'Twilio account SID' },
-                { key: 'TWILIO_AUTH_TOKEN',       label: 'Twilio Auth Token',  placeholder: 'xxxxxxxx', hint: 'Twilio auth token' },
-                { key: 'TWILIO_WHATSAPP_NUMBER',  label: 'Twilio WA Number',   placeholder: 'whatsapp:+14155238886', hint: 'From number (Twilio sandbox)' },
+              { group: '📱 Twilio (SMS & WhatsApp OTP)', keys: [
+                { key: 'TWILIO_ACCOUNT_SID',     label: 'Twilio Account SID',      placeholder: 'ACxxxxxx',              hint: 'Twilio console → Account SID' },
+                { key: 'TWILIO_AUTH_TOKEN',       label: 'Twilio Auth Token',        placeholder: 'xxxxxxxx',              hint: 'Twilio console → Auth Token' },
+                { key: 'TWILIO_PHONE_NUMBER',     label: 'Twilio Phone (SMS OTP)',   placeholder: '+12015551234',          hint: 'Twilio number for SMS — e.g. +12015551234' },
+                { key: 'TWILIO_WHATSAPP_NUMBER',  label: 'Twilio WA Number',         placeholder: 'whatsapp:+14155238886', hint: 'Twilio sandbox WA number' },
               ]},
             ] as { group: string; keys: { key: string; label: string; placeholder: string; hint: string }[] }[]).map(section => (
               <div key={section.group} style={{ marginBottom: 24 }}>
@@ -584,6 +587,48 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+
+            {/* OTP Delivery Method */}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid var(--b1)' }}>
+                🔐 OTP Delivery Method
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu2)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'block', marginBottom: 5 }}>
+                  Send OTP Via
+                </label>
+                {[
+                  { value: 'wa_bridge',  label: '💬 WhatsApp Bridge (Baileys)',    hint: 'Built-in WA — connect from WhatsApp tab. Free, no API key needed.' },
+                  { value: 'twilio_wa',  label: '📱 Twilio WhatsApp',              hint: 'Twilio sandbox WA. Needs TWILIO_ACCOUNT_SID + AUTH_TOKEN + WA NUMBER.' },
+                  { value: 'twilio_sms', label: '📨 Twilio SMS',                   hint: 'Regular SMS OTP. Needs TWILIO_ACCOUNT_SID + AUTH_TOKEN + PHONE NUMBER.' },
+                ].map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={() => setApiKeys(k => ({ ...k, OTP_METHOD: opt.value }))}
+                    style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px',
+                      marginBottom: 8, borderRadius: 10, cursor: 'pointer', border: '2px solid',
+                      borderColor: (apiKeys as any).OTP_METHOD === opt.value ? 'var(--gold)' : 'var(--b1)',
+                      background: (apiKeys as any).OTP_METHOD === opt.value ? 'var(--gL)' : 'var(--s2)',
+                      transition: 'all 0.15s',
+                    }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                      border: '2px solid ' + ((apiKeys as any).OTP_METHOD === opt.value ? 'var(--gold)' : 'var(--b2)'),
+                      background: (apiKeys as any).OTP_METHOD === opt.value ? 'var(--gold)' : 'transparent',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {(apiKeys as any).OTP_METHOD === opt.value && <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#08090C' }} />}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700 }}>{opt.label}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--mu)', marginTop: 3 }}>{opt.hint}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <button onClick={saveApiKeys} disabled={savingKeys}
               style={{ padding: '11px 32px', background: savingKeys ? 'rgba(212,168,83,0.5)' : 'linear-gradient(135deg,#D4A853,#B87C30)', border: 'none', borderRadius: 8, color: '#08090C', fontWeight: 700, fontSize: 13, cursor: savingKeys ? 'not-allowed' : 'pointer', fontFamily: 'Syne' }}>
