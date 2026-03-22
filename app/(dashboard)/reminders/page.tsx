@@ -161,8 +161,8 @@ function RemindersContent() {
   const [waConfig, setWaConfig]       = useState({ apiKey: '', phoneNumberId: '' })
   const [savingWa, setSavingWa]       = useState(false)
 
-  // WA Bridge (scan & connect)
-  const [bridgeUrl, setBridgeUrl]     = useState('http://localhost:3001')
+  // WA Bridge (scan & connect) — built-in at /api/wa
+  const [bridgeUrl, setBridgeUrl]     = useState('/api/wa')
   const [bridgeStatus, setBridgeStatus] = useState<'disconnected'|'scanning'|'connected'|'logged_out'>('disconnected')
   const [bridgePhone, setBridgePhone] = useState<string|null>(null)
   const [bridgeQR, setBridgeQR]       = useState<string|null>(null)
@@ -219,7 +219,7 @@ function RemindersContent() {
       supabase.from('app_settings').select('*').eq('key', 'reminder_templates').single(),
     ])
     if (waCfgRow.data?.value) { try { setWaConfig(JSON.parse(waCfgRow.data.value)) } catch {} }
-    const savedUrl = bridgeCfgRow.data?.value ? bridgeCfgRow.data.value.replace(/^"|"$/g, '') : 'http://localhost:3001'
+    const savedUrl = bridgeCfgRow.data?.value ? bridgeCfgRow.data.value.replace(/^"|"$/g, '') : '/api/wa'
     setBridgeUrl(savedUrl)
     if (tmplRow.data?.value) { try { setTemplates(t => ({ ...t, ...JSON.parse(tmplRow.data!.value) })) } catch {} }
     // Check bridge status
@@ -758,17 +758,11 @@ function RemindersContent() {
               Apna WhatsApp Business account QR code scan karke connect karo. Messages directly aapke number se jayenge bina Meta API ke.
             </div>
 
-            {/* Bridge URL */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', marginBottom: 4 }}>Bridge Server URL</div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input value={bridgeUrl} onChange={e => setBridgeUrl(e.target.value)}
-                  placeholder="http://localhost:3001"
-                  style={{ ...inp, flex: 1, fontFamily: 'DM Mono', fontSize: 11 }} />
-                <button onClick={saveBridgeUrl}
-                  style={{ padding: '8px 14px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 8, color: 'var(--mu2)', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                  Save URL
-                </button>
+            {/* Status badge — built-in bridge */}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '8px 12px', background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.15)', borderRadius: 8, marginBottom: 12 }}>
+              <span style={{ fontSize: 16 }}>☁️</span>
+              <div style={{ fontSize: 12, color: 'var(--mu2)' }}>
+                Bridge <strong style={{ color: 'var(--teal)' }}>built-in</strong> — deploy pe automatically kaam karta hai. Alag server run karne ki zarurat nahi!
               </div>
             </div>
 
@@ -819,14 +813,14 @@ function RemindersContent() {
               </button>
             </div>
 
-            {/* Setup instructions */}
+            {/* How it works */}
             <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--s2)', borderRadius: 8, fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.8 }}>
-              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--tx)' }}>⚙️ Setup (ek baar):</div>
-              <div>1. Project ke <span style={{ fontFamily: 'DM Mono', color: 'var(--teal)' }}>whatsapp-bridge/</span> folder mein jao</div>
-              <div>2. Run karo: <span style={{ fontFamily: 'DM Mono', color: 'var(--gold)', background: 'rgba(212,168,83,0.1)', padding: '1px 6px', borderRadius: 4 }}>npm install && npm start</span></div>
-              <div>3. Bridge <span style={{ color: 'var(--teal)', fontWeight: 600 }}>localhost:3001</span> par start ho jayega</div>
-              <div>4. Upar "Connect WhatsApp" dabao aur QR scan karo</div>
-              <div style={{ marginTop: 6, color: 'var(--blue)' }}>💡 Server always running rehna chahiye — PM2 ya startup script use karo production mein</div>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--tx)' }}>ℹ️ Kaise kaam karta hai:</div>
+              <div>1. "Connect WhatsApp" button dabao</div>
+              <div>2. WhatsApp Business app → Linked Devices → Link a Device</div>
+              <div>3. Niche wala QR code scan karo</div>
+              <div>4. ✅ Connected — ab sare messages aapke number se jayenge</div>
+              <div style={{ marginTop: 6, color: 'var(--orange)' }}>⚠️ Session tab tak rehta hai jab tak server restart na ho. Restart hone par dobara scan karo.</div>
             </div>
           </div>
 

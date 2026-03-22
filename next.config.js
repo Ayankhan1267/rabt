@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: { ignoreBuildErrors: true },
+  serverExternalPackages: ['@whiskeysockets/baileys', 'pino', '@hapi/boom', 'qrcode'],
   async rewrites() {
     return [
       {
