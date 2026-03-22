@@ -305,13 +305,12 @@ function RemindersContent() {
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (!url) { setLoading(false); return }
 
-      const [specRes, consRes, ordRes, skinRes, userRes, leadsRes] = await Promise.all([
+      const [specRes, consRes, ordRes, skinRes, userRes] = await Promise.all([
         fetch(url + '/api/specialists').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/consultations').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/orders').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/skinprofiles').then(r => r.ok ? r.json() : []),
         fetch(url + '/api/users').then(r => r.ok ? r.json() : []),
-        fetch(url + '/api/leads').then(r => r.ok ? r.json() : []).catch(() => []),
       ])
 
       const allSpecs  = Array.isArray(specRes)  ? specRes.filter(Boolean)  : []
@@ -319,7 +318,6 @@ function RemindersContent() {
       const allOrders = Array.isArray(ordRes)    ? ordRes.filter(Boolean)   : []
       const allSkins  = Array.isArray(skinRes)   ? skinRes.filter(Boolean)  : []
       const allUsers  = Array.isArray(userRes)   ? userRes.filter(Boolean)  : []
-      const allLeads  = Array.isArray(leadsRes)  ? leadsRes.filter(Boolean) : []
 
       const mySpec = allSpecs.find((s: any) => s.email?.toLowerCase() === prof?.email?.toLowerCase())
       setMongoSpec(mySpec)
@@ -362,31 +360,38 @@ function RemindersContent() {
         patientMap[key].orders.push(o)
         if (phone) patientMap[key].phone = phone
       })
+      // Add Supabase CRM leads assigned to this specialist
+      const { data: supaLeads } = await supabase.from('leads').select('*').eq('assigned_to', user?.id)
+      ;(supaLeads || []).forEach((l: any) => {
+        const phone = (l.phone || '').replace(/[^0-9]/g, '')
+        const key = phone || l.id?.toString()
+        if (!key) return
+        if (!patientMap[key]) {
+          patientMap[key] = { name: l.name || 'Lead', phone, skinType: '', consultations: [], orders: [], crmStage: l.stage }
+        } else {
+          patientMap[key].crmStage = l.stage
+        }
+      })
+
       setPatients(Object.values(patientMap))
 
-      // ── FOLLOW-UP LISTS ───────────────────────────────────────────────────
-      const orderedPhones    = new Set(allOrders.map((o: any) => (o.customerPhone || '').replace(/[^0-9]/g, '')).filter((p: string) => p.length >= 10))
-      const orderedUserIds   = new Set(allOrders.map((o: any) => o.userId?.toString()).filter(Boolean))
-      const consultedPhones  = new Set(allCons.map((c: any) => (c.phone || '').replace(/[^0-9]/g, '')).filter((p: string) => p.length >= 10))
-      const consultedUserIds = new Set(allCons.map((c: any) => c.userId?.toString()).filter(Boolean))
+      // ── FOLLOW-UP LISTS — only specialist's own patients/leads ─────────────
+      const orderedPhones   = new Set(myOrdersFiltered.map((o: any) => (o.customerPhone || '').replace(/[^0-9]/g, '')).filter((p: string) => p.length >= 10))
+      const orderedUserIds  = new Set(myOrdersFiltered.map((o: any) => o.userId?.toString()).filter(Boolean))
+      const consultedPhones = new Set(myCons.map((c: any) => (c.phone || '').replace(/[^0-9]/g, '')).filter((p: string) => p.length >= 10))
 
-      // Aggregate all known leads (users + CRM leads + skin profiles)
-      const leadsByPhone: Record<string, any> = {}
-      const addLead = (name: string, phone: string, email: string, userId: string, source: string) => {
-        const p = phone.replace(/[^0-9]/g, '')
-        if (!name || p.length < 10) return
-        if (!leadsByPhone[p]) leadsByPhone[p] = { name, phone: p, email, userId, source }
-      }
-      allUsers.forEach((u: any) => {
-        const name = (u.firstName && u.lastName) ? u.firstName + ' ' + u.lastName : u.firstName || u.name || ''
-        addLead(name, u.phoneNumber || u.phone || '', u.email || '', u._id?.toString(), 'user')
-      })
-      allLeads.forEach((l: any) => addLead(l.name || l.customerName || '', l.phone || l.customerPhone || '', l.email || '', l.userId || l._id?.toString(), 'lead'))
-      allSkins.forEach((sp: any) => addLead(sp.name || '', sp.phone || '', sp.email || '', sp.userId || sp._id?.toString(), 'skin'))
-
-      const uniqueLeads = Object.values(leadsByPhone)
-      setNotPurchasedLeads(uniqueLeads.filter(l => !orderedPhones.has(l.phone) && !orderedUserIds.has(l.userId)))
-      setNotBookedLeads(uniqueLeads.filter(l => !consultedPhones.has(l.phone) && !consultedUserIds.has(l.userId)))
+      const myPatientList = Object.values(patientMap) as any[]
+      // notPurchasedLeads: had consultations but no orders yet → follow up to buy
+      setNotPurchasedLeads(myPatientList.filter((p: any) => {
+        const ph = (p.phone || '').replace(/[^0-9]/g, '')
+        const uid = p.consultations?.[0]?.userId?.toString()
+        return p.consultations.length > 0 && !orderedPhones.has(ph) && !(uid && orderedUserIds.has(uid))
+      }))
+      // notBookedLeads: no consultation yet → follow up to book
+      setNotBookedLeads(myPatientList.filter((p: any) => {
+        const ph = (p.phone || '').replace(/[^0-9]/g, '')
+        return p.consultations.length === 0 && !consultedPhones.has(ph)
+      }))
 
       const { data: logsData } = await supabase.from('whatsapp_logs').select('*').order('created_at', { ascending: false }).limit(50)
       setLogs(logsData || [])
@@ -608,8 +613,9 @@ function RemindersContent() {
                         {p.skinType && <div style={{ fontSize: 10, color: 'var(--teal)' }}>🔬 {p.skinType}</div>}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
-                        {p.orders.length > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: 'var(--grL)', color: 'var(--green)' }}>🛍️ Purchased</span>}
-                        {p.consultations.length > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)' }}>📅 {p.consultations.length} cons</span>}
+                        {p.orders?.length > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: 'var(--grL)', color: 'var(--green)' }}>🛍️ Purchased</span>}
+                        {p.consultations?.length > 0 && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: 'rgba(0,151,167,0.1)', color: 'var(--teal)' }}>📅 {p.consultations.length} cons</span>}
+                        {p.crmStage && <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, background: 'var(--gL)', color: 'var(--gold)', whiteSpace: 'nowrap' }}>{p.crmStage.replace(/_/g, ' ')}</span>}
                       </div>
                     </div>
                   )

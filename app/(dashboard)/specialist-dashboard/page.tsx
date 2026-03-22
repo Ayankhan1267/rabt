@@ -58,6 +58,7 @@ export default function SpecialistDashboard() {
   const [allUsers, setAllUsers] = useState<any[]>([])
   const [skinProfiles, setSkinProfiles] = useState<any[]>([])
   const [leads, setLeads] = useState<any[]>([])
+  const [crmLeads, setCrmLeads] = useState<any[]>([])
   const [unassignedCons, setUnassignedCons] = useState<any[]>([])
   const [rejectedIds, setRejectedIds] = useState<string[]>([])
   const [orders, setOrders] = useState<any[]>([])
@@ -178,6 +179,9 @@ export default function SpecialistDashboard() {
       setAllUsers(allUsers)
       setConsultations(mySpec ? allCons.filter((c: any) => c.assignedSpecialist?.toString() === mySpec._id?.toString()) : [])
       setLeads(mySpec ? allCons.filter((c: any) => c.assignedSpecialist?.toString() === mySpec._id?.toString()) : [])
+      // Fetch Supabase CRM leads assigned to this specialist
+      const { data: supaLeads } = await supabase.from('leads').select('*').eq('assigned_to', user?.id)
+      setCrmLeads(supaLeads || [])
       setUnassignedCons(allCons.filter((c: any) => c.status === 'pending' && !c.assignedSpecialist && !rejectedIds.includes(c._id?.toString())))
       setOrders(Array.isArray(ordRes) ? ordRes : [])
       setProducts(Array.isArray(prodRes) ? prodRes : [])
@@ -293,14 +297,52 @@ export default function SpecialistDashboard() {
   })
 
   const allMyPatients = Array.from(patientMap.values())
-  const filteredPatients = allMyPatients.filter(p => {
+
+  // Merge allMyPatients with Supabase CRM leads (add stage + add leads-only entries)
+  const crmByPhone = new Map<string, any>()
+  crmLeads.forEach((l: any) => {
+    const p = (l.phone || '').replace(/[^0-9]/g, '')
+    if (p) crmByPhone.set(p, l)
+  })
+  const enrichedPatients: any[] = allMyPatients.map((p: any) => {
+    const phone = (p.phone || '').replace(/[^0-9]/g, '')
+    const lead = phone ? crmByPhone.get(phone) : null
+    return { ...p, crmStage: lead?.stage || null }
+  })
+  crmLeads.forEach((l: any) => {
+    const phone = (l.phone || '').replace(/[^0-9]/g, '')
+    if (!phone) return
+    if (enrichedPatients.some((p: any) => (p.phone || '').replace(/[^0-9]/g, '') === phone)) return
+    enrichedPatients.push({
+      key: phone, name: l.name || 'Lead', phone: l.phone || '', email: l.email || '',
+      age: '', skinType: '', skinConcerns: [], consults: 0, orders: 0, spent: 0,
+      source: 'lead', lastConsultation: null, userId: l.mongo_user_id || null, crmStage: l.stage,
+    })
+  })
+
+  const filteredPatients = enrichedPatients.filter((p: any) => {
     if (patientFilter !== 'all' && p.source !== patientFilter) return false
     if (patientSearch) {
       const s = patientSearch.toLowerCase()
-      return p.name.toLowerCase().includes(s) || p.phone.includes(s)
+      return p.name.toLowerCase().includes(s) || (p.phone || '').includes(s)
     }
     return true
   })
+
+  const STAGE_COLORS: Record<string, { bg: string; color: string }> = {
+    just_login: { bg: 'var(--s2)', color: 'var(--mu)' },
+    new: { bg: 'var(--blL)', color: 'var(--blue)' },
+    contacted: { bg: 'rgba(139,92,246,0.15)', color: '#a78bfa' },
+    consultation_pending: { bg: 'var(--orL)', color: 'var(--orange)' },
+    consultation_booked: { bg: 'var(--gL)', color: 'var(--gold)' },
+    consultation_accepted: { bg: 'rgba(20,184,166,0.15)', color: 'var(--teal)' },
+    consultation_rescheduled: { bg: 'var(--orL)', color: 'var(--orange)' },
+    consultation_completed: { bg: 'var(--grL)', color: 'var(--green)' },
+    routine_purchased: { bg: 'var(--grL)', color: 'var(--green)' },
+    converted: { bg: 'var(--grL)', color: 'var(--green)' },
+    consultation_cancelled: { bg: 'var(--rdL)', color: 'var(--red)' },
+    lost: { bg: 'var(--rdL)', color: 'var(--red)' },
+  }
 
   function addToCart(product: any, variant: any) {
     const key = product._id + (variant?.sku || '')
@@ -1130,7 +1172,7 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                 <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr>{['Patient', 'Skin Type / Concerns', 'Consults', 'Orders', 'Spent', 'Source', 'Actions'].map(h => (
+                    <tr>{['Patient', 'CRM Stage', 'Skin Type', 'Consults', 'Orders', 'Spent', 'Actions'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '9px 12px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
                     ))}</tr>
                   </thead>
@@ -1148,27 +1190,22 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                             </div>
                           </div>
                         </td>
-                        <td style={{ padding: '11px 12px', maxWidth: 160 }}>
+                        <td style={{ padding: '11px 12px' }}>
+                          {p.crmStage ? (
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, whiteSpace: 'nowrap', background: STAGE_COLORS[p.crmStage]?.bg || 'var(--s2)', color: STAGE_COLORS[p.crmStage]?.color || 'var(--mu)' }}>
+                              {p.crmStage.replace(/_/g, ' ')}
+                            </span>
+                          ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
+                        </td>
+                        <td style={{ padding: '11px 12px', maxWidth: 140 }}>
                           {p.skinType ? (
-                            <div>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize', marginBottom: 4 }}>{p.skinType}</div>
-                              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                                {(p.skinConcerns || []).slice(0, 2).map((c: string, ci: number) => (
-                                  <span key={ci} style={{ fontSize: 9, padding: '1px 6px', borderRadius: 20, background: 'var(--orL)', color: 'var(--orange)', fontWeight: 600 }}>{c}</span>
-                                ))}
-                              </div>
-                            </div>
-                          ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>&mdash;</span>}
+                            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'capitalize' }}>{p.skinType}</div>
+                          ) : <span style={{ fontSize: 11, color: 'var(--mu)' }}>—</span>}
                         </td>
                         <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--teal)' }}>{p.consults}</td>
                         <td style={{ padding: '11px 12px', fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: 'var(--blue)' }}>{p.orders}</td>
                         <td style={{ padding: '11px 12px', fontFamily: 'DM Mono', fontSize: 13, fontWeight: 700, color: 'var(--gold)' }}>
                           {p.spent > 0 ? 'Rs.' + p.spent.toLocaleString('en-IN') : <span style={{ color: 'var(--mu)' }}>Rs.0</span>}
-                        </td>
-                        <td style={{ padding: '11px 12px' }}>
-                          <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)' }}>
-                            {p.source === 'offline' ? 'Offline' : 'Online'}
-                          </span>
                         </td>
                         <td style={{ padding: '11px 12px' }}>
                           <div style={{ display: 'flex', gap: 5 }}>
