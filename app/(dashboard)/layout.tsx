@@ -69,6 +69,7 @@ const NAV: NavSection[] = [
     roles: ['founder', 'manager'],
     items: [
       { id: 'marketing', label: 'Marketing', icon: '📢', href: '/marketing', roles: ['founder','admin','manager','marketing','content_creator'] },
+      { id: 'social-automation', label: 'Social Automation', icon: '📲', href: '/social-automation', badge: 'AI', badgeColor: 'var(--purple)', roles: ['founder', 'admin', 'manager', 'marketing', 'content_creator'] },
       { id: 'content', label: 'Content Studio', icon: '🎬', href: '/content', roles: ['founder','admin','manager','content_creator','marketing'] },
       { id: 'ads', label: 'Ads Manager', icon: '📊', href: '/ads' },
 
