@@ -6,6 +6,26 @@ import toast from 'react-hot-toast'
 const SKIN_CONCERNS = ['Acne & Breakouts', 'Pigmentation & Dark Spots', 'Dryness & Dehydration', 'Oiliness & Shine', 'Sensitivity & Redness', 'Aging & Fine Lines', 'Dull Skin', 'Dark Circles', 'Large Pores', 'Uneven Skin Tone']
 const STEP_LABELS   = ['Customer Details', 'Skin Analysis', 'AI Report & Products', 'Checkout', 'Confirmation']
 
+// MongoDB products have images as [{url,isPrimary}] and price as object or in variants
+function extractProductImg(p: any): string {
+  return p.images?.find((img: any) => img?.isPrimary)?.url || p.images?.[0]?.url || p.images?.[0] || p.image || ''
+}
+function extractProductPrice(p: any): number {
+  const fromVariant = (v: any) => {
+    if (!v) return 0
+    const vp = v.price
+    if (typeof vp === 'object') return vp?.discounted || vp?.original || 0
+    return typeof vp === 'number' ? vp : 0
+  }
+  if (p.variants?.length) return fromVariant(p.variants[0])
+  const pp = p.price
+  if (typeof pp === 'object') return pp?.discounted || pp?.original || 0
+  return typeof pp === 'number' ? pp : 0
+}
+function normalizeProduct(p: any) {
+  return { ...p, price: extractProductPrice(p), images: [extractProductImg(p)].filter(Boolean) }
+}
+
 interface Product { _id: string; name: string; slug: string; category: string; price: number; originalPrice: number; images: string[]; range?: string; sku?: string }
 interface CartItem { product: Product; qty: number }
 interface Coupon { _id: string; code: string; discount: number; discountType: string; minimumAmount: number; maximumDiscount: number }
@@ -97,7 +117,7 @@ export default function PartnerPortalPage() {
     setProductsLoading(true)
     try {
       const res = await fetch(getApiUrl() + '/api/products')
-      if (res.ok) { const d = await res.json(); setProducts(Array.isArray(d) ? d : []) }
+      if (res.ok) { const d = await res.json(); setProducts((Array.isArray(d) ? d : []).map(normalizeProduct)) }
     } catch {}
     setProductsLoading(false)
   }
