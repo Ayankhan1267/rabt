@@ -10,7 +10,7 @@ const C = {
   blue: '#3B82F6', orange: '#F59E0B',
 }
 
-type Tab = 'command' | 'monitor' | 'report' | 'tasks' | 'schedule'
+type Tab = 'command' | 'monitor' | 'report' | 'tasks' | 'schedule' | 'auto'
 type Priority = 'urgent' | 'high' | 'medium' | 'low'
 type TaskStatus = 'pending' | 'in_progress' | 'done' | 'blocked'
 
@@ -80,6 +80,10 @@ export default function AssistantAgentPage() {
   const [callLogs, setCallLogs] = useState<any[]>([])
   const [orders, setOrders] = useState<{ total: number; today: number; pending: number }>({ total: 0, today: 0, pending: 0 })
   const [consultations, setConsultations] = useState<{ total: number; today: number; pending: number }>({ total: 0, today: 0, pending: 0 })
+  const [autoBrain, setAutoBrain] = useState<any>(null)
+  const [runningAuto, setRunningAuto] = useState(false)
+  const [autoPhone, setAutoPhone] = useState('')
+  const [autoSendWA, setAutoSendWA] = useState(false)
 
   useEffect(() => {
     loadTasks()
@@ -117,6 +121,30 @@ export default function AssistantAgentPage() {
     const { data } = await supabase.from('rabt_call_logs')
       .select('*').order('created_at', { ascending: false }).limit(10)
     if (data) setCallLogs(data)
+  }
+
+  async function runAutoBrain(createTasks = true) {
+    setRunningAuto(true)
+    try {
+      const res = await fetch('/api/assistant/auto-run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ createTasks, sendReport: autoSendWA, phone: autoPhone }),
+      })
+      if (res.ok) {
+        const d = await res.json()
+        setAutoBrain(d)
+        if (d.createdTasks?.length > 0) {
+          await loadTasks()
+          toast.success(`AI created ${d.createdTasks.length} task${d.createdTasks.length > 1 ? 's' : ''} automatically!`)
+        } else {
+          toast.success('AI analysis complete!')
+        }
+      } else {
+        toast.error('Auto-brain failed')
+      }
+    } catch { toast.error('Failed to run Auto Brain') }
+    setRunningAuto(false)
   }
 
   async function loadAiInsight() {
@@ -208,6 +236,7 @@ export default function AssistantAgentPage() {
   const completionRate = tasks.length > 0 ? Math.round((doneTasks / tasks.length) * 100) : 0
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
+    { id: 'auto', label: 'Auto Brain', icon: '🤖' },
     { id: 'command', label: 'Command Center', icon: '⚡' },
     { id: 'monitor', label: 'Team Monitor', icon: '👥' },
     { id: 'report', label: 'Daily Report', icon: '📊' },
@@ -679,6 +708,231 @@ export default function AssistantAgentPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* AUTO BRAIN TAB */}
+      {tab === 'auto' && (
+        <div>
+          {/* Run Panel */}
+          <div style={{ background: `linear-gradient(135deg, #1A2E2B, #2D5F5A)`, borderRadius: 16, padding: 28, marginBottom: 24, color: '#fff' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+              <div style={{ fontSize: 40 }}>🤖</div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>Autonomous AI Brain</div>
+                <div style={{ fontSize: 13, opacity: 0.8 }}>Analyzes all business data · Creates tasks automatically · Monitors all agents · Sends WhatsApp report</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, opacity: 0.8 }}>WhatsApp Report To (optional)</div>
+                <input
+                  value={autoPhone}
+                  onChange={e => setAutoPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 13 }}
+                />
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer', paddingBottom: 10 }}>
+                <input type="checkbox" checked={autoSendWA} onChange={e => setAutoSendWA(e.target.checked)} />
+                Send WhatsApp report
+              </label>
+              <button
+                onClick={() => runAutoBrain(true)}
+                disabled={runningAuto}
+                style={{ padding: '12px 28px', background: runningAuto ? 'rgba(255,255,255,0.2)' : '#10B981', color: '#fff', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: runningAuto ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              >
+                {runningAuto ? '🧠 Thinking...' : '▶ Run Auto Brain'}
+              </button>
+              <button
+                onClick={() => runAutoBrain(false)}
+                disabled={runningAuto}
+                style={{ padding: '12px 20px', background: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: runningAuto ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+              >
+                Analyze Only
+              </button>
+            </div>
+          </div>
+
+          {!autoBrain && !runningAuto && (
+            <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 48, textAlign: 'center' }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🧠</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 8 }}>Ready to Analyze Your Business</div>
+              <div style={{ fontSize: 14, color: '#6B7280', maxWidth: 480, margin: '0 auto' }}>
+                Click "Run Auto Brain" to let the AI analyze your MongoDB orders, Supabase tasks, team performance, agent statuses, and goals — then auto-create tasks for the team.
+              </div>
+            </div>
+          )}
+
+          {runningAuto && (
+            <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 48, textAlign: 'center' }}>
+              <div style={{ fontSize: 48, marginBottom: 16, animation: 'pulse 1s infinite' }}>🧠</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: C.dark, marginBottom: 8 }}>Analyzing Everything...</div>
+              <div style={{ fontSize: 13, color: '#6B7280' }}>Reading MongoDB orders · Supabase tasks · Team performance · Agent statuses · Goals</div>
+              <div style={{ marginTop: 16, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                {['Fetching data...', 'Thinking...', 'Creating tasks...'].map((s, i) => (
+                  <span key={i} style={{ fontSize: 12, padding: '4px 12px', background: C.teal + '15', color: C.teal, borderRadius: 20 }}>{s}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {autoBrain && !runningAuto && (
+            <div>
+              {/* Situation Banner */}
+              <div style={{
+                background: autoBrain.situation === 'critical' ? '#FEF2F2' : autoBrain.situation === 'warning' ? '#FFFBEB' : '#F0FDF4',
+                border: `1px solid ${autoBrain.situation === 'critical' ? C.red : autoBrain.situation === 'warning' ? C.gold : C.green}`,
+                borderRadius: 14, padding: '16px 20px', marginBottom: 20,
+                display: 'flex', alignItems: 'flex-start', gap: 14,
+              }}>
+                <div style={{ fontSize: 28, flexShrink: 0 }}>
+                  {autoBrain.situation === 'critical' ? '🚨' : autoBrain.situation === 'warning' ? '⚠️' : '✅'}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: C.dark, marginBottom: 4 }}>
+                    {autoBrain.situation === 'critical' ? 'Critical — Immediate Attention Needed' : autoBrain.situation === 'warning' ? 'Warning — Some Issues Need Attention' : 'All Good — Business Running Smoothly'}
+                  </div>
+                  <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.6 }}>{autoBrain.analysis}</div>
+                  {autoBrain.focusForToday && (
+                    <div style={{ marginTop: 10, padding: '8px 14px', background: C.teal + '15', borderRadius: 8, fontSize: 13, fontWeight: 700, color: C.teal }}>
+                      🎯 Focus today: {autoBrain.focusForToday}
+                    </div>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: '#9CA3AF', flexShrink: 0, textAlign: 'right' }}>
+                  {new Date(autoBrain.runAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                  <br />
+                  {autoBrain.dataSnapshot?.tasks?.total || 0} tasks · {autoBrain.dataSnapshot?.connectedAgents || 0}/{autoBrain.dataSnapshot?.totalAgents || 0} agents
+                </div>
+              </div>
+
+              {/* Data Snapshot Row */}
+              {autoBrain.dataSnapshot?.mongo && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: 'Orders Today', value: autoBrain.dataSnapshot.mongo.todayOrders ?? '—', color: C.teal },
+                    { label: 'Orders This Month', value: autoBrain.dataSnapshot.mongo.monthOrders ?? '—', color: C.green },
+                    { label: 'Month Revenue', value: autoBrain.dataSnapshot.mongo.monthRevenue ? `₹${(autoBrain.dataSnapshot.mongo.monthRevenue/100000).toFixed(1)}L` : '—', color: C.gold },
+                    { label: 'Pending Consults', value: autoBrain.dataSnapshot.mongo.pendingConsultations ?? '—', color: autoBrain.dataSnapshot.mongo.pendingConsultations > 0 ? C.red : C.green },
+                    { label: 'At-Risk Customers', value: autoBrain.dataSnapshot.mongo.atRiskCustomers ?? '—', color: autoBrain.dataSnapshot.mongo.atRiskCustomers > 5 ? C.orange : C.green },
+                  ].map((k, i) => (
+                    <div key={i} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: k.color, fontFamily: 'Syne, sans-serif' }}>{k.value}</div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{k.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+                {/* Auto-Created Tasks */}
+                <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>🤖 AI-Created Tasks</div>
+                    <span style={{ fontSize: 12, background: C.teal + '15', color: C.teal, padding: '2px 10px', borderRadius: 20, fontWeight: 700 }}>
+                      {autoBrain.createdTasks?.length || 0} created
+                    </span>
+                  </div>
+                  <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 360, overflowY: 'auto' }}>
+                    {(autoBrain.createdTasks?.length > 0 ? autoBrain.createdTasks : autoBrain.tasksToCreate || []).map((t: any, i: number) => (
+                      <div key={i} style={{ padding: '10px 14px', background: t.id ? '#F0FDF4' : '#F8FAFC', borderRadius: 10, border: `1px solid ${t.id ? C.green + '30' : C.border}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                          <div style={{ fontWeight: 600, fontSize: 13, color: C.dark, flex: 1 }}>{t.title}</div>
+                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 6, background: t.priority === 'urgent' ? C.red + '15' : C.gold + '15', color: t.priority === 'urgent' ? C.red : C.gold, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                            {t.priority}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 4 }}>
+                          {t.area} · {t.assigned_role || t.assigned_role} · {t.due_date}
+                        </div>
+                        {t.ai_reason && <div style={{ fontSize: 11, color: C.teal, marginTop: 4, fontStyle: 'italic' }}>💡 {t.ai_reason}</div>}
+                        {t.id && <div style={{ fontSize: 10, color: C.green, marginTop: 4, fontWeight: 700 }}>✅ Created in Supabase</div>}
+                      </div>
+                    ))}
+                    {autoBrain.createdTasks?.length === 0 && !autoBrain.tasksToCreate?.length && (
+                      <div style={{ fontSize: 13, color: '#9CA3AF', textAlign: 'center', padding: '20px 0' }}>No tasks needed — team is on track!</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Goal Progress + Agent Alerts */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {/* Goal Progress */}
+                  {autoBrain.goalProgress?.length > 0 && (
+                    <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 700, fontSize: 15, color: C.dark }}>🎯 Goal Progress</div>
+                      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {autoBrain.goalProgress.map((g: any, i: number) => (
+                          <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: g.status === 'ahead' ? '#F0FDF4' : g.status === 'behind' ? '#FEF2F2' : '#FFFBEB', border: `1px solid ${g.status === 'ahead' ? C.green + '30' : g.status === 'behind' ? C.red + '30' : C.gold + '30'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: C.dark, flex: 1 }}>{g.goal}</div>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: g.status === 'ahead' ? C.green : g.status === 'behind' ? C.red : C.gold, color: '#fff', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                {g.status === 'ahead' ? '✅ Ahead' : g.status === 'behind' ? '⚠️ Behind' : '🎯 On track'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: 11, color: '#6B7280', marginTop: 4 }}>{g.insight}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Agent Alerts */}
+                  {autoBrain.agentAlerts?.length > 0 && (
+                    <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                      <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, fontWeight: 700, fontSize: 15, color: C.dark }}>🔌 Agent Alerts</div>
+                      <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {autoBrain.agentAlerts.map((a: any, i: number) => (
+                          <div key={i} style={{ padding: '10px 14px', borderRadius: 10, background: a.severity === 'critical' ? '#FEF2F2' : '#FFFBEB', borderLeft: `3px solid ${a.severity === 'critical' ? C.red : C.gold}` }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: C.dark }}>{a.agent}</div>
+                            <div style={{ fontSize: 12, color: '#6B7280', marginTop: 3 }}>{a.action}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* WhatsApp Report Preview */}
+              {autoBrain.whatsappReport && (
+                <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
+                  <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>📱 WhatsApp Report</div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input
+                        value={autoPhone}
+                        onChange={e => setAutoPhone(e.target.value)}
+                        placeholder="+91 98765 43210"
+                        style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 12, width: 160 }}
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!autoPhone) return toast.error('Enter phone number')
+                          const res = await fetch('/api/send-whatsapp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phone: autoPhone, message: autoBrain.whatsappReport }),
+                          })
+                          if (res.ok) toast.success('Report sent!') else toast.error('Failed to send')
+                        }}
+                        style={{ padding: '6px 16px', background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Send Now
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ padding: 16, background: '#F9FAFB' }}>
+                    <pre style={{ fontSize: 12, color: '#374151', whiteSpace: 'pre-wrap', fontFamily: 'system-ui', lineHeight: 1.6, margin: 0 }}>
+                      {autoBrain.whatsappReport}
+                    </pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
