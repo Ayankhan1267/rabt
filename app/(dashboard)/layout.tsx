@@ -152,6 +152,7 @@ const DERMIQ_NAV: NavSection[] = [
       { id: 'dq-marketing', label: 'Marketing', icon: '📢', href: '/dermiq/marketing', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_marketing'] },
       { id: 'dq-content', label: 'Content Manager', icon: '🎨', href: '/dermiq/content', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing', 'dermiq_manager'] },
       { id: 'dq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
+      { id: 'dq-influencers', label: 'Influencers & Partners', icon: '🌟', href: '/dermiq/influencers', badge: 'New', badgeColor: '#D4A853', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing', 'dermiq_manager'] },
       { id: 'dq-analytics', label: 'Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
     ],
   },
