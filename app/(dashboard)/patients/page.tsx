@@ -122,17 +122,19 @@ export default function PatientsPage() {
     const key = phone || name.toLowerCase()
     let aiAnalysis: any = null
     try { if (po.skin_analysis) aiAnalysis = JSON.parse(po.skin_analysis) } catch {}
-    const skinScore = po.skin_score || aiAnalysis?.skinScore
-    const skinCategory = po.skin_category || aiAnalysis?.skinCategory
-    const recommendedRange = po.recommended_range || aiAnalysis?.recommendedRange
-    const skinType = po.skin_type || aiAnalysis?.skinType
-    const skinProfile = aiAnalysis ? {
-      ...aiAnalysis,
+    const skinScore = aiAnalysis?.skinScore || po.skin_score
+    const skinCategory = aiAnalysis?.skinCategory || po.skin_category
+    const recommendedRange = aiAnalysis?.recommendedRange || po.recommended_range
+    const skinType = aiAnalysis?.skinType || po.skin_type
+    // Always create a skinProfile — use aiAnalysis if available, fallback to basic columns
+    const skinProfile = {
+      ...(aiAnalysis || {}),
       skinScore, skinCategory, recommendedRange, skinType,
       phone, name, source: 'sales_partner',
       partnerName: po.partner_name || '',
       orderId: po.order_id,
-    } : null
+      specialistAssigned: po.specialist_assigned || null,
+    }
     if (!patientMap.has(key)) {
       patientMap.set(key, {
         key, name, phone, email,
@@ -141,7 +143,7 @@ export default function PatientsPage() {
         partnerName: po.partner_name || '',
         consultations: [],
         orders: [po],
-        skinProfiles: skinProfile ? [skinProfile] : [],
+        skinProfiles: [skinProfile],
         spent: po.amount || 0,
         userId: null,
         skinScore, skinCategory, recommendedRange,
@@ -151,7 +153,7 @@ export default function PatientsPage() {
       if (existing.source !== 'online') existing.source = 'partner'
       if (!existing.orders.find((o: any) => o.id === po.id)) existing.orders.push(po)
       existing.spent = (existing.spent || 0) + (po.amount || 0)
-      if (skinProfile && !existing.skinProfiles.find((e: any) => e.orderId === po.order_id)) existing.skinProfiles.push(skinProfile)
+      if (!existing.skinProfiles.find((e: any) => e.orderId === po.order_id)) existing.skinProfiles.push(skinProfile)
       if (!existing.skinScore) existing.skinScore = skinScore
       if (!existing.skinCategory) existing.skinCategory = skinCategory
       if (!existing.recommendedRange) existing.recommendedRange = recommendedRange
@@ -420,7 +422,7 @@ function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
       )}
 
       {/* Partner AI Skin Analysis — full card */}
-      {isPartner && sp && (
+      {isPartner && sp && (sp.skinScore || sp.skinCategory || sp.skinType || sp.skinSummary) && (
         <div style={{ marginBottom: 14 }}>
           {/* Score banner */}
           <div style={{ background: 'linear-gradient(135deg,#003D40,#005F6A)', borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
@@ -437,7 +439,8 @@ function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
                 </div>
               )}
             </div>
-            {sp.skinSummary && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 10px' }}>{sp.skinSummary}</div>}
+            {sp.skinSummary && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 10px', marginTop: 6 }}>{sp.skinSummary}</div>}
+            {sp.specialistAssigned && <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 6 }}>👩‍⚕️ Assigned Specialist: <strong style={{ color: '#fff' }}>{sp.specialistAssigned}</strong></div>}
           </div>
 
           {/* Concerns */}
@@ -518,6 +521,14 @@ function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Partner — no analysis data fallback */}
+      {isPartner && sp && !sp.skinScore && !sp.skinCategory && !sp.skinType && (
+        <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14, textAlign: 'center' }}>
+          <div style={{ fontSize: 12, color: 'var(--mu)' }}>🔬 Skin analysis not yet completed for this customer</div>
+          {sp.specialistAssigned && <div style={{ fontSize: 11, color: 'var(--teal)', marginTop: 6 }}>👩‍⚕️ Assigned to: {sp.specialistAssigned}</div>}
         </div>
       )}
 
