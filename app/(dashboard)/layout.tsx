@@ -37,6 +37,8 @@ const NAV: NavSection[] = [
     label: 'Sales',
     items: [
       { id: 'landing', label: 'Landing Page', icon: '🌐', href: '/website', roles: ['founder', 'manager'] },
+      { id: 'marketplace', label: 'DermIQ Marketplace', icon: '🛍️', href: '/marketplace', badge: 'New', badgeColor: 'var(--teal)', roles: ['founder', 'admin', 'manager'] },
+      { id: 'vendor', label: 'Vendor Portal', icon: '🏪', href: '/vendor', roles: ['founder', 'admin', 'manager'] },
       { id: 'website', label: 'Website Analytics', icon: '📊', href: '/website-analytics', roles: ['founder', 'manager'] },
       { id: 'customers', label: 'Customers', icon: '👥', href: '/customers', roles: ['founder', 'manager', 'ops', 'specialist_manager'] },
       { id: 'crm', label: 'CRM / Leads', icon: '👥', href: '/crm', roles: ['founder', 'manager', 'specialist_manager', 'specialist', 'support'] },
