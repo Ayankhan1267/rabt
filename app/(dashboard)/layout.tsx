@@ -39,7 +39,6 @@ const NAV: NavSection[] = [
     label: 'Sales',
     items: [
       { id: 'landing', label: 'Landing Page', icon: '🌐', href: '/website', roles: ['founder', 'manager'] },
-      { id: 'marketplace', label: 'DermIQ Marketplace', icon: '🛍️', href: '/marketplace', badge: 'New', badgeColor: 'var(--teal)', roles: ['founder', 'admin', 'manager'] },
       { id: 'vendor', label: 'Vendor Portal', icon: '🏪', href: '/vendor', roles: ['founder', 'admin', 'manager'] },
       { id: 'website', label: 'Website Analytics', icon: '📊', href: '/website-analytics', roles: ['founder', 'manager'] },
       { id: 'customers', label: 'Customers', icon: '👥', href: '/customers', roles: ['founder', 'manager', 'ops', 'specialist_manager'] },
@@ -113,97 +112,6 @@ const NAV: NavSection[] = [
   },
 ]
 
-// ── DermIQ — completely independent nav (no Rabt data) ─────────────────────
-const DERMIQ_NAV: NavSection[] = [
-  {
-    label: 'Command',
-    items: [
-      { id: 'dq-dashboard', label: 'Dashboard', icon: '⚗️', href: '/dermiq/dashboard' },
-      { id: 'dq-specialists', label: 'Specialists', icon: '👩‍⚕️', href: '/dermiq/specialists', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
-      { id: 'dq-calendar', label: 'Calendar', icon: '📅', href: '/dermiq/calendar' },
-    ],
-  },
-  {
-    label: 'Consultations',
-    items: [
-      { id: 'dq-consultations', label: 'Consultations', icon: '🧴', href: '/dermiq/consultations', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
-      { id: 'dq-consultation-queue', label: 'Consultation Queue', icon: '⏳', href: '/dermiq/consultation-queue', badge: 'Live', badgeColor: '#10B981', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager'] },
-      { id: 'dq-specialist-panel', label: 'Specialist Panel', icon: '👩‍⚕️', href: '/dermiq/specialist-panel', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager', 'dermiq_specialist'] },
-      { id: 'dq-skin-review', label: 'Skin Review Panel', icon: '🔬', href: '/dermiq/skin-review', badge: 'AI', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager'] },
-      { id: 'dq-skinprofiles', label: 'Skin Profiles', icon: '🌿', href: '/dermiq/skinprofiles' },
-    ],
-  },
-  {
-    label: 'Marketplace',
-    items: [
-      { id: 'dq-marketplace', label: 'Marketplace Overview', icon: '🛍️', href: '/dermiq/marketplace', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-vendors', label: 'Vendor Manager', icon: '🏪', href: '/dermiq/vendors', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-listings', label: 'Product Listings', icon: '📦', href: '/dermiq/listings', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-orders', label: 'Orders', icon: '📋', href: '/dermiq/orders', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_ops'] },
-      { id: 'dq-order-pipeline', label: 'Order Pipeline', icon: '🚚', href: '/dermiq/order-pipeline', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_ops'] },
-      { id: 'dq-product-approval', label: 'Product Approval', icon: '✅', href: '/dermiq/product-approval', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-inventory', label: 'Inventory', icon: '🗄️', href: '/dermiq/inventory', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_ops'] },
-    ],
-  },
-  {
-    label: 'Customers',
-    items: [
-      { id: 'dq-customers', label: 'Customers', icon: '👥', href: '/dermiq/customers', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_support'] },
-      { id: 'dq-crm', label: 'CRM / Leads', icon: '💼', href: '/dermiq/crm', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_support'] },
-      { id: 'dq-support', label: 'Support', icon: '💬', href: '/dermiq/support', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_support'] },
-    ],
-  },
-  {
-    label: 'Marketing',
-    items: [
-      { id: 'dq-marketing', label: 'Marketing', icon: '📢', href: '/dermiq/marketing', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_marketing'] },
-      { id: 'dq-content', label: 'Content Manager', icon: '🎨', href: '/dermiq/content', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing', 'dermiq_manager'] },
-      { id: 'dq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
-      { id: 'dq-influencers', label: 'Influencers & Partners', icon: '🌟', href: '/dermiq/influencers', badge: 'New', badgeColor: '#D4A853', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing', 'dermiq_manager'] },
-      { id: 'dq-analytics', label: 'Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-    ],
-  },
-  {
-    label: 'Finance',
-    items: [
-      { id: 'dq-finance', label: 'Finance', icon: '💰', href: '/dermiq/finance', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
-      { id: 'dq-payouts', label: 'Vendor Payouts', icon: '💸', href: '/dermiq/payouts', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
-      { id: 'dq-kyc', label: 'KYC & Verification', icon: '✅', href: '/dermiq/kyc', roles: ['founder', 'admin', 'dermiq_admin'] },
-    ],
-  },
-  {
-    label: 'Growth',
-    items: [
-      { id: 'dq-funnels', label: 'Funnel Tracker', icon: '🎯', href: '/dermiq/funnels', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-retention', label: 'Retention System', icon: '🔄', href: '/dermiq/retention', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
-      { id: 'dq-revenue', label: 'Revenue Flow', icon: '💳', href: '/dermiq/revenue', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
-    ],
-  },
-  {
-    label: 'Operations',
-    items: [
-      { id: 'dq-automation', label: 'Marketing Automation', icon: '⚡', href: '/dermiq/automation', badge: 'Auto', badgeColor: '#F97316', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
-      { id: 'dq-seo', label: 'SEO Automation', icon: '🔍', href: '/dermiq/seo', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
-      { id: 'dq-quality', label: 'Quality Control', icon: '🛡️', href: '/dermiq/quality', roles: ['founder', 'admin', 'dermiq_admin'] },
-    ],
-  },
-  {
-    label: 'AI System',
-    items: [
-      { id: 'dq-ai-control', label: 'AI Control Center', icon: '🤖', href: '/dermiq/ai-control', badge: 'Power', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin'] },
-    ],
-  },
-  {
-    label: 'System',
-    items: [
-      { id: 'dq-notifications', label: 'Notifications', icon: '🔔', href: '/dermiq/notifications', badge: 'New', badgeColor: '#EF4444' },
-      { id: 'dq-setup', label: 'Setup Wizard', icon: '🚀', href: '/dermiq/setup', roles: ['founder', 'admin', 'dermiq_admin'] },
-      { id: 'dq-team', label: 'Team & Access', icon: '🤝', href: '/dermiq/team', roles: ['founder', 'admin', 'dermiq_admin'] },
-      { id: 'dq-settings', label: 'Settings', icon: '⚙️', href: '/dermiq/settings', roles: ['founder', 'admin', 'dermiq_admin'] },
-    ],
-  },
-]
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [notifications, setNotifications] = useState<any[]>([])
@@ -211,7 +119,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
-  const [platform, setPlatform] = useState<'rabt' | 'dermiq'>('rabt')
   // Reminder widget state (specialist)
   const [reminderCount, setReminderCount] = useState(0)
   const [todaySent, setTodaySent]         = useState(0)
@@ -222,16 +129,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loadProfile()
     checkMobile()
     window.addEventListener('resize', checkMobile)
-    // Restore platform from localStorage
-    const saved = localStorage.getItem('hq_platform') as 'rabt' | 'dermiq' | null
-    if (saved) setPlatform(saved)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
-
-  function switchPlatform(p: 'rabt' | 'dermiq') {
-    setPlatform(p)
-    localStorage.setItem('hq_platform', p)
-  }
 
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false) }, [pathname])
@@ -376,20 +275,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const roleConfig = profile ? ROLE_CONFIG[profile.role] : null
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
-  const dermiqRole: string | undefined = (profile as any)?.dermiq_role
-  // Show DermIQ switcher only to founders/admins OR users with a dermiq_role
-  const canSeeDermiq = profile && (['founder','admin'].includes(profile.role) || !!dermiqRole)
   const hasAccess = (item: NavItem | NavSection) => {
     if (!profile) return false
     if (['founder','admin'].includes(profile.role)) return true
     const roles = item.roles
     if (!roles) return true
-    // On DermIQ platform, also match dermiq_role values
-    if (platform === 'dermiq' && dermiqRole && roles.includes(dermiqRole)) return true
     return roles.includes(profile.role)
   }
-  // Completely separate navs — DermIQ shows ONLY DERMIQ_NAV, Rabt shows only NAV
-  const activeNav = platform === 'dermiq' ? DERMIQ_NAV : NAV
+  const activeNav = NAV
   const currentTitle = activeNav.flatMap(s => s.items).find(i => isActive(i.href))?.label || 'Dashboard'
 
   // -- Sidebar Content (shared between desktop + mobile) --
@@ -418,32 +311,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', fontSize: 9, fontWeight: 700, padding: '3px 9px', borderRadius: 20, background: roleConfig.color + '22', color: roleConfig.color, border: `1px solid ${roleConfig.color}44`, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{roleConfig.label}</div>
         )}
       </div>
-
-      {/* Platform Switcher — only visible to those with DermIQ access */}
-      {canSeeDermiq && (
-        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
-          <div style={{ fontSize: 8.5, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontWeight: 600 }}>Platform</div>
-          <div style={{ display: 'flex', background: 'var(--s2)', borderRadius: 8, padding: 3, gap: 2 }}>
-            {(['rabt', 'dermiq'] as const).map(p => (
-              <button key={p} onClick={() => switchPlatform(p)} style={{
-                flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-                fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
-                transition: 'all 0.15s',
-                background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
-                color: platform === p ? '#fff' : 'var(--mu)',
-                boxShadow: platform === p ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-              }}>
-                {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
-              </button>
-            ))}
-          </div>
-          {platform === 'dermiq' && (
-            <div style={{ marginTop: 5, fontSize: 9, color: '#2D5F5A', fontWeight: 600, textAlign: 'center', letterSpacing: '0.05em', background: 'rgba(45,95,90,0.08)', borderRadius: 5, padding: '3px 0' }}>
-              MULTIVENDOR MARKETPLACE
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '9px', overflowY: 'auto' }}>
@@ -582,24 +449,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!isMobile && <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontWeight: 800 }}>{currentTitle}</div>}
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Platform switcher — topbar (only for authorized users) */}
-            {canSeeDermiq && (
-              <div style={{ display: 'flex', background: 'rgba(26,155,160,0.06)', borderRadius: 8, padding: 2, gap: 2, border: '1px solid var(--b1)' }}>
-                {(['rabt', 'dermiq'] as const).map(p => (
-                  <button key={p} onClick={() => switchPlatform(p)} style={{
-                    padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                    fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
-                    transition: 'all 0.15s',
-                    background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
-                    color: platform === p ? '#fff' : 'var(--mu)',
-                    boxShadow: platform === p ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
-                  }}>
-                    {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
-                  </button>
-                ))}
-              </div>
-            )}
-
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
               <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>🔔</button>
