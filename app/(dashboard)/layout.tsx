@@ -120,6 +120,7 @@ const DERMIQ_NAV: NavSection[] = [
     label: 'Consultations',
     items: [
       { id: 'dq-consultations', label: 'Consultations', icon: '🧴', href: '/dermiq/consultations', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
+      { id: 'dq-skin-review', label: 'Skin Review Panel', icon: '🔬', href: '/dermiq/skin-review', badge: 'AI', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager'] },
       { id: 'dq-skinprofiles', label: 'Skin Profiles', icon: '🌿', href: '/dermiq/skinprofiles' },
     ],
   },
