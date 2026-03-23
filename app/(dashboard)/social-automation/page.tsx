@@ -241,6 +241,32 @@ export default function SocialAutomationPage() {
   // Analytics state
   const [analyticsRange, setAnalyticsRange] = useState('30')
 
+  // API Keys state
+  const [apiKeys, setApiKeys] = useState({
+    meta_app_id: '', meta_app_secret: '', meta_page_token: '', ig_account_id: '',
+    fb_page_id: '',
+    yt_client_id: '', yt_client_secret: '', yt_refresh_token: '', yt_channel_id: '',
+    li_client_id: '', li_client_secret: '', li_org_urn: '', li_access_token: '',
+    tw_api_key: '', tw_api_secret: '', tw_access_token: '', tw_access_secret: '',
+    elevenlabs_key: '', heygen_key: '', pexels_key: '', stability_key: '',
+  })
+  const [savingKeys, setSavingKeys] = useState<string | null>(null)
+
+  async function saveTokens(platform: string, tokenData: Record<string, unknown>) {
+    setSavingKeys(platform)
+    try {
+      await fetch('/api/video/save-tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tokens: { [platform]: { ...tokenData, status: 'connected' } } }),
+      })
+      toast.success(`${platform} connected!`)
+    } catch {
+      toast.error('Save failed')
+    }
+    setSavingKeys(null)
+  }
+
   useEffect(() => { setMounted(true) }, [])
 
   // Countdown ticker
@@ -1110,45 +1136,78 @@ export default function SocialAutomationPage() {
       {/* ── TAB: SETTINGS / CONNECT ACCOUNTS ─────────────────────────────────── */}
       {tab === 'settings' && (
         <div>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.dark, marginBottom: 6 }}>Connect Social Accounts</h2>
-          <p style={{ fontSize: 13, color: C.mu, marginBottom: 28 }}>Paste your API credentials below. Tokens are stored securely in Supabase and never exposed to the frontend.</p>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.dark, marginBottom: 6 }}>Connect Accounts & API Keys</h2>
+          <p style={{ fontSize: 13, color: C.mu, marginBottom: 28 }}>All tokens saved to Supabase — secure, never exposed. Each platform has its own save button.</p>
 
-          {/* Meta (Instagram + Facebook) */}
-          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+          {/* AI Services Keys */}
+          <div style={{ background: `linear-gradient(135deg, ${C.dark}, #243D3A)`, borderRadius: 16, padding: 24, marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📸</div>
+              <div style={{ fontSize: 28 }}>🤖</div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>Instagram + Facebook</div>
-                <div style={{ fontSize: 12, color: C.mu }}>Meta Graph API — posts, reels, carousels, stories</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>AI Generation APIs</div>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Script · Voice · Avatar · Images</div>
               </div>
-              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#FEF3C7', color: '#D97706', fontSize: 12, fontWeight: 600 }}>Not Connected</div>
             </div>
-
-            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#92400E', lineHeight: 1.7 }}>
-              <strong>Setup Steps:</strong><br />
-              1. Go to <strong>developers.facebook.com</strong> → Create App → Business<br />
-              2. Add <strong>Instagram Graph API</strong> + <strong>Facebook Login</strong><br />
-              3. Connect your Instagram Business account to a Facebook Page<br />
-              4. Go to <strong>Graph API Explorer</strong> → select your app → add permissions:<br />
-              &nbsp;&nbsp;&nbsp;<code style={{ background: '#FEF3C7', padding: '1px 5px', borderRadius: 4 }}>instagram_basic, instagram_content_publish, pages_manage_posts</code><br />
-              5. Generate token → paste below
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 16 }}>
               {[
-                { label: 'Meta App ID', placeholder: '1234567890123456', key: 'meta_app_id' },
-                { label: 'Meta App Secret', placeholder: 'abc123...', key: 'meta_app_secret' },
-                { label: 'Page Access Token (long-lived)', placeholder: 'EAABx...', key: 'meta_page_token' },
-                { label: 'Instagram Business Account ID', placeholder: '17841400...', key: 'ig_account_id' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 6 }}>{f.label}</label>
-                  <input type="password" placeholder={f.placeholder} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                { label: '🔤 Anthropic (Claude) — Script', key: 'elevenlabs_key', ph: 'sk-ant-... (set in .env)', disabled: true, note: 'Already configured in .env' },
+                { label: '🎙️ ElevenLabs — Voiceover', key: 'elevenlabs_key', ph: 'your_elevenlabs_api_key', note: 'elevenlabs.io → Profile → API Key' },
+                { label: '🎬 HeyGen — AI Avatar Video', key: 'heygen_key', ph: 'your_heygen_api_key', note: 'heygen.com → Settings → API' },
+                { label: '📸 Stability AI — Image Gen', key: 'stability_key', ph: 'sk-...', note: 'platform.stability.ai → API Keys' },
+                { label: '🎥 Pexels — Stock Footage', key: 'pexels_key', ph: 'your_pexels_api_key', note: 'pexels.com/api → FREE' },
+              ].filter(f => !f.disabled).map(f => (
+                <div key={f.key + f.label}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.8)', display: 'block', marginBottom: 4 }}>{f.label}</label>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', marginBottom: 6 }}>{f.note}</div>
+                  <input type="password" value={apiKeys[f.key as keyof typeof apiKeys]} onChange={e => setApiKeys(k => ({ ...k, [f.key]: e.target.value }))} placeholder={f.ph}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', fontSize: 13, color: '#fff', outline: 'none', background: 'rgba(255,255,255,0.08)', boxSizing: 'border-box' }} />
                 </div>
               ))}
             </div>
-            <button onClick={() => toast.success('Meta credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg,${C.teal},${C.teal2})`, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-              Save & Test Connection
+            <button disabled={savingKeys === 'ai_services'} onClick={() => saveTokens('ai_services', { elevenlabs: apiKeys.elevenlabs_key, heygen: apiKeys.heygen_key, pexels: apiKeys.pexels_key, stability: apiKeys.stability_key })}
+              style={{ padding: '10px 24px', background: C.gold, color: C.dark, border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              {savingKeys === 'ai_services' ? 'Saving...' : '💾 Save AI Keys'}
+            </button>
+          </div>
+
+          {/* Meta (Instagram + Facebook) */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📸</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>Instagram + Facebook Page</div>
+                <div style={{ fontSize: 12, color: C.mu }}>Feed posts · Reels · Carousels · Stories · Facebook Page</div>
+              </div>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                {['IG Feed','IG Reels','IG Stories','FB Page','FB Stories'].map(t => (
+                  <span key={t} style={{ padding: '3px 8px', borderRadius: 20, background: '#EFF6FF', color: '#1D4ED8', fontSize: 10, fontWeight: 600 }}>{t}</span>
+                ))}
+              </div>
+            </div>
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#92400E', lineHeight: 1.8 }}>
+              <strong>Setup:</strong> developers.facebook.com → Create App → Business → Add Instagram Graph API + Facebook Login →
+              Connect Instagram Business to Facebook Page → Graph API Explorer → Permissions:
+              <code style={{ background: '#FEF3C7', padding: '1px 6px', borderRadius: 4, margin: '0 4px' }}>instagram_basic, instagram_content_publish, pages_manage_posts, pages_read_engagement</code>
+              → Generate long-lived token
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              {[
+                { label: 'Meta App ID', ph: '1234567890', key: 'meta_app_id' },
+                { label: 'Meta App Secret', ph: 'abc123def456...', key: 'meta_app_secret' },
+                { label: 'Page Access Token (long-lived)', ph: 'EAABx...', key: 'meta_page_token' },
+                { label: 'Instagram Business Account ID', ph: '17841400...', key: 'ig_account_id' },
+                { label: 'Facebook Page ID', ph: '1234567890', key: 'fb_page_id' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 5 }}>{f.label}</label>
+                  <input type="password" value={apiKeys[f.key as keyof typeof apiKeys]} onChange={e => setApiKeys(k => ({ ...k, [f.key]: e.target.value }))} placeholder={f.ph}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button disabled={savingKeys === 'instagram'} onClick={() => saveTokens('instagram', { access_token: apiKeys.meta_page_token, account_id: apiKeys.ig_account_id, extra: { app_id: apiKeys.meta_app_id, app_secret: apiKeys.meta_app_secret, fb_page_id: apiKeys.fb_page_id } })}
+              style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#833ab4,#fd1d1d)', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              {savingKeys === 'instagram' ? 'Saving...' : '💾 Save & Connect Meta'}
             </button>
           </div>
 
@@ -1184,8 +1243,9 @@ export default function SocialAutomationPage() {
                 </div>
               ))}
             </div>
-            <button onClick={() => toast.success('YouTube credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: '#FF0000', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-              Save & Test Connection
+            <button disabled={savingKeys === 'youtube'} onClick={() => saveTokens('youtube', { account_id: apiKeys.yt_channel_id, extra: { client_id: apiKeys.yt_client_id, client_secret: apiKeys.yt_client_secret, refresh_token: apiKeys.yt_refresh_token } })}
+              style={{ marginTop: 16, padding: '10px 24px', background: '#FF0000', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              {savingKeys === 'youtube' ? 'Saving...' : '💾 Save & Connect YouTube'}
             </button>
           </div>
 
@@ -1221,8 +1281,44 @@ export default function SocialAutomationPage() {
                 </div>
               ))}
             </div>
-            <button onClick={() => toast.success('LinkedIn credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: '#0A66C2', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
-              Save & Test Connection
+            <button disabled={savingKeys === 'linkedin'} onClick={() => saveTokens('linkedin', { access_token: apiKeys.li_access_token, account_id: apiKeys.li_org_urn, extra: { client_id: apiKeys.li_client_id, client_secret: apiKeys.li_client_secret } })}
+              style={{ marginTop: 16, padding: '10px 24px', background: '#0A66C2', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              {savingKeys === 'linkedin' ? 'Saving...' : '💾 Save & Connect LinkedIn'}
+            </button>
+          </div>
+
+          {/* Twitter/X */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>𝕏</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>Twitter / X</div>
+                <div style={{ fontSize: 12, color: C.mu }}>Twitter API v2 — text posts, threads, media tweets</div>
+              </div>
+              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#F3F4F6', color: C.mu, fontSize: 12, fontWeight: 600 }}>Basic Plan needed for media</div>
+            </div>
+            <div style={{ background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 12, color: '#0C4A6E', lineHeight: 1.8 }}>
+              <strong>Setup:</strong> developer.twitter.com → Create Project → Create App →
+              Keys and Tokens → Generate API Key, API Secret, Access Token, Access Token Secret.
+              Free tier = text-only tweets. For images/videos upgrade to <strong>Basic ($100/mo)</strong>.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
+              {[
+                { label: 'API Key (Consumer Key)', ph: 'xxxxxxxxxxxxxxxxxxxx', key: 'tw_api_key' },
+                { label: 'API Secret (Consumer Secret)', ph: 'xxxxxxxxxxxxxxxxxxxxxxxxx', key: 'tw_api_secret' },
+                { label: 'Access Token', ph: '0000000000-xxxxxxxxxx', key: 'tw_access_token' },
+                { label: 'Access Token Secret', ph: 'xxxxxxxxxxxxxxxxxxxxxxxxx', key: 'tw_access_secret' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 5 }}>{f.label}</label>
+                  <input type="password" value={apiKeys[f.key as keyof typeof apiKeys]} onChange={e => setApiKeys(k => ({ ...k, [f.key]: e.target.value }))} placeholder={f.ph}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button disabled={savingKeys === 'twitter'} onClick={() => saveTokens('twitter', { access_token: apiKeys.tw_access_token, extra: { api_key: apiKeys.tw_api_key, api_secret: apiKeys.tw_api_secret, oauth_token: apiKeys.tw_access_token, oauth_token_secret: apiKeys.tw_access_secret } })}
+              style={{ padding: '10px 24px', background: '#000', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              {savingKeys === 'twitter' ? 'Saving...' : '💾 Save & Connect X'}
             </button>
           </div>
 
