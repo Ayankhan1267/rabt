@@ -17,6 +17,7 @@ const NAV: NavSection[] = [
     label: 'Command',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: '⚡', href: '/dashboard', roles: ['founder', 'admin', 'manager', 'finance', 'hr', 'marketing', 'content_creator'] },
+      { id: 'assistant-agent', label: 'Assistant Agent', icon: '🧠', href: '/assistant-agent', badge: 'AI', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'manager'] },
       { id: 'calling-agent', label: 'Calling Agent', icon: '📞', href: '/calling-agent', badge: 'AI', badgeColor: '#2D5F5A' },
       { id: 'sales-agent', label: 'Sales Agent', icon: '🤖', href: '/sales-agent', badge: 'AI', badgeColor: '#10B981' },
       { id: 'specialist-dashboard', label: 'Specialist Panel', icon: '🌿', href: '/specialist-dashboard', roles: ['specialist'] },
