@@ -55,14 +55,9 @@ export default function PatientsPage() {
           (p.consultationId && myConsIds.has(p.consultationId?.toString()))
         ))
         setUsers(allUsers)
-        // Fetch partner orders from Supabase assigned to this specialist
-        const { data: pOrds } = await supabase.from('partner_orders').select('*')
-        const myId = mySpec._id?.toString()
-        const myName = (mySpec.name || prof?.full_name || '').toLowerCase()
-        setPartnerOrders((pOrds || []).filter((o: any) =>
-          (myId && o.specialist_id?.toString() === myId) ||
-          (myName && o.specialist_assigned?.toLowerCase() === myName)
-        ))
+        // Fetch ALL partner orders via service-role API (bypasses RLS)
+        const pOrds = await fetch('/api/partner-orders').then(r => r.ok ? r.json() : [])
+        setPartnerOrders(Array.isArray(pOrds) ? pOrds : [])
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
@@ -147,7 +142,7 @@ export default function PatientsPage() {
         consultations: [],
         orders: [po],
         skinProfiles: skinProfile ? [skinProfile] : [],
-        spent: po.total_amount || 0,
+        spent: po.amount || 0,
         userId: null,
         skinScore, skinCategory, recommendedRange,
       })
@@ -155,7 +150,7 @@ export default function PatientsPage() {
       const existing = patientMap.get(key)!
       if (existing.source !== 'online') existing.source = 'partner'
       if (!existing.orders.find((o: any) => o.id === po.id)) existing.orders.push(po)
-      existing.spent = (existing.spent || 0) + (po.total_amount || 0)
+      existing.spent = (existing.spent || 0) + (po.amount || 0)
       if (skinProfile && !existing.skinProfiles.find((e: any) => e.orderId === po.order_id)) existing.skinProfiles.push(skinProfile)
       if (!existing.skinScore) existing.skinScore = skinScore
       if (!existing.skinCategory) existing.skinCategory = skinCategory

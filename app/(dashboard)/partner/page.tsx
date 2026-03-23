@@ -269,7 +269,7 @@ export default function PartnerPortalPage() {
       }
 
       await supabase.from('partner_orders').insert({
-        partner_id: partner?.id, order_id: orderId,
+        partner_id: partner?.id, partner_name: partner?.name || null, order_id: orderId,
         customer_name: customer.name, customer_phone: customer.phone,
         customer_email: customer.email, customer_city: customer.city, customer_state: customer.state,
         amount: cartTotal, commission, commission_pct: partner?.commission_pct || 0,
