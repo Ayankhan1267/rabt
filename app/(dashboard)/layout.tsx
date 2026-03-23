@@ -106,6 +106,30 @@ const NAV: NavSection[] = [
   },
 ]
 
+// ── DermIQ-extra nav sections ──────────────────────────────────────────────
+const DERMIQ_EXTRA: NavSection[] = [
+  {
+    label: 'DermIQ Vendors',
+    roles: ['founder', 'admin', 'manager'],
+    items: [
+      { id: 'dermiq-vendors', label: 'Vendor Manager', icon: '🏪', href: '/dermiq/vendors', roles: ['founder', 'admin', 'manager'] },
+      { id: 'dermiq-listings', label: 'Product Listings', icon: '📦', href: '/dermiq/listings', roles: ['founder', 'admin', 'manager'] },
+      { id: 'dermiq-payouts', label: 'Vendor Payouts', icon: '💸', href: '/dermiq/payouts', roles: ['founder', 'admin', 'finance'] },
+      { id: 'dermiq-kyc', label: 'KYC & Verification', icon: '✅', href: '/dermiq/kyc', roles: ['founder', 'admin'] },
+    ],
+  },
+  {
+    label: 'DermIQ Marketplace',
+    roles: ['founder', 'admin', 'manager'],
+    items: [
+      { id: 'dermiq-marketplace', label: 'Marketplace Overview', icon: '🛍️', href: '/dermiq/marketplace', roles: ['founder', 'admin', 'manager'] },
+      { id: 'dermiq-orders', label: 'All Orders', icon: '📋', href: '/dermiq/orders', roles: ['founder', 'admin', 'manager', 'ops'] },
+      { id: 'dermiq-analytics', label: 'Marketplace Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'manager'] },
+      { id: 'dermiq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'manager', 'marketing'] },
+    ],
+  },
+]
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [notifications, setNotifications] = useState<any[]>([])
@@ -113,6 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [unreadCount, setUnreadCount] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [platform, setPlatform] = useState<'rabt' | 'dermiq'>('rabt')
   // Reminder widget state (specialist)
   const [reminderCount, setReminderCount] = useState(0)
   const [todaySent, setTodaySent]         = useState(0)
@@ -123,8 +148,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     loadProfile()
     checkMobile()
     window.addEventListener('resize', checkMobile)
+    // Restore platform from localStorage
+    const saved = localStorage.getItem('hq_platform') as 'rabt' | 'dermiq' | null
+    if (saved) setPlatform(saved)
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
+
+  function switchPlatform(p: 'rabt' | 'dermiq') {
+    setPlatform(p)
+    localStorage.setItem('hq_platform', p)
+  }
 
   // Close sidebar on route change (mobile)
   useEffect(() => { setSidebarOpen(false) }, [pathname])
@@ -276,7 +309,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     if (!roles) return true
     return roles.includes(profile.role)
   }
-  const currentTitle = NAV.flatMap(s => s.items).find(i => isActive(i.href))?.label || 'Dashboard'
+  // Active nav = base NAV + DermIQ extras when on dermiq platform
+  const activeNav = platform === 'dermiq' ? [...NAV, ...DERMIQ_EXTRA] : NAV
+  const currentTitle = activeNav.flatMap(s => s.items).find(i => isActive(i.href))?.label || 'Dashboard'
 
   // -- Sidebar Content (shared between desktop + mobile) --
   const SidebarContent = () => (
@@ -305,9 +340,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </div>
 
+      {/* Platform Switcher */}
+      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+        <div style={{ display: 'flex', background: 'var(--s2)', borderRadius: 8, padding: 3, gap: 2 }}>
+          {(['rabt', 'dermiq'] as const).map(p => (
+            <button key={p} onClick={() => switchPlatform(p)} style={{
+              flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+              fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+              transition: 'all 0.15s',
+              background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
+              color: platform === p ? '#fff' : 'var(--mu)',
+              boxShadow: platform === p ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+            }}>
+              {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
+            </button>
+          ))}
+        </div>
+        {platform === 'dermiq' && (
+          <div style={{ marginTop: 5, fontSize: 9, color: 'var(--teal)', fontWeight: 600, textAlign: 'center', letterSpacing: '0.05em' }}>
+            MULTIVENDOR MARKETPLACE
+          </div>
+        )}
+      </div>
+
       {/* Nav */}
       <nav style={{ flex: 1, padding: '9px', overflowY: 'auto' }}>
-        {NAV.map(section => {
+        {activeNav.map(section => {
           if (!hasAccess(section)) return null
           const visibleItems = section.items.filter(item => hasAccess(item))
           if (visibleItems.length === 0) return null
@@ -442,6 +500,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!isMobile && <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontWeight: 800 }}>{currentTitle}</div>}
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Platform switcher buttons — topbar */}
+            <div style={{ display: 'flex', background: 'rgba(26,155,160,0.06)', borderRadius: 8, padding: 2, gap: 2, border: '1px solid var(--b1)' }}>
+              {(['rabt', 'dermiq'] as const).map(p => (
+                <button key={p} onClick={() => switchPlatform(p)} style={{
+                  padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+                  transition: 'all 0.15s',
+                  background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
+                  color: platform === p ? '#fff' : 'var(--mu)',
+                  boxShadow: platform === p ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                }}>
+                  {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
+                </button>
+              ))}
+            </div>
+
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
               <button onClick={() => { setShowNotif(!showNotif); if (!showNotif && unreadCount > 0) markAllRead() }} style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(26,155,160,0.08)', border: '1px solid rgba(26,155,160,0.2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15 }}>🔔</button>
@@ -492,7 +566,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {isMobile && profile?.role !== 'partner' && (
           <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, background: 'var(--s1)', borderTop: '1px solid var(--b1)', display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 200, paddingBottom: 8 }}>
             {/* Show top 4 relevant nav items */}
-            {NAV.flatMap(s => s.items).filter(item => hasAccess(item)).slice(0, 4).map(item => {
+            {activeNav.flatMap(s => s.items).filter(item => hasAccess(item)).slice(0, 4).map(item => {
               const active = isActive(item.href)
               return (
                 <a key={item.id} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, textDecoration: 'none', padding: '6px 10px', borderRadius: 10, background: active ? 'rgba(26,155,160,0.1)' : 'transparent', minWidth: 56 }}>
