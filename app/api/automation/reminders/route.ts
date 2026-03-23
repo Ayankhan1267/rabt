@@ -121,6 +121,19 @@ export const AUTO_TEMPLATES: Record<string, { label: string; group: string; text
     group: 'Post Purchase',
     text: `Hi {name}! 📚\n\nWelcome to your skin journey! 🌿\n\n🧴 *Routine Tips:*\n• Subah: Cleanser → Toner → Serum → Moisturizer → SPF\n• Raat: Double cleanse → Serum → Night cream\n• Consistency = Results (4-6 weeks!)\n\n🥗 *Diet for your skin:*\n• ✅ Hara saag, fruits, omega-3\n• ✅ Paani: 3-4 litre roz\n• ❌ Avoid: Sugar, dairy, junk food\n• 😴 Neend: 7-8 ghante\n\nKoi sawaal? Hum yahaan hain! 💚\n~{specialist}, Rabt Naturals 🌿`,
   },
+
+  // Partner Automations
+  partner_specialist_assigned: {
+    label: '🤝 Partner Customer — Specialist Assigned',
+    group: 'Partner',
+    text: `Hi {name}! 🌿\n\nAapki Rabt Naturals AI Skin Analysis complete ho gayi! 🎉\n\n🩺 *Aapke Skin Specialist:* {specialist}\n\n📊 *Aapka Skin Report:*\n• Skin Score: {skinScore}/100\n• Category: {skinCategory}\n• Recommended Range: {recommendedRange}\n\nAapka specialist jald hi aapke skincare routine mein guide karenge! 💚\n\n🛍️ Products dekhein: rabtnaturals.com/products\nKoi sawaal ho toh reply karein!\n~Rabt Naturals 🌿`,
+  },
+
+  partner_order_placed: {
+    label: '📦 Partner Order Placed',
+    group: 'Partner',
+    text: `Hi {name}! 🎉\n\nAapka order place ho gaya hai!\n\n📦 Order ID: {orderId}\n💰 Amount: ₹{amount}\n🚚 Payment: {paymentMethod}\n\nExpected delivery: 3-5 working days.\n\nTrack karein: rabtnaturals.com/track\n\nKoi sawaal ho toh reply karein! 💚\n~Rabt Naturals 🌿`,
+  },
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

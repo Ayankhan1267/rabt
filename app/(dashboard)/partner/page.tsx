@@ -240,6 +240,34 @@ export default function PartnerPortalPage() {
         if (res.ok) { const d = await res.json(); orderId = d.orderNumber || orderId }
       } catch {}
 
+      // Save full skin profile to MongoDB so specialist can see it (no commission)
+      if (aiAnalysis) {
+        try {
+          await fetch(apiUrl + '/api/skinprofiles', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: customer.name, phone: customer.phone, email: customer.email,
+              age: customer.age, city: customer.city, state: customer.state,
+              skinType: aiAnalysis.skinType || skinType, skinScore: aiAnalysis.skinScore,
+              skinCategory: aiAnalysis.skinCategory, skinSummary: aiAnalysis.skinSummary,
+              skinConcerns: aiAnalysis.skinConcerns || concerns,
+              recommendedRange: aiAnalysis.recommendedRange, rangeReason: aiAnalysis.rangeReason,
+              amRoutine: aiAnalysis.amRoutine, pmRoutine: aiAnalysis.pmRoutine,
+              dietAdvice: aiAnalysis.dietAdvice, lifestyleAdvice: aiAnalysis.lifestyleAdvice,
+              weeklyTreatment: aiAnalysis.weeklyTreatment, expectedResults: aiAnalysis.expectedResults,
+              ingredientsToLookFor: aiAnalysis.ingredientsToLookFor,
+              ingredientsToAvoid: aiAnalysis.ingredientsToAvoid,
+              specialistNote: aiAnalysis.specialistNote,
+              productRecommendations: aiAnalysis.productRecommendations,
+              specialistId: assignedSpecialist?._id, specialistName: assignedSpecialist?.name,
+              source: 'sales_partner', partnerId: partner?.id, partnerName: partner?.name,
+              orderId, createdAt: new Date().toISOString(),
+            }),
+          })
+        } catch {}
+      }
+
       await supabase.from('partner_orders').insert({
         partner_id: partner?.id, order_id: orderId,
         customer_name: customer.name, customer_phone: customer.phone,
@@ -250,9 +278,10 @@ export default function PartnerPortalPage() {
         skin_type: aiAnalysis?.skinType || skinType, recommended_range: aiAnalysis?.recommendedRange,
         specialist_assigned: assignedSpecialist?.name || null, specialist_id: assignedSpecialist?._id || null,
         products: cart.map(c => c.product.name).join(', '), items_count: cart.length,
+        skin_analysis: aiAnalysis ? JSON.stringify(aiAnalysis) : null,
       })
 
-      // ✅ Commission sirf pending_commission mein — earnings mein NAHI
+      // ✅ Commission sirf partner ko — specialist ko koi commission nahi (source: sales_partner)
       if (partner?.id) {
         await supabase.from('sales_partners').update({
           total_orders:       (partner.total_orders       || 0) + 1,
@@ -263,6 +292,27 @@ export default function PartnerPortalPage() {
           total_orders:       (p.total_orders       || 0) + 1,
           pending_commission: (p.pending_commission || 0) + commission,
         } : p)
+      }
+
+      // WA automation — customer ko specialist assigned ka notification
+      if (customer.phone && assignedSpecialist) {
+        try {
+          await fetch('/api/auto-trigger', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              trigger: 'partner_specialist_assigned',
+              customer: { name: customer.name, phone: customer.phone, email: customer.email },
+              data: {
+                specialist: assignedSpecialist.name,
+                orderId,
+                skinScore: String(aiAnalysis?.skinScore || ''),
+                skinCategory: aiAnalysis?.skinCategory || '',
+                recommendedRange: aiAnalysis?.recommendedRange || '',
+              },
+            }),
+          })
+        } catch {}
       }
 
       setOrderResult({ orderId, assignedSpecialist, commission })
@@ -314,39 +364,113 @@ export default function PartnerPortalPage() {
     const cust     = customerData || customer
     const w = window.open('', '_blank')
     if (!w) return
-    w.document.write(`<html><head><title>Skin Profile - ${cust.name}</title>
-    <style>body{font-family:Arial,sans-serif;padding:30px;color:#111;max-width:800px;margin:0 auto}.brand{font-size:28px;font-weight:900;color:#D4A853;letter-spacing:2px}.score{font-size:36px;font-weight:800;color:#0097A7}.tag{background:#D4F1F4;color:#005F6A;padding:3px 10px;border-radius:20px;font-size:12px;display:inline-block;margin:3px}.section{margin-top:16px;border-bottom:2px solid #0097A7;padding-bottom:4px;color:#003D40;font-size:15px;font-weight:800}.product{background:#f8f8f8;border-left:3px solid #0097A7;padding:10px;margin:6px 0;border-radius:4px}.footer{text-align:center;margin-top:30px;color:#888;font-size:12px;border-top:1px solid #eee;padding-top:16px}@media print{button{display:none}}</style>
-    </head><body>
-    <div style="text-align:center;padding-bottom:16px;border-bottom:3px solid #0097A7;margin-bottom:20px">
-      <div class="brand">RABT NATURALS</div>
-      <div style="font-size:18px;font-weight:900;color:#003D40;margin:6px 0">Personalized Skin Care Report</div>
-      <div style="font-size:12px;color:#666">${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
-    </div>
-    <div style="background:#f0fafa;border-radius:10px;padding:14px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center">
+    const scoreColor = (analysis?.skinScore||0) >= 70 ? '#16A34A' : (analysis?.skinScore||0) >= 50 ? '#D97706' : '#DC2626'
+    const routineStep = (s:any,j:number,accent:string) => `<div style="display:flex;gap:10px;padding:10px 12px;background:#f8fafa;border-radius:8px;margin-bottom:6px;border-left:3px solid ${accent}"><div style="width:22px;height:22px;border-radius:50%;background:${accent};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;flex-shrink:0;line-height:22px;text-align:center">${j+1}</div><div><div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px">${s.product}</div><div style="font-size:11px;color:#555;line-height:1.5">${s.instruction}</div>${s.time?`<div style="font-size:10px;color:${accent};margin-top:2px;font-weight:600">⏱ ${s.time}</div>`:''}</div></div>`
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Skin Report — ${cust.name}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;background:#fff;max-width:820px;margin:0 auto;padding:0}
+      .page{padding:32px}
+      .header{background:linear-gradient(135deg,#003D40,#005F6A);border-radius:16px;padding:28px 32px;margin-bottom:24px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+      .brand-name{font-size:11px;font-weight:800;letter-spacing:0.15em;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:6px}
+      .brand-title{font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:2px}
+      .brand-sub{font-size:13px;color:rgba(255,255,255,0.7)}
+      .score-box{text-align:center;background:rgba(255,255,255,0.1);border-radius:14px;padding:14px 20px;flex-shrink:0}
+      .score-num{font-size:48px;font-weight:900;color:${scoreColor};line-height:1}
+      .score-label{font-size:10px;color:rgba(255,255,255,0.6);margin-top:4px}
+      .customer-box{background:linear-gradient(135deg,#f0fafa,#e8f7f7);border-radius:12px;padding:18px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid rgba(1,151,166,0.15)}
+      .tag{display:inline-block;background:rgba(1,151,166,0.12);color:#005F6A;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}
+      .tag-red{background:rgba(220,38,38,0.08);color:#DC2626}
+      .section-title{font-size:13px;font-weight:800;color:#005F6A;text-transform:uppercase;letter-spacing:0.08em;padding:10px 0 8px;border-bottom:2px solid #0097A7;margin-bottom:12px}
+      .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+      .card{background:#f8fafa;border-radius:10px;padding:14px 16px;border:1px solid rgba(1,151,166,0.1)}
+      .ing-good{color:#16A34A;font-size:11px;padding:2px 0}
+      .ing-bad{color:#DC2626;font-size:11px;padding:2px 0}
+      .diet-item{display:flex;gap:8px;padding:3px 0;font-size:11.5px;color:#333;line-height:1.5}
+      .result-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #e5e7eb;align-items:flex-start}
+      .result-week{background:rgba(1,151,166,0.1);color:#005F6A;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;margin-top:2px}
+      .product-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#f8fafa;border-left:3px solid #0097A7;border-radius:6px;margin-bottom:6px}
+      .specialist-box{background:linear-gradient(135deg,rgba(1,151,166,0.08),rgba(0,63,64,0.05));border:1px solid rgba(1,151,166,0.25);border-radius:12px;padding:16px;text-align:center;margin-top:18px}
+      .footer{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#888;font-size:11px;line-height:1.8}
+      @media print{body{padding:0}.page{padding:20px}button{display:none!important}}
+    </style>
+    </head><body><div class="page">
+
+    <!-- Header -->
+    <div class="header">
       <div>
-        <div style="font-size:20px;font-weight:800;color:#003D40">${cust.name}</div>
-        <div style="font-size:13px;color:#555;margin-top:4px">${cust.phone || ''} · Age: ${cust.age || '—'} · ${cust.city || ''}, ${cust.state || ''}</div>
-        ${analysis?.skinConcerns ? '<div style="margin-top:8px">'+(analysis.skinConcerns||[]).map((c:string)=>`<span class="tag">${c}</span>`).join('')+'</div>' : ''}
+        <div class="brand-name">Personalized Skin Care Report</div>
+        <div class="brand-title">rabt naturals</div>
+        <div class="brand-sub">rabtnaturals.com · AI-Powered Skin Analysis</div>
+        <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.6)">${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
       </div>
-      <div style="text-align:center"><div class="score">${analysis?.skinScore||'—'}</div><div style="font-size:11px;color:#888">/ 100</div></div>
+      <div class="score-box">
+        <div class="score-num">${analysis?.skinScore||'—'}</div>
+        <div class="score-label">/ 100 Skin Score</div>
+      </div>
     </div>
-    <div class="section">🔬 Skin Analysis</div>
-    <div style="margin:10px 0"><strong>Skin Type:</strong> ${analysis?.skinType||skinType||'—'} &nbsp;|&nbsp; <strong>Category:</strong> ${analysis?.skinCategory||'—'}</div>
-    <p style="color:#444;line-height:1.6">${analysis?.skinSummary||'—'}</p>
-    <div style="margin-top:10px"><strong>Recommended Range:</strong> ${analysis?.recommendedRange||'—'}</div>
-    ${analysis?.amRoutine ? `
-    <div class="section">🌅 Morning Routine</div>
-    ${(analysis.amRoutine||[]).map((s:any,i:number)=>`<div class="product"><strong>Step ${i+1}: ${s.product}</strong><br><span style="color:#555;font-size:12px">${s.instruction}</span></div>`).join('')}
-    <div class="section">🌙 Night Routine</div>
-    ${(analysis.pmRoutine||[]).map((s:any,i:number)=>`<div class="product"><strong>Step ${i+1}: ${s.product}</strong><br><span style="color:#555;font-size:12px">${s.instruction}</span></div>`).join('')}
-    ` : ''}
-    ${analysis?.dietAdvice ? `<div class="section">🥗 Diet & Lifestyle</div><div style="margin-top:8px">${(analysis.dietAdvice||[]).map((d:string)=>`<div style="padding:3px 0;font-size:12px">✓ ${d}</div>`).join('')}</div>` : ''}
-    <div class="section">🛒 Order #${order?.orderId||'—'}</div>
-    ${cart.map(c=>`<div class="product" style="display:flex;justify-content:space-between"><span>${c.product.name} × ${c.qty}</span><strong>₹${(c.product.price*c.qty).toLocaleString('en-IN')}</strong></div>`).join('')}
-    <div style="background:#003D40;color:#fff;padding:12px;border-radius:8px;display:flex;justify-content:space-between;margin-top:8px"><strong>Total</strong><strong>₹${cartTotal.toLocaleString('en-IN')}</strong></div>
-    ${order?.assignedSpecialist ? `<div style="background:#D4F1F4;border-radius:10px;padding:14px;text-align:center;margin-top:16px"><div style="font-size:12px;font-weight:700;color:#0097A7">Your Rabt Skin Specialist</div><div style="font-size:16px;font-weight:800;color:#003D40;margin-top:4px">${order.assignedSpecialist.name}</div></div>` : ''}
-    <div class="footer">Rabt Naturals · rabtnaturals.com · support@rabtnaturals.in<br>AI-powered personalized skin care report</div>
-    <script>window.onload=()=>window.print()</script></body></html>`)
+
+    <!-- Customer -->
+    <div class="customer-box">
+      <div>
+        <div style="font-size:20px;font-weight:800;color:#003D40;margin-bottom:4px">${cust.name}</div>
+        <div style="font-size:12px;color:#666;margin-bottom:8px">${cust.phone||''} · Age: ${cust.age||'—'} · ${[cust.city,cust.state].filter(Boolean).join(', ')||'—'}</div>
+        <div>${[analysis?.skinType&&`<span class="tag">${analysis.skinType}</span>`,analysis?.skinCategory&&`<span class="tag">${analysis.skinCategory}</span>`,...(analysis?.skinConcerns||[]).map((c:string)=>`<span class="tag tag-red">${c}</span>`)].filter(Boolean).join('')}</div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="section-title">🔬 Skin Assessment</div>
+    <p style="font-size:13px;line-height:1.75;color:#333;margin-bottom:14px;padding:12px 14px;background:#f0fafa;border-radius:8px;border-left:3px solid #0097A7">${analysis?.skinSummary||'—'}</p>
+
+    <!-- Range + Concerns -->
+    <div class="grid2">
+      <div class="card">
+        <div style="font-size:11px;font-weight:800;color:#0097A7;text-transform:uppercase;margin-bottom:8px">🌿 Recommended Range</div>
+        <div style="font-size:20px;font-weight:800;color:#003D40;margin-bottom:6px">${analysis?.recommendedRange||'—'}</div>
+        <div style="font-size:11.5px;color:#555;line-height:1.6">${analysis?.rangeReason||''}</div>
+      </div>
+      <div class="card">
+        <div style="font-size:11px;font-weight:800;color:#16A34A;text-transform:uppercase;margin-bottom:8px">Ingredients Guide</div>
+        <div style="font-size:10px;font-weight:700;color:#16A34A;margin-bottom:4px">✓ Use</div>
+        ${(analysis?.ingredientsToLookFor||[]).map((i:string)=>`<div class="ing-good">• ${i}</div>`).join('')}
+        <div style="font-size:10px;font-weight:700;color:#DC2626;margin:8px 0 4px">✗ Avoid</div>
+        ${(analysis?.ingredientsToAvoid||[]).map((i:string)=>`<div class="ing-bad">• ${i}</div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Routines -->
+    <div class="section-title">🌅 Morning Routine</div>
+    <div style="margin-bottom:18px">${(analysis?.amRoutine||[]).map((s:any,j:number)=>routineStep(s,j,'#F59E0B')).join('')}</div>
+
+    <div class="section-title">🌙 Night Routine</div>
+    <div style="margin-bottom:18px">${(analysis?.pmRoutine||[]).map((s:any,j:number)=>routineStep(s,j,'#818CF8')).join('')}</div>
+
+    ${analysis?.weeklyTreatment?`<div class="section-title">📅 Weekly Treatment</div><p style="font-size:12.5px;color:#333;line-height:1.65;margin-bottom:18px;padding:10px 14px;background:#f8fafa;border-radius:8px">${analysis.weeklyTreatment}</p>`:''}
+
+    <!-- Expected Results -->
+    ${analysis?.expectedResults?`<div class="section-title">📈 Expected Results Timeline</div><div style="margin-bottom:18px">${[['Week 4',analysis.expectedResults.week4],['Week 8',analysis.expectedResults.week8],['Week 12',analysis.expectedResults.week12]].filter(([,v])=>v).map(([l,v])=>`<div class="result-row"><span class="result-week">${l}</span><span style="font-size:12px;color:#333;line-height:1.5">${v}</span></div>`).join('')}</div>`:''}
+
+    <!-- Diet -->
+    ${(analysis?.dietAdvice?.length||analysis?.lifestyleAdvice?.length)?`<div class="section-title">🥗 Diet & Lifestyle</div><div class="card" style="margin-bottom:18px">${(analysis.dietAdvice||[]).map((d:string)=>`<div class="diet-item"><span style="color:#16A34A;font-weight:700">✓</span>${d}</div>`).join('')}${(analysis.lifestyleAdvice||[]).map((d:string)=>`<div class="diet-item"><span style="color:#0097A7;font-weight:700">★</span>${d}</div>`).join('')}</div>`:''}
+
+    ${analysis?.specialistNote?`<div class="section-title">🩺 Specialist Note</div><div style="background:rgba(1,151,166,0.06);border:1px solid rgba(1,151,166,0.2);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:12.5px;line-height:1.7;color:#333">${analysis.specialistNote}</div>`:''}
+
+    <!-- Products -->
+    ${cart.length?`<div class="section-title">🛒 Order #${order?.orderId||'—'}</div><div style="margin-bottom:6px">${cart.map(c=>`<div class="product-row"><span style="font-size:13px">${c.product.name} <span style="color:#888">× ${c.qty}</span></span><strong style="color:#0097A7">₹${(c.product.price*c.qty).toLocaleString('en-IN')}</strong></div>`).join('')}</div><div style="background:#003D40;color:#fff;padding:12px 16px;border-radius:8px;display:flex;justify-content:space-between;margin-top:4px;margin-bottom:18px"><strong>Total Amount</strong><strong style="font-size:16px">₹${cartTotal.toLocaleString('en-IN')}</strong></div>`:''}
+
+    <!-- Specialist -->
+    ${order?.assignedSpecialist?`<div class="specialist-box"><div style="font-size:11px;font-weight:800;color:#0097A7;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Your Rabt Skin Specialist</div><div style="font-size:18px;font-weight:800;color:#003D40;margin-bottom:4px">${order.assignedSpecialist.name||order.assignedSpecialist}</div><div style="font-size:11px;color:#555">This specialist will guide your skincare journey</div></div>`:''}
+
+    <div class="footer">
+      <strong style="color:#003D40;font-size:13px">Rabt Naturals</strong><br>
+      rabtnaturals.com · support@rabtnaturals.in<br>
+      This report is AI-generated and personalized based on your skin analysis.<br>
+      For best results, follow the routine consistently for 12 weeks.
+    </div>
+
+    <script>window.onload=()=>{window.print()}</script>
+    </div></body></html>`)
     w.document.close()
   }
 
@@ -793,71 +917,144 @@ export default function PartnerPortalPage() {
             </div>
           )}
 
-          {/* STEP 2 RESULTS */}
+          {/* STEP 2 — AI SKIN ANALYSIS RESULTS */}
           {step === 2 && aiAnalysis && (
             <div>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                <div className="card">
-                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 14 }}>
-                    {photoPreview && <img src={photoPreview} alt="Customer" style={{ width: 80, height: 80, borderRadius: 12, objectFit: 'cover', border: '2px solid var(--teal)', flexShrink: 0 }} />}
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: 'Syne', fontSize: 28, fontWeight: 800, color: 'var(--teal)' }}>{aiAnalysis.skinScore}<span style={{ fontSize: 14, color: 'var(--mu)' }}>/100</span></div>
-                      <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 700, marginBottom: 4 }}>{aiAnalysis.skinCategory}</div>
-                      {aiAnalysis.skinType && <span style={{ fontSize: 11, padding: '2px 10px', borderRadius: 20, background: 'rgba(0,151,167,.1)', color: 'var(--teal)', fontWeight: 600 }}>{aiAnalysis.skinType}</span>}
+              {/* Hero Score Banner */}
+              <div style={{ background: 'linear-gradient(135deg,#003D40,#005F6A)', borderRadius: 16, padding: isMobile ? '20px 16px' : '24px 28px', marginBottom: 16, position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: -30, right: -30, width: 140, height: 140, borderRadius: '50%', background: 'rgba(1,151,166,0.15)' }} />
+                <div style={{ position: 'absolute', bottom: -20, left: -20, width: 90, height: 90, borderRadius: '50%', background: 'rgba(1,151,166,0.1)' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', position: 'relative' }}>
+                  {photoPreview && <img src={photoPreview} alt="Customer" style={{ width: 70, height: 70, borderRadius: 14, objectFit: 'cover', border: '3px solid rgba(1,151,166,0.6)', flexShrink: 0 }} />}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>🔬 Rabt AI Skin Analysis</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: isMobile ? 18 : 20, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{customer.name}</div>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      {aiAnalysis.skinType && <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(1,151,166,0.3)', color: '#7EEEF4', fontWeight: 700 }}>{aiAnalysis.skinType}</span>}
+                      {aiAnalysis.skinCategory && <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(255,255,255,0.1)', color: '#fff', fontWeight: 600 }}>{aiAnalysis.skinCategory}</span>}
+                      {aiAnalysis.primaryConcern && <span style={{ fontSize: 10, padding: '3px 10px', borderRadius: 20, background: 'rgba(239,68,68,0.2)', color: '#FCA5A5', fontWeight: 600 }}>⚠ {aiAnalysis.primaryConcern}</span>}
                     </div>
                   </div>
-                  <p style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.6, marginBottom: 10 }}>{aiAnalysis.skinSummary}</p>
-                  {aiAnalysis.skinConcerns && <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>{aiAnalysis.skinConcerns.map((c:string,i:number) => <span key={i} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'var(--rdL)', color: 'var(--red)', fontWeight: 600 }}>{c}</span>)}</div>}
+                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                    <div style={{ fontFamily: 'Syne', fontSize: 52, fontWeight: 800, color: aiAnalysis.skinScore >= 70 ? '#4ADE80' : aiAnalysis.skinScore >= 50 ? '#FACC15' : '#F87171', lineHeight: 1 }}>{aiAnalysis.skinScore}</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>/ 100 Skin Score</div>
+                  </div>
                 </div>
-                <div className="card">
-                  <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14, color: 'var(--teal)' }}>🌿 Recommended Range</div>
-                  <div style={{ background: 'var(--s2)', borderRadius: 12, padding: '14px', marginBottom: 14 }}>
-                    <div style={{ fontFamily: 'Syne', fontSize: 22, fontWeight: 800, color: 'var(--gold)', marginBottom: 6 }}>{aiAnalysis.recommendedRange}</div>
-                    <div style={{ fontSize: 12.5, color: 'var(--mu2)', lineHeight: 1.6 }}>{aiAnalysis.rangeReason}</div>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Look For</div>
-                      {(aiAnalysis.ingredientsToLookFor||[]).map((ing:string,i:number) => <div key={i} style={{ fontSize: 11.5, color: 'var(--green)', marginBottom: 3 }}>✓ {ing}</div>)}
-                    </div>
-                    <div style={{ background: 'rgba(239,68,68,.06)', borderRadius: 10, padding: '10px 12px' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 5 }}>Avoid</div>
-                      {(aiAnalysis.ingredientsToAvoid||[]).map((ing:string,i:number) => <div key={i} style={{ fontSize: 11.5, color: 'var(--red)', marginBottom: 3 }}>✗ {ing}</div>)}
-                    </div>
-                  </div>
+                <div style={{ marginTop: 14, padding: '10px 14px', background: 'rgba(255,255,255,0.06)', borderRadius: 10, borderLeft: '3px solid rgba(1,151,166,0.6)' }}>
+                  <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.7, margin: 0 }}>{aiAnalysis.skinSummary}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                {[{title:'🌅 Morning Routine',routine:aiAnalysis.amRoutine},{title:'🌙 Night Routine',routine:aiAnalysis.pmRoutine}].map(({title,routine},i)=>(
+              {/* Concerns + Range row */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div className="card">
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>⚠ Skin Concerns</div>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                    {(aiAnalysis.skinConcerns||[]).map((c:string,i:number) => (
+                      <span key={i} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, background: 'rgba(239,68,68,0.08)', color: 'var(--red)', fontWeight: 600, border: '1px solid rgba(239,68,68,0.2)' }}>{c}</span>
+                    ))}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    <div style={{ background: 'rgba(34,197,94,0.06)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(34,197,94,0.15)' }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>✓ Ingredients To Use</div>
+                      {(aiAnalysis.ingredientsToLookFor||[]).map((ing:string,i:number) => <div key={i} style={{ fontSize: 11, color: 'var(--tx)', marginBottom: 3 }}>• {ing}</div>)}
+                    </div>
+                    <div style={{ background: 'rgba(239,68,68,0.06)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(239,68,68,0.15)' }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>✗ Avoid</div>
+                      {(aiAnalysis.ingredientsToAvoid||[]).map((ing:string,i:number) => <div key={i} style={{ fontSize: 11, color: 'var(--tx)', marginBottom: 3 }}>• {ing}</div>)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card" style={{ background: 'linear-gradient(160deg,rgba(1,151,166,0.06),rgba(0,63,64,0.1))', border: '1px solid rgba(1,151,166,0.25)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🌿 Recommended Range</div>
+                  <div style={{ fontFamily: 'Syne', fontSize: 24, fontWeight: 800, color: 'var(--teal)', marginBottom: 6 }}>{aiAnalysis.recommendedRange}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mu2)', lineHeight: 1.65, marginBottom: 14 }}>{aiAnalysis.rangeReason}</div>
+                  {aiAnalysis.weeklyTreatment && (
+                    <div style={{ background: 'rgba(1,151,166,0.1)', borderRadius: 10, padding: '10px 12px', border: '1px solid rgba(1,151,166,0.2)' }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 5 }}>📅 Weekly Treatment</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--tx)', lineHeight: 1.6 }}>{aiAnalysis.weeklyTreatment}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Routines */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                {[{title:'🌅 Morning Routine', routine: aiAnalysis.amRoutine, accent: '#F59E0B'}, {title:'🌙 Night Routine', routine: aiAnalysis.pmRoutine, accent: '#818CF8'}].map(({title,routine,accent},i) => (
                   <div key={i} className="card">
-                    <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12 }}>{title}</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 12, color: accent }}>{title}</div>
                     {(routine||[]).map((s:any,j:number) => (
-                      <div key={j} style={{ display: 'flex', gap: 10, padding: '9px 11px', background: 'var(--s2)', borderRadius: 10, marginBottom: 7 }}>
-                        <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{j+1}</div>
-                        <div><div style={{ fontSize: 12.5, fontWeight: 700 }}>{s.product}</div><div style={{ fontSize: 11, color: 'var(--mu2)', marginTop: 2 }}>{s.instruction}</div></div>
+                      <div key={j} style={{ display: 'flex', gap: 10, padding: '10px 12px', background: 'var(--s2)', borderRadius: 10, marginBottom: 8, border: '1px solid var(--b1)' }}>
+                        <div style={{ width: 26, height: 26, borderRadius: '50%', background: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{j+1}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, marginBottom: 2 }}>{s.product}</div>
+                          <div style={{ fontSize: 11, color: 'var(--mu2)', lineHeight: 1.5 }}>{s.instruction}</div>
+                          {s.time && <div style={{ fontSize: 10, color: accent, marginTop: 3, fontWeight: 600 }}>⏱ {s.time}</div>}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ))}
               </div>
 
+              {/* Expected Results + Diet */}
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                {aiAnalysis.expectedResults && (
+                  <div className="card">
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>📈 Expected Results</div>
+                    {[['Week 4', aiAnalysis.expectedResults.week4], ['Week 8', aiAnalysis.expectedResults.week8], ['Week 12', aiAnalysis.expectedResults.week12]].map(([label, result], i) => result && (
+                      <div key={i} style={{ display: 'flex', gap: 10, padding: '8px 0', borderBottom: i < 2 ? '1px solid var(--b1)' : 'none' }}>
+                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, background: 'rgba(34,197,94,0.1)', color: 'var(--green)', fontWeight: 700, flexShrink: 0, alignSelf: 'flex-start', marginTop: 2 }}>{label}</span>
+                        <span style={{ fontSize: 12, color: 'var(--tx)', lineHeight: 1.5 }}>{result}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(aiAnalysis.dietAdvice?.length > 0 || aiAnalysis.lifestyleAdvice?.length > 0) && (
+                  <div className="card">
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>🥗 Diet & Lifestyle</div>
+                    {(aiAnalysis.dietAdvice||[]).map((d:string,i:number) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                        <span style={{ color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>✓</span>
+                        <span style={{ fontSize: 11.5, color: 'var(--tx)', lineHeight: 1.5 }}>{d}</span>
+                      </div>
+                    ))}
+                    {(aiAnalysis.lifestyleAdvice||[]).map((d:string,i:number) => (
+                      <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                        <span style={{ color: 'var(--teal)', fontWeight: 700, flexShrink: 0 }}>★</span>
+                        <span style={{ fontSize: 11.5, color: 'var(--tx)', lineHeight: 1.5 }}>{d}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Specialist Note */}
+              {aiAnalysis.specialistNote && (
+                <div style={{ background: 'linear-gradient(135deg,rgba(1,151,166,0.08),rgba(0,63,64,0.06))', border: '1px solid rgba(1,151,166,0.25)', borderRadius: 12, padding: '14px 16px', marginBottom: 14 }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 6 }}>🩺 Specialist Note</div>
+                  <p style={{ fontSize: 12.5, color: 'var(--tx)', lineHeight: 1.65, margin: 0 }}>{aiAnalysis.specialistNote}</p>
+                </div>
+              )}
+
               {/* Products */}
-              <div className="card" style={{ marginBottom: 16 }}>
-                <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, marginBottom: 14 }}>🛒 Products</div>
-                {productsLoading ? <div style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>Loading...</div> : (
+              <div className="card" style={{ marginBottom: 14 }}>
+                <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800, marginBottom: 14 }}>🛒 Recommended Products</div>
+                {productsLoading ? <div style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>Loading products...</div> : (
                   <>
                     {cart.length > 0 && (
                       <>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 10 }}>✨ AI Recommended</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 10, marginBottom: 16 }}>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>✨ AI Selected for {customer.name}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 10, marginBottom: 16 }}>
                           {cart.map((c,i) => (
-                            <div key={i} style={{ background: 'var(--s2)', borderRadius: 12, padding: '12px', border: '1.5px solid var(--teal)' }}>
-                              {c.product.images?.[0] && <img src={c.product.images[0]} alt={c.product.name} style={{ width: '100%', height: 90, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#fff' }} />}
-                              <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>{c.product.name}</div>
+                            <div key={i} style={{ background: 'var(--s2)', borderRadius: 12, padding: '12px', border: '1.5px solid rgba(1,151,166,0.4)', position: 'relative' }}>
+                              <div style={{ position: 'absolute', top: 8, left: 8, fontSize: 8, padding: '2px 6px', borderRadius: 20, background: 'rgba(1,151,166,0.15)', color: 'var(--teal)', fontWeight: 800 }}>AI PICK</div>
+                              {c.product.images?.[0] && <img src={c.product.images[0]} alt={c.product.name} style={{ width: '100%', height: 85, objectFit: 'contain', borderRadius: 8, marginBottom: 8, background: '#fff', paddingTop: 16 }} />}
+                              <div style={{ fontSize: 10.5, fontWeight: 700, marginBottom: 6, lineHeight: 1.35 }}>{c.product.name}</div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontFamily: 'DM Mono', fontWeight: 800, color: 'var(--teal)', fontSize: 13 }}>₹{c.product.price}</span>
-                                <button onClick={()=>removeFromCart(c.product._id)} style={{ padding: '4px 8px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕</button>
+                                <span style={{ fontFamily: 'DM Mono', fontWeight: 800, color: 'var(--teal)', fontSize: 13 }}>₹{c.product.price.toLocaleString('en-IN')}</span>
+                                <button onClick={()=>removeFromCart(c.product._id)} style={{ padding: '3px 7px', background: 'var(--rdL)', border: 'none', borderRadius: 6, color: 'var(--red)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>✕</button>
                               </div>
                             </div>
                           ))}
@@ -865,15 +1062,15 @@ export default function PartnerPortalPage() {
                       </>
                     )}
                     <details>
-                      <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: 'var(--teal)', padding: '8px 0' }}>➕ Add more products ({products.length} available)</summary>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(150px,1fr))', gap: 8, marginTop: 10, maxHeight: 400, overflowY: 'auto' }}>
+                      <summary style={{ cursor: 'pointer', fontSize: 12.5, fontWeight: 700, color: 'var(--teal)', padding: '8px 0', userSelect: 'none' }}>➕ Add more products ({products.length - cart.length} available)</summary>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(140px,1fr))', gap: 8, marginTop: 10, maxHeight: 380, overflowY: 'auto', padding: '4px 2px' }}>
                         {products.filter(p => !cart.find(c => c.product._id === p._id)).map(prod => (
                           <div key={prod._id} style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px', border: '1px solid var(--b1)' }}>
-                            {prod.images?.[0] && <img src={prod.images[0]} alt={prod.name} style={{ width: '100%', height: 75, objectFit: 'contain', borderRadius: 6, marginBottom: 6, background: '#fff' }} />}
-                            <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 4, lineHeight: 1.3 }}>{prod.name}</div>
+                            {prod.images?.[0] && <img src={prod.images[0]} alt={prod.name} style={{ width: '100%', height: 70, objectFit: 'contain', borderRadius: 6, marginBottom: 6, background: '#fff' }} />}
+                            <div style={{ fontSize: 10.5, fontWeight: 600, marginBottom: 4, lineHeight: 1.3 }}>{prod.name}</div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--teal)', fontSize: 12 }}>₹{prod.price}</span>
-                              <button onClick={()=>addToCart(prod)} style={{ padding: '4px 8px', background: 'rgba(0,151,167,.1)', border: 'none', borderRadius: 6, color: 'var(--teal)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+</button>
+                              <span style={{ fontFamily: 'DM Mono', fontWeight: 700, color: 'var(--teal)', fontSize: 12 }}>₹{prod.price.toLocaleString('en-IN')}</span>
+                              <button onClick={()=>addToCart(prod)} style={{ padding: '4px 10px', background: 'rgba(1,151,166,0.12)', border: '1px solid rgba(1,151,166,0.3)', borderRadius: 6, color: 'var(--teal)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Add</button>
                             </div>
                           </div>
                         ))}
@@ -883,14 +1080,16 @@ export default function PartnerPortalPage() {
                 )}
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>
-                  🛒 {cart.length} products · ₹{cartTotal.toLocaleString('en-IN')}
-                  {commission > 0 && <span style={{ fontSize: 13, color: 'var(--orange)', marginLeft: 10 }}>+₹{commission} pending commission</span>}
+              {/* Bottom bar */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '14px 16px' }}>
+                <div>
+                  <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: 'var(--teal)' }}>₹{cartTotal.toLocaleString('en-IN')}</div>
+                  <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 1 }}>{cart.length} products · {commission > 0 ? `+₹${commission} your commission` : ''}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  <button onClick={()=>{setAiAnalysis(null);setPhotoBase64('');setPhotoPreview('')}} style={{ padding: '12px 20px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, color: 'var(--mu2)', fontWeight: 600, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>🔄 Re-analyze</button>
-                  <button onClick={()=>{if(cart.length===0){toast.error('Add at least one product');return}setStep(3)}} style={{ padding: '12px 28px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'Outfit' }}>Proceed to Checkout →</button>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button onClick={()=>generatePDF()} style={{ padding: '10px 14px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, color: 'var(--teal)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>📄 Skin PDF</button>
+                  <button onClick={()=>{setAiAnalysis(null);setPhotoBase64('');setPhotoPreview('')}} style={{ padding: '10px 16px', background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 9, color: 'var(--mu2)', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>🔄 Re-analyze</button>
+                  <button onClick={()=>{if(cart.length===0){toast.error('Add at least one product');return}setStep(3)}} style={{ padding: '10px 22px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 9, color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'Outfit' }}>Proceed to Checkout →</button>
                 </div>
               </div>
             </div>

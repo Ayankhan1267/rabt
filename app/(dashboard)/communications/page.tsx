@@ -41,6 +41,9 @@ const TRIGGER_TYPES = [
   { id: 'cart_abandoned',      label: 'Cart Abandoned',           icon: '🛒', desc: 'Cart mein product, order nahi', group: 'Ongoing' },
   { id: 'birthday',            label: 'Birthday Wish',            icon: '🎂', desc: 'Birthday pe special offer', group: 'Ongoing' },
   { id: 'win_back',            label: 'Win Back',                 icon: '💝', desc: '30 din se koi order nahi', group: 'Ongoing' },
+  // ── Partner ──
+  { id: 'partner_specialist_assigned', label: 'Partner Customer — Specialist Assigned', icon: '🤝', desc: 'Partner ke customer ko specialist assign hone pe WA bhejo', group: 'Partner' },
+  { id: 'partner_order_placed',        label: 'Partner Order Placed',                   icon: '📦', desc: 'Partner ke through order place hone pe confirmation', group: 'Partner' },
   { id: 'custom',              label: 'Custom Campaign',          icon: '📢', desc: 'Manual broadcast', group: 'Manual' },
 ]
 
@@ -397,6 +400,37 @@ Code: *COMEBACK15*
 
 Aapki specialist {{specialist}} ko aapki yaad aa rahi hai! 💚
 ~Rabt Naturals`,
+
+  partner_specialist_assigned: `Hi {{name}}! 🌿
+
+Aapki Rabt Naturals AI Skin Analysis complete ho gayi! 🎉
+
+🩺 *Aapke Skin Specialist:* {{specialist}}
+
+📊 *Aapka Skin Report:*
+• Skin Score: {{skinScore}}/100
+• Category: {{skinCategory}}
+• Recommended Range: {{recommendedRange}}
+
+Aapka specialist jald hi aapke skincare journey mein guide karenge! 💚
+
+🛍️ Products dekhein: rabtnaturals.com/products
+Koi sawaal ho toh reply karein!
+~Rabt Naturals 🌿`,
+
+  partner_order_placed: `Hi {{name}}! 🎉
+
+Aapka order place ho gaya hai!
+
+📦 Order ID: {{orderId}}
+💰 Amount: ₹{{amount}}
+🚚 Payment: {{paymentMethod}}
+
+Expected delivery: 3-5 working days.
+Track karein: rabtnaturals.com/track
+
+Koi sawaal ho toh reply karein! 💚
+~Rabt Naturals 🌿`,
 
   custom: `Hi {{name}}! 🌿
 

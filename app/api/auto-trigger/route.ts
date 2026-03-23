@@ -103,6 +103,23 @@ Exclusive offer sirf aapke liye:
 
 ~Rabt Naturals 🌿`,
 
+  partner_specialist_assigned: `Hi {{name}}! 🌿
+
+Aapki Rabt Naturals skin analysis complete ho gayi! 🎉
+
+🩺 *Aapke Skin Specialist:* {{specialist}}
+
+📊 *Aapka Skin Report:*
+• Skin Score: {{skinScore}}/100
+• Category: {{skinCategory}}
+• Recommended Range: {{recommendedRange}}
+
+Aapka specialist jald hi aapke skincare journey mein guide karenge!
+
+🛍️ Recommended products: rabtnaturals.com/products
+Koi sawaal ho toh reply karein! 💚
+~Rabt Naturals 🌿`,
+
   birthday: `Happy Birthday {{name}}! 🎂🎉
 
 Aaj aapka special din hai!
