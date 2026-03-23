@@ -55,12 +55,14 @@ export default function PatientsPage() {
           (p.consultationId && myConsIds.has(p.consultationId?.toString()))
         ))
         setUsers(allUsers)
-        // Fetch partner orders from Supabase assigned to this specialist (by MongoDB _id)
-        const { data: pOrders } = await supabase
-          .from('partner_orders')
-          .select('*')
-          .eq('specialist_id', mySpec._id)
-        setPartnerOrders(Array.isArray(pOrders) ? pOrders : [])
+        // Fetch partner orders from Supabase assigned to this specialist
+        const { data: pOrds } = await supabase.from('partner_orders').select('*')
+        const myId = mySpec._id?.toString()
+        const myName = (mySpec.name || prof?.full_name || '').toLowerCase()
+        setPartnerOrders((pOrds || []).filter((o: any) =>
+          (myId && o.specialist_id?.toString() === myId) ||
+          (myName && o.specialist_assigned?.toLowerCase() === myName)
+        ))
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
