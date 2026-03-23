@@ -33,8 +33,8 @@ const PLATFORM_DOTS: Record<string, string> = {
 // ── Content generation templates ─────────────────────────────────────────────
 const REEL_SCRIPTS = [
   {
-    hook: '🚨 "I tried every moisturiser for 3 months — here's the ONE that actually worked."',
-    problem: 'Dry skin in winter? You're probably layering wrong. Most people put serum OVER moisturiser — that's blocking 60% of absorption.',
+    hook: '🚨 "I tried every moisturiser for 3 months — here\'s the ONE that actually worked."',
+    problem: 'Dry skin in winter? You\'re probably layering wrong. Most people put serum OVER moisturiser — that\'s blocking 60% of absorption.',
     solution: 'Rabt\'s Hydra-Lock Serum goes on first — hyaluronic acid draws water INTO skin. Then seal with our Ceramide Barrier Cream. Morning + night, 14 days = completely different skin.',
     cta: '🔗 Link in bio → Free skin type quiz → Personalised routine in 2 mins.',
   },
@@ -899,7 +899,7 @@ export default function SocialAutomationPage() {
           <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
             {[['7','7 Days'],['30','30 Days'],['90','90 Days']].map(([v, l]) => (
               <button key={v} onClick={() => setAnalyticsRange(v)} style={{
-                padding: '7px 18px', border: 'none', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                padding: '7px 18px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
                 background: analyticsRange === v ? C.teal : '#fff', color: analyticsRange === v ? '#fff' : C.mu,
                 border: analyticsRange !== v ? `1px solid ${C.border}` : 'none',
               }}>{l}</button>
