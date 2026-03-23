@@ -83,8 +83,9 @@ const NAV: NavSection[] = [
     roles: ['founder', 'manager'],
     items: [
       { id: 'finance', label: 'Finance', icon: '💰', href: '/finance', roles: ['founder','admin','manager','finance'] },
+      { id: 'funnels', label: 'Funnel Tracker', icon: '🎯', href: '/funnels', roles: ['founder', 'admin', 'manager'] },
       { id: 'productlab', label: 'Product Lab', icon: '🧪', href: '/productlab' },
-      { id: 'goals', label: 'Goals & OKR', icon: '🎯', href: '/goals' },
+      { id: 'goals', label: 'Goals & OKR', icon: '🏆', href: '/goals' },
       { id: 'reports', label: 'Reports', icon: '📋', href: '/reports' },
       { id: 'hr', label: 'HR', icon: '👥', href: '/hr', roles: ['founder','admin','manager','hr'] },
       { id: 'team', label: 'Team', icon: '🤝', href: '/team' },
