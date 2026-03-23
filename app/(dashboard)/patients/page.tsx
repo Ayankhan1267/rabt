@@ -13,7 +13,7 @@ export default function PatientsPage() {
   const [mounted, setMounted] = useState(false)
   const [selected, setSelected] = useState<any>(null)
   const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all'|'online'|'offline'>('all')
+  const [filter, setFilter] = useState<'all'|'online'|'offline'|'partner'>('all')
 
   useEffect(() => { setMounted(true); loadAll() }, [])
 
@@ -110,6 +110,38 @@ export default function PatientsPage() {
     }
   })
 
+  // 3. Partner customers — from skin profiles with source: 'sales_partner'
+  skinProfiles.filter((sp: any) => (sp.source || '').toLowerCase() === 'sales_partner').forEach((sp: any) => {
+    const phone = sp.phone || ''
+    const name = sp.name || sp.customerName || 'Unknown'
+    const email = sp.email || ''
+    const key = phone || name.toLowerCase()
+    if (!patientMap.has(key)) {
+      patientMap.set(key, {
+        key, name, phone, email,
+        age: sp.age || '',
+        source: 'partner',
+        partnerName: sp.partnerName || '',
+        consultations: [],
+        orders: [],
+        skinProfiles: [sp],
+        spent: 0,
+        userId: null,
+        skinScore: sp.skinScore,
+        skinCategory: sp.skinCategory,
+        recommendedRange: sp.recommendedRange,
+      })
+    } else {
+      const existing = patientMap.get(key)!
+      existing.source = existing.source || 'partner'
+      if (!existing.skinProfiles.find((e: any) => e._id === sp._id)) existing.skinProfiles.push(sp)
+      if (!existing.skinScore) existing.skinScore = sp.skinScore
+      if (!existing.skinCategory) existing.skinCategory = sp.skinCategory
+      if (!existing.recommendedRange) existing.recommendedRange = sp.recommendedRange
+      if (!existing.partnerName) existing.partnerName = sp.partnerName
+    }
+  })
+
   const allPatients = Array.from(patientMap.values())
   const filtered = allPatients.filter(p => {
     const matchSearch = !search || p.name?.toLowerCase().includes(search.toLowerCase()) || p.phone?.includes(search)
@@ -154,7 +186,7 @@ export default function PatientsPage() {
           { label: 'Total Patients', value: allPatients.length, color: 'var(--blue)' },
           { label: 'Online', value: allPatients.filter(p => p.source === 'online').length, color: 'var(--teal)' },
           { label: 'Offline', value: allPatients.filter(p => p.source === 'offline').length, color: 'var(--orange)' },
-          { label: 'Total Revenue', value: 'Rs.' + allPatients.reduce((s: number, p: any) => s + p.spent, 0).toLocaleString('en-IN'), color: 'var(--gold)' },
+          { label: 'Via Partner', value: allPatients.filter(p => p.source === 'partner').length, color: 'var(--green)' },
         ].map((s, i) => (
           <div key={i} className="card" style={{ padding: '10px 12px' }}>
             <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 8 }}>{s.label}</div>
@@ -167,9 +199,9 @@ export default function PatientsPage() {
       <div className="pts-searchbar" style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name or phone..." style={{ ...inp, flex: 1 }} />
         <div className="pts-filter-btns" style={{ display: 'flex', gap: 4, background: 'var(--s2)', borderRadius: 8, padding: 4 }}>
-          {(['all','online','offline'] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: '6px 14px', background: filter === f ? 'var(--s1)' : 'transparent', border: 'none', borderRadius: 6, color: filter === f ? 'var(--teal)' : 'var(--mu)', fontWeight: filter === f ? 700 : 500, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
-              {f === 'all' ? 'All' : f.charAt(0).toUpperCase() + f.slice(1)}
+          {(['all','online','offline','partner'] as const).map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{ flex: 1, padding: '6px 10px', background: filter === f ? 'var(--s1)' : 'transparent', border: 'none', borderRadius: 6, color: filter === f ? 'var(--teal)' : 'var(--mu)', fontWeight: filter === f ? 700 : 500, fontSize: 11, cursor: 'pointer', fontFamily: 'Outfit', textTransform: 'capitalize', whiteSpace: 'nowrap' }}>
+              {f === 'all' ? 'All' : f === 'partner' ? '🤝 Partner' : f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
         </div>
@@ -199,8 +231,8 @@ export default function PatientsPage() {
                       <div style={{ fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--mu)', marginTop: 1 }}>{p.phone || p.email || '—'}</div>
                     </div>
-                    <span style={{ fontSize: 9, padding: '3px 7px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)', flexShrink: 0 }}>
-                      {p.source}
+                    <span style={{ fontSize: 9, padding: '3px 7px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : p.source === 'partner' ? 'rgba(34,197,94,0.1)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : p.source === 'partner' ? 'var(--green)' : 'var(--blue)', flexShrink: 0 }}>
+                      {p.source === 'partner' ? '🤝 Partner' : p.source}
                     </span>
                   </div>
                   {/* Skin & stats pills */}
@@ -291,7 +323,9 @@ export default function PatientsPage() {
                     <div style={{ display: 'flex', alignItems: 'center' }}><span style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: p.orders.length > 0 ? 'var(--blue)' : 'var(--mu)' }}>{p.orders.length}</span></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}><span style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800, color: p.spent > 0 ? 'var(--gold)' : 'var(--mu)' }}>Rs.{p.spent.toLocaleString('en-IN')}</span></div>
                     <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : 'var(--blue)' }}>{p.source === 'offline' ? 'Offline' : 'Online'}</span>
+                      <span style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, fontWeight: 700, background: p.source === 'offline' ? 'var(--orL)' : p.source === 'partner' ? 'rgba(34,197,94,0.1)' : 'var(--blL)', color: p.source === 'offline' ? 'var(--orange)' : p.source === 'partner' ? 'var(--green)' : 'var(--blue)' }}>
+                        {p.source === 'partner' ? '🤝 Partner' : p.source === 'offline' ? 'Offline' : 'Online'}
+                      </span>
                     </div>
                     <div style={{ display: 'flex', gap: 5, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                       {p.phone ? (
@@ -334,25 +368,144 @@ export default function PatientsPage() {
 }
 
 function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
+  const sp = p.skinProfiles?.[0]
+  const isPartner = p.source === 'partner'
+  const scoreColor = sp?.skinScore >= 70 ? 'var(--green)' : sp?.skinScore >= 50 ? 'var(--orange)' : 'var(--red)'
+
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800 }}>{p.name}</div>
-          <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 3 }}>{p.phone || '-'}{p.email ? ' · ' + p.email : ''}</div>
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 3 }}>
+            <div style={{ fontFamily: 'Syne', fontSize: 17, fontWeight: 800 }}>{p.name}</div>
+            <span style={{ fontSize: 9, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: isPartner ? 'rgba(34,197,94,0.1)' : p.source === 'offline' ? 'var(--orL)' : 'var(--blL)', color: isPartner ? 'var(--green)' : p.source === 'offline' ? 'var(--orange)' : 'var(--blue)' }}>
+              {isPartner ? '🤝 Partner' : p.source === 'offline' ? 'Offline' : 'Online'}
+            </span>
+          </div>
+          <div style={{ fontSize: 11.5, color: 'var(--mu)', lineHeight: 1.5 }}>
+            {p.phone || '-'}{p.email ? ' · ' + p.email : ''}{p.age ? ' · Age ' + p.age : ''}
+            {isPartner && p.partnerName && <span style={{ color: 'var(--green)' }}> · via {p.partnerName}</span>}
+          </div>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18 }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--mu)', cursor: 'pointer', fontSize: 18, flexShrink: 0, padding: '0 0 0 8px' }}>✕</button>
       </div>
+
+      {/* Action buttons */}
       {p.phone && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
           <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! 🌿 Rabt Naturals ki taraf se. Aapki skin ke baare mein baat karein?')}
             target="_blank" rel="noopener noreferrer"
-            style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>WhatsApp</a>
+            style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>💬 WhatsApp</a>
           <a href={'tel:' + p.phone.replace(/[^0-9+]/g, '')}
-            style={{ flex: 1, padding: '10px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 13, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>Call</a>
+            style={{ flex: 1, padding: '9px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>📞 Call</a>
         </div>
       )}
-      {p.skinProfiles?.length > 0 && (
+
+      {/* Partner AI Skin Analysis — full card */}
+      {isPartner && sp && (
+        <div style={{ marginBottom: 14 }}>
+          {/* Score banner */}
+          <div style={{ background: 'linear-gradient(135deg,#003D40,#005F6A)', borderRadius: 12, padding: '14px 16px', marginBottom: 10 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div>
+                <div style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>🔬 AI Skin Analysis</div>
+                <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: '#fff' }}>{sp.skinCategory || sp.skinType || '—'}</div>
+                {sp.recommendedRange && <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginTop: 2 }}>Recommended: {sp.recommendedRange}</div>}
+              </div>
+              {sp.skinScore && (
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontFamily: 'Syne', fontSize: 36, fontWeight: 800, color: scoreColor, lineHeight: 1 }}>{sp.skinScore}</div>
+                  <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.5)' }}>/ 100</div>
+                </div>
+              )}
+            </div>
+            {sp.skinSummary && <div style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.8)', lineHeight: 1.6, background: 'rgba(255,255,255,0.07)', borderRadius: 8, padding: '8px 10px' }}>{sp.skinSummary}</div>}
+          </div>
+
+          {/* Concerns */}
+          {(sp.skinConcerns || []).length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--red)', textTransform: 'uppercase', marginBottom: 6 }}>⚠ Concerns</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                {sp.skinConcerns.map((c: string, ci: number) => (
+                  <span key={ci} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 20, background: 'rgba(239,68,68,0.08)', color: 'var(--red)', fontWeight: 600, border: '1px solid rgba(239,68,68,0.15)' }}>{c}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* AM/PM routines */}
+          {(sp.amRoutine?.length > 0 || sp.pmRoutine?.length > 0) && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+              {[{label:'🌅 Morning', steps: sp.amRoutine, color:'#F59E0B'},{label:'🌙 Night', steps: sp.pmRoutine, color:'#818CF8'}].map(({label,steps,color},i) => steps?.length > 0 && (
+                <div key={i} style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 12px' }}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color, marginBottom: 8 }}>{label}</div>
+                  {steps.map((s: any, j: number) => (
+                    <div key={j} style={{ display: 'flex', gap: 6, marginBottom: 5 }}>
+                      <div style={{ width: 18, height: 18, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 9, fontWeight: 800, flexShrink: 0 }}>{j+1}</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 10.5, fontWeight: 700, lineHeight: 1.3 }}>{s.product}</div>
+                        <div style={{ fontSize: 9.5, color: 'var(--mu)', lineHeight: 1.4 }}>{s.instruction}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Expected results */}
+          {sp.expectedResults && (
+            <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', marginBottom: 8 }}>📈 Expected Results</div>
+              {[['Week 4', sp.expectedResults.week4],['Week 8', sp.expectedResults.week8],['Week 12', sp.expectedResults.week12]].filter(([,v])=>v).map(([l,v],i)=>(
+                <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 5 }}>
+                  <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 20, background: 'rgba(34,197,94,0.1)', color: 'var(--green)', fontWeight: 700, flexShrink: 0 }}>{l}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--tx)', lineHeight: 1.4 }}>{v}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Diet */}
+          {(sp.dietAdvice?.length > 0) && (
+            <div style={{ background: 'var(--s2)', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--orange)', textTransform: 'uppercase', marginBottom: 6 }}>🥗 Diet Advice</div>
+              {sp.dietAdvice.slice(0,3).map((d: string, i: number) => (
+                <div key={i} style={{ fontSize: 10.5, color: 'var(--tx)', marginBottom: 4, lineHeight: 1.4 }}>✓ {d}</div>
+              ))}
+            </div>
+          )}
+
+          {/* Specialist note */}
+          {sp.specialistNote && (
+            <div style={{ background: 'rgba(1,151,166,0.07)', border: '1px solid rgba(1,151,166,0.2)', borderRadius: 10, padding: '10px 12px', marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 5 }}>🩺 Specialist Note</div>
+              <div style={{ fontSize: 11, color: 'var(--tx)', lineHeight: 1.6 }}>{sp.specialistNote}</div>
+            </div>
+          )}
+
+          {/* Product recommendations */}
+          {(sp.productRecommendations?.length > 0) && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 8 }}>🛍️ Recommended Products</div>
+              {sp.productRecommendations.map((pr: any, i: number) => (
+                <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '8px 10px', marginBottom: 6, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, background: pr.priority === 'must have' ? 'rgba(1,151,166,0.15)' : 'var(--s2)', color: pr.priority === 'must have' ? 'var(--teal)' : 'var(--mu)', fontWeight: 700, flexShrink: 0, border: '1px solid var(--b1)', marginTop: 1 }}>{pr.priority || 'suggested'}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 2 }}>{pr.productId}</div>
+                    <div style={{ fontSize: 10, color: 'var(--mu)', lineHeight: 1.4 }}>{pr.reason}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Non-partner skin profiles */}
+      {!isPartner && p.skinProfiles?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--teal)', textTransform: 'uppercase', marginBottom: 8 }}>Skin Profile</div>
           {p.skinProfiles.map((sp: any, i: number) => (
@@ -373,6 +526,7 @@ function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
           ))}
         </div>
       )}
+
       {p.consultations?.length > 0 && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 8 }}>Consultations ({p.consultations.length})</div>
