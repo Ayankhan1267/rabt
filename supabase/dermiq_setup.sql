@@ -53,6 +53,22 @@ ALTER TABLE dermiq_customers DISABLE ROW LEVEL SECURITY;
 --     )
 --   );
 
+-- 5. DermIQ AI Config (AI Control Center stores weights, rules, thresholds)
+CREATE TABLE IF NOT EXISTS dermiq_ai_config (
+  key text PRIMARY KEY,
+  value jsonb NOT NULL,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE dermiq_ai_config DISABLE ROW LEVEL SECURITY;
+
+-- 6. DermIQ Content (CMS — banners, announcements, featured products)
+CREATE TABLE IF NOT EXISTS dermiq_content (
+  id text PRIMARY KEY,
+  data jsonb,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE dermiq_content DISABLE ROW LEVEL SECURITY;
+
 -- =====================================================================
 -- VERIFY: Check your tables exist
 -- =====================================================================

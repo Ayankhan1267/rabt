@@ -159,6 +159,12 @@ const DERMIQ_NAV: NavSection[] = [
     ],
   },
   {
+    label: 'AI System',
+    items: [
+      { id: 'dq-ai-control', label: 'AI Control Center', icon: '🤖', href: '/dermiq/ai-control', badge: 'Power', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin'] },
+    ],
+  },
+  {
     label: 'System',
     items: [
       { id: 'dq-team', label: 'Team & Access', icon: '🤝', href: '/dermiq/team', roles: ['founder', 'admin', 'dermiq_admin'] },
