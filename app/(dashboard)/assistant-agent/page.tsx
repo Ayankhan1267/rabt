@@ -916,7 +916,7 @@ export default function AssistantAgentPage() {
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ phone: autoPhone, message: autoBrain.whatsappReport }),
                           })
-                          if (res.ok) toast.success('Report sent!') else toast.error('Failed to send')
+                          if (res.ok) { toast.success('Report sent!') } else { toast.error('Failed to send') }
                         }}
                         style={{ padding: '6px 16px', background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
                       >
