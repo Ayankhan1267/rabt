@@ -25,8 +25,46 @@ export default function MarketingPage() {
   const [campaignForm, setCampaignForm] = useState({ name: '', platform: 'Meta Ads', status: 'Draft', budget: '', spend: '', leads: '0', roas: '0', objective: '', notes: '', start_date: '', end_date: '' })
   const [influencerForm, setInfluencerForm] = useState({ name: '', handle: '', followers: '', niche: 'Skincare', stage: 'Outreach Sent', platform: 'Instagram', email: '', phone: '', rate: '', notes: '' })
   const [launchForm, setLaunchForm] = useState({ label: '', date: '', color: 'var(--gold)', notes: '' })
+  const [metaCampaigns, setMetaCampaigns] = useState<any[]>([])
+  const [metaInsights, setMetaInsights] = useState<any>(null)
+  const [adConnected, setAdConnected] = useState(false)
+  const [adLoading, setAdLoading] = useState(false)
+  const [adDateRange, setAdDateRange] = useState('last_7d')
 
   useEffect(() => { setMounted(true); loadAll() }, [])
+
+  function getDateSince(range: string) {
+    const d = new Date()
+    if (range === 'today') return d.toISOString().split('T')[0]
+    if (range === 'last_7d') { d.setDate(d.getDate() - 7); return d.toISOString().split('T')[0] }
+    if (range === 'last_14d') { d.setDate(d.getDate() - 14); return d.toISOString().split('T')[0] }
+    if (range === 'last_30d') { d.setDate(d.getDate() - 30); return d.toISOString().split('T')[0] }
+    return d.toISOString().split('T')[0]
+  }
+
+  async function fetchAdCampaigns(range = adDateRange) {
+    setAdLoading(true)
+    try {
+      const { data: setting } = await supabase.from('hq_settings').select('value').eq('key', 'ads_credentials').single()
+      if (!setting?.value) { setAdLoading(false); return }
+      const creds = JSON.parse(setting.value)
+      const meta = creds.meta
+      if (!meta?.accessToken || !meta?.adAccountId) { setAdLoading(false); return }
+      const accId = meta.adAccountId.startsWith('act_') ? meta.adAccountId : 'act_' + meta.adAccountId
+      const since = getDateSince(range)
+      const until = new Date().toISOString().split('T')[0]
+      const [insRes, campRes] = await Promise.all([
+        fetch(`https://graph.facebook.com/v19.0/${accId}/insights?fields=spend,impressions,clicks,ctr,cpc,actions,action_values&time_range={"since":"${since}","until":"${until}"}&access_token=${meta.accessToken}`),
+        fetch(`https://graph.facebook.com/v19.0/${accId}/campaigns?fields=id,name,status,objective,daily_budget,lifetime_budget,insights.date_preset(${range === 'last_7d' ? 'last_7d' : range === 'last_14d' ? 'last_14d' : range === 'last_30d' ? 'last_month' : 'today'}){spend,impressions,clicks,ctr,cpc,actions,action_values}&limit=25&access_token=${meta.accessToken}`),
+      ])
+      const insData = await insRes.json()
+      const campData = await campRes.json()
+      if (!insData.error) setMetaInsights(insData.data?.[0] || {})
+      if (!campData.error) setMetaCampaigns(campData.data || [])
+      setAdConnected(true)
+    } catch {}
+    setAdLoading(false)
+  }
 
   async function loadAll() {
     setLoading(true)
@@ -39,6 +77,7 @@ export default function MarketingPage() {
       setCampaigns(campRes.data || [])
       setInfluencers(infRes.data || [])
       setLaunches(launchRes.data || [])
+      fetchAdCampaigns()
 
       const url = process.env.NEXT_PUBLIC_MONGO_API_URL || process.env.NEXT_PUBLIC_MONGO_API_URL || localStorage.getItem('rabt_mongo_url')
       if (url) {
@@ -248,14 +287,144 @@ export default function MarketingPage() {
               {upcomingLaunches.length === 0 && <div style={{ textAlign: 'center', color: 'var(--mu)', padding: 20, fontSize: 12 }}>No upcoming launches</div>}
             </div>
           </div>
+
+          {/* Meta Ads Live Summary */}
+          {(adConnected || metaCampaigns.length > 0) && (
+            <div className="card" style={{ marginTop: 4 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ width: 28, height: 28, background: '#1877F2', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 14 }}>f</div>
+                  <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 800 }}>Meta Ads — Live</div>
+                  <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, fontWeight: 700, background: 'var(--grL)', color: 'var(--green)' }}>● Connected</span>
+                </div>
+                <button onClick={() => setTab('campaigns')} style={{ fontSize: 11, color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer' }}>View campaigns →</button>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 14 }}>
+                {[
+                  { l: 'Spend', v: '₹' + Number(metaInsights?.spend || 0).toLocaleString('en-IN'), c: 'var(--red)' },
+                  { l: 'Impressions', v: Number(metaInsights?.impressions || 0).toLocaleString(), c: 'var(--blue)' },
+                  { l: 'Clicks', v: Number(metaInsights?.clicks || 0).toLocaleString(), c: 'var(--teal)' },
+                  { l: 'CTR', v: Number(metaInsights?.ctr || 0).toFixed(2) + '%', c: 'var(--gold)' },
+                  { l: 'CPC', v: '₹' + Number(metaInsights?.cpc || 0).toFixed(2), c: 'var(--orange)' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: 'var(--s2)', borderRadius: 8, padding: '9px 12px' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', marginBottom: 4 }}>{s.l}</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 16, fontWeight: 800, color: s.c }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {metaCampaigns.slice(0, 4).map((c: any, i: number) => {
+                  const ins = c.insights?.data?.[0] || {}
+                  const isActive = c.status === 'ACTIVE'
+                  return (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'var(--s2)', borderRadius: 8 }}>
+                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 20, fontWeight: 700, flexShrink: 0, background: isActive ? 'var(--grL)' : 'var(--orL)', color: isActive ? 'var(--green)' : 'var(--orange)' }}>{c.status}</span>
+                      <span style={{ flex: 1, fontSize: 12, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--red)', flexShrink: 0 }}>₹{Number(ins.spend || 0).toFixed(0)}</span>
+                      <span style={{ fontSize: 11, fontFamily: 'DM Mono', color: 'var(--gold)', flexShrink: 0 }}>{Number(ins.ctr || 0).toFixed(2)}% CTR</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* CAMPAIGNS */}
       {tab === 'campaigns' && (
         <div>
+          {/* ── Meta Ads Live Campaigns ── */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, background: '#1877F2', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 16 }}>f</div>
+                <div>
+                  <div style={{ fontFamily: 'Syne', fontSize: 14, fontWeight: 800 }}>Live Meta Ad Campaigns</div>
+                  <div style={{ fontSize: 11, color: adConnected ? 'var(--green)' : 'var(--mu)', marginTop: 1 }}>{adConnected ? `✓ Connected · ${metaCampaigns.length} campaigns` : 'Not connected — set credentials in Ads Manager'}</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select value={adDateRange} onChange={e => { setAdDateRange(e.target.value); fetchAdCampaigns(e.target.value) }} style={{ background: 'var(--s2)', border: '1px solid var(--b2)', borderRadius: 7, padding: '6px 10px', fontSize: 12, color: 'var(--tx)', fontFamily: 'Outfit', outline: 'none' }}>
+                  {[{v:'today',l:'Today'},{v:'last_7d',l:'Last 7 Days'},{v:'last_14d',l:'Last 14 Days'},{v:'last_30d',l:'Last 30 Days'}].map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
+                </select>
+                <button onClick={() => fetchAdCampaigns()} disabled={adLoading} style={{ padding: '6px 14px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 7, color: 'var(--blue)', fontWeight: 700, fontSize: 12, cursor: 'pointer', fontFamily: 'Outfit' }}>
+                  {adLoading ? '⏳' : '↻ Sync'}
+                </button>
+              </div>
+            </div>
+
+            {/* Account-level summary */}
+            {metaInsights && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 10, marginBottom: 14 }}>
+                {[
+                  { l: 'Spend', v: '₹' + Number(metaInsights.spend || 0).toLocaleString('en-IN'), c: 'var(--red)' },
+                  { l: 'Impressions', v: Number(metaInsights.impressions || 0).toLocaleString(), c: 'var(--blue)' },
+                  { l: 'Clicks', v: Number(metaInsights.clicks || 0).toLocaleString(), c: 'var(--teal)' },
+                  { l: 'CTR', v: Number(metaInsights.ctr || 0).toFixed(2) + '%', c: 'var(--gold)' },
+                  { l: 'CPC', v: '₹' + Number(metaInsights.cpc || 0).toFixed(2), c: 'var(--orange)' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 10, padding: '10px 14px' }}>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 5 }}>{s.l}</div>
+                    <div style={{ fontFamily: 'Syne', fontSize: 18, fontWeight: 800, color: s.c }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Campaign rows */}
+            {metaCampaigns.length > 0 ? (
+              <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr>{['Campaign', 'Status', 'Objective', 'Spend', 'Impressions', 'Clicks', 'CTR', 'CPC'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '9px 14px', fontSize: 10, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', borderBottom: '1px solid var(--b1)', whiteSpace: 'nowrap' }}>{h}</th>
+                    ))}</tr>
+                  </thead>
+                  <tbody>
+                    {metaCampaigns.map((c: any, i: number) => {
+                      const ins = c.insights?.data?.[0] || {}
+                      const isActive = c.status === 'ACTIVE'
+                      const isPaused = c.status === 'PAUSED'
+                      return (
+                        <tr key={i} style={{ borderBottom: '1px solid var(--b1)' }} onMouseOver={e => e.currentTarget.style.background = 'rgba(255,255,255,0.018)'} onMouseOut={e => e.currentTarget.style.background = ''}>
+                          <td style={{ padding: '10px 14px' }}>
+                            <div style={{ fontSize: 12.5, fontWeight: 600 }}>{c.name}</div>
+                            <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 2 }}>ID: {c.id}</div>
+                          </td>
+                          <td style={{ padding: '10px 14px' }}>
+                            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 20, fontWeight: 700, background: isActive ? 'var(--grL)' : isPaused ? 'var(--orL)' : 'var(--s2)', color: isActive ? 'var(--green)' : isPaused ? 'var(--orange)' : 'var(--mu)' }}>{c.status}</span>
+                          </td>
+                          <td style={{ padding: '10px 14px', fontSize: 11, color: 'var(--mu2)' }}>{(c.objective || '—').replace(/_/g, ' ')}</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'DM Mono', fontWeight: 700, fontSize: 12, color: 'var(--red)' }}>₹{Number(ins.spend || 0).toFixed(0)}</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'DM Mono', fontSize: 12 }}>{Number(ins.impressions || 0).toLocaleString()}</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'DM Mono', fontSize: 12, color: 'var(--teal)', fontWeight: 700 }}>{Number(ins.clicks || 0).toLocaleString()}</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'DM Mono', fontSize: 12, color: 'var(--gold)', fontWeight: 700 }}>{Number(ins.ctr || 0).toFixed(2)}%</td>
+                          <td style={{ padding: '10px 14px', fontFamily: 'DM Mono', fontSize: 12, color: 'var(--orange)' }}>₹{Number(ins.cpc || 0).toFixed(2)}</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : !adConnected ? (
+              <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '24px', textAlign: 'center' }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>📘</div>
+                <div style={{ fontFamily: 'Syne', fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Meta Ads Not Connected</div>
+                <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 14 }}>Add your credentials in Ads Manager to sync live campaign data</div>
+                <a href="/ads" style={{ padding: '8px 18px', background: '#1877F2', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12, textDecoration: 'none', display: 'inline-block' }}>Go to Ads Manager →</a>
+              </div>
+            ) : (
+              <div style={{ background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '20px', textAlign: 'center', color: 'var(--mu)', fontSize: 12 }}>
+                {adLoading ? '⏳ Loading campaigns...' : 'No campaigns found for this period'}
+              </div>
+            )}
+          </div>
+
+          {/* ── Manual Campaigns ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Campaigns <span style={{ color: 'var(--mu)', fontSize: 13, fontWeight: 500 }}>({campaigns.length})</span></div>
+            <div style={{ fontFamily: 'Syne', fontSize: 15, fontWeight: 800 }}>Manual Campaigns <span style={{ color: 'var(--mu)', fontSize: 13, fontWeight: 500 }}>({campaigns.length})</span></div>
             <button onClick={() => setShowAddCampaign(true)} style={{ padding: '8px 18px', background: 'linear-gradient(135deg,#0197a6,#017a87)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 12.5, cursor: 'pointer', fontFamily: 'Outfit' }}>+ Add Campaign</button>
           </div>
 
