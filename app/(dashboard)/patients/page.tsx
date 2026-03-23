@@ -9,6 +9,7 @@ export default function PatientsPage() {
   const [orders, setOrders] = useState<any[]>([])
   const [skinProfiles, setSkinProfiles] = useState<any[]>([])
   const [users, setUsers] = useState<any[]>([])
+  const [partnerOrders, setPartnerOrders] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [selected, setSelected] = useState<any>(null)
@@ -54,6 +55,12 @@ export default function PatientsPage() {
           (p.consultationId && myConsIds.has(p.consultationId?.toString()))
         ))
         setUsers(allUsers)
+        // Fetch partner orders from Supabase assigned to this specialist (by MongoDB _id)
+        const { data: pOrders } = await supabase
+          .from('partner_orders')
+          .select('*')
+          .eq('specialist_id', mySpec._id)
+        setPartnerOrders(Array.isArray(pOrders) ? pOrders : [])
       }
     } catch { toast.error('Failed to load') }
     setLoading(false)
@@ -110,35 +117,48 @@ export default function PatientsPage() {
     }
   })
 
-  // 3. Partner customers — from skin profiles with source: 'sales_partner'
-  skinProfiles.filter((sp: any) => (sp.source || '').toLowerCase() === 'sales_partner').forEach((sp: any) => {
-    const phone = sp.phone || ''
-    const name = sp.name || sp.customerName || 'Unknown'
-    const email = sp.email || ''
+  // 3. Partner customers — from Supabase partner_orders assigned to this specialist
+  partnerOrders.forEach((po: any) => {
+    const phone = po.customer_phone || ''
+    const name = po.customer_name || 'Unknown'
+    const email = po.customer_email || ''
     const key = phone || name.toLowerCase()
+    let aiAnalysis: any = null
+    try { if (po.skin_analysis) aiAnalysis = JSON.parse(po.skin_analysis) } catch {}
+    const skinScore = po.skin_score || aiAnalysis?.skinScore
+    const skinCategory = po.skin_category || aiAnalysis?.skinCategory
+    const recommendedRange = po.recommended_range || aiAnalysis?.recommendedRange
+    const skinType = po.skin_type || aiAnalysis?.skinType
+    const skinProfile = aiAnalysis ? {
+      ...aiAnalysis,
+      skinScore, skinCategory, recommendedRange, skinType,
+      phone, name, source: 'sales_partner',
+      partnerName: po.partner_name || '',
+      orderId: po.order_id,
+    } : null
     if (!patientMap.has(key)) {
       patientMap.set(key, {
         key, name, phone, email,
-        age: sp.age || '',
+        age: '',
         source: 'partner',
-        partnerName: sp.partnerName || '',
+        partnerName: po.partner_name || '',
         consultations: [],
-        orders: [],
-        skinProfiles: [sp],
-        spent: 0,
+        orders: [po],
+        skinProfiles: skinProfile ? [skinProfile] : [],
+        spent: po.total_amount || 0,
         userId: null,
-        skinScore: sp.skinScore,
-        skinCategory: sp.skinCategory,
-        recommendedRange: sp.recommendedRange,
+        skinScore, skinCategory, recommendedRange,
       })
     } else {
       const existing = patientMap.get(key)!
-      existing.source = existing.source || 'partner'
-      if (!existing.skinProfiles.find((e: any) => e._id === sp._id)) existing.skinProfiles.push(sp)
-      if (!existing.skinScore) existing.skinScore = sp.skinScore
-      if (!existing.skinCategory) existing.skinCategory = sp.skinCategory
-      if (!existing.recommendedRange) existing.recommendedRange = sp.recommendedRange
-      if (!existing.partnerName) existing.partnerName = sp.partnerName
+      if (existing.source !== 'online') existing.source = 'partner'
+      if (!existing.orders.find((o: any) => o.id === po.id)) existing.orders.push(po)
+      existing.spent = (existing.spent || 0) + (po.total_amount || 0)
+      if (skinProfile && !existing.skinProfiles.find((e: any) => e.orderId === po.order_id)) existing.skinProfiles.push(skinProfile)
+      if (!existing.skinScore) existing.skinScore = skinScore
+      if (!existing.skinCategory) existing.skinCategory = skinCategory
+      if (!existing.recommendedRange) existing.recommendedRange = recommendedRange
+      if (!existing.partnerName) existing.partnerName = po.partner_name
     }
   })
 
