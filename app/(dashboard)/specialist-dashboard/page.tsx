@@ -257,6 +257,7 @@ export default function SpecialistDashboard() {
       return (oUid && oUid === uid) || (phone && oPhone === phone)
     })
     const spent = patientOrders.reduce((s: number, o: any) => s + (o.amount || 0), 0)
+    const recentOrder = patientOrders.sort((a: any, b: any) => new Date(b.createdAt||0).getTime() - new Date(a.createdAt||0).getTime())[0] || null
     if (!existing) {
       patientMap.set(key, {
         key, name, phone,
@@ -265,10 +266,10 @@ export default function SpecialistDashboard() {
         skinType: skinProfile?.skinType || '',
         skinConcerns: skinProfile?.skinConcerns || [],
         consults: 1, orders: patientOrders.length, spent,
-        source: 'online', lastConsultation: c, userId: uid,
+        source: 'online', lastConsultation: c, userId: uid, recentOrder,
       })
     } else {
-      patientMap.set(key, { ...existing, consults: existing.consults + 1, orders: patientOrders.length, spent })
+      patientMap.set(key, { ...existing, consults: existing.consults + 1, orders: patientOrders.length, spent, recentOrder })
     }
   })
 
@@ -288,6 +289,7 @@ export default function SpecialistDashboard() {
       return phone && poPhone === phone
     })
     const spent = patientOrders.reduce((s: number, po: any) => s + (po.amount || 0), 0)
+    const recentOrder = patientOrders.sort((a: any, b: any) => new Date(b.createdAt||0).getTime() - new Date(a.createdAt||0).getTime())[0] || o
     if (!patientMap.has(key)) {
       patientMap.set(key, {
         key, name, phone,
@@ -296,7 +298,7 @@ export default function SpecialistDashboard() {
         skinType: skinProfile?.skinType || '',
         skinConcerns: skinProfile?.skinConcerns || [],
         consults: 0, orders: patientOrders.length, spent,
-        source: 'offline', lastConsultation: null, userId: null,
+        source: 'offline', lastConsultation: null, userId: null, recentOrder,
       })
     }
   })
@@ -1364,6 +1366,35 @@ ${cart.length > 0 ? `<div class="section"><div class="section-title">Recommended
                         </span>
                       )}
                     </div>
+                    {/* Recent Order Tracking */}
+                    {p.recentOrder && (() => {
+                      const ro = p.recentOrder
+                      const roStatus = (ro.orderStatus || ro.status || '').toLowerCase()
+                      const isDelivered = roStatus === 'delivered'
+                      const isCancelled = ['cancelled','canceled'].includes(roStatus)
+                      const awb = ro.awbNumber || ro.awb_code || ro.tracking_id || ''
+                      const courier = ro.courierName || ro.courier_name || ro.courier || ''
+                      return (
+                        <div style={{ background: 'var(--s2)', borderRadius: 8, padding: '9px 11px', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 3, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--mu)', textTransform: 'uppercase' }}>📦 Last Order</span>
+                              <span style={{ fontSize: 9, padding: '1px 6px', borderRadius: 20, fontWeight: 700, background: isDelivered ? 'var(--grL)' : isCancelled ? 'var(--rdL)' : 'var(--gL)', color: isDelivered ? 'var(--green)' : isCancelled ? 'var(--red)' : 'var(--gold)', textTransform: 'capitalize' }}>{roStatus || 'new'}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--mu2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ro.products || ro.product || ro.items?.[0]?.name || '—'}</div>
+                            {awb && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                <span style={{ fontFamily: 'DM Mono', fontSize: 10, color: 'var(--teal)', fontWeight: 700 }}>{awb}</span>
+                                {courier && <span style={{ fontSize: 9, color: 'var(--mu)' }}>{courier}</span>}
+                                <a href={`https://shiprocket.co/tracking/${awb}`} target="_blank" rel="noopener noreferrer"
+                                  style={{ fontSize: 9, color: '#FF6B35', fontWeight: 800, textDecoration: 'none' }}>Track ↗</a>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ fontFamily: 'DM Mono', fontSize: 13, fontWeight: 800, color: 'var(--gold)', flexShrink: 0 }}>Rs.{ro.amount}</div>
+                        </div>
+                      )
+                    })()}
                     {/* Action buttons */}
                     <div style={{ display: 'grid', gridTemplateColumns: p.phone && p.lastConsultation ? '1fr 1fr' : '1fr', gap: 8 }}>
                       {p.phone && (
