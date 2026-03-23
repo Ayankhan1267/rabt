@@ -120,6 +120,8 @@ const DERMIQ_NAV: NavSection[] = [
     label: 'Consultations',
     items: [
       { id: 'dq-consultations', label: 'Consultations', icon: '🧴', href: '/dermiq/consultations', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
+      { id: 'dq-consultation-queue', label: 'Consultation Queue', icon: '⏳', href: '/dermiq/consultation-queue', badge: 'Live', badgeColor: '#10B981', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager'] },
+      { id: 'dq-specialist-panel', label: 'Specialist Panel', icon: '👩‍⚕️', href: '/dermiq/specialist-panel', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager', 'dermiq_specialist'] },
       { id: 'dq-skin-review', label: 'Skin Review Panel', icon: '🔬', href: '/dermiq/skin-review', badge: 'AI', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_specialist_manager'] },
       { id: 'dq-skinprofiles', label: 'Skin Profiles', icon: '🌿', href: '/dermiq/skinprofiles' },
     ],
@@ -131,6 +133,8 @@ const DERMIQ_NAV: NavSection[] = [
       { id: 'dq-vendors', label: 'Vendor Manager', icon: '🏪', href: '/dermiq/vendors', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
       { id: 'dq-listings', label: 'Product Listings', icon: '📦', href: '/dermiq/listings', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
       { id: 'dq-orders', label: 'Orders', icon: '📋', href: '/dermiq/orders', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_ops'] },
+      { id: 'dq-order-pipeline', label: 'Order Pipeline', icon: '🚚', href: '/dermiq/order-pipeline', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_ops'] },
+      { id: 'dq-product-approval', label: 'Product Approval', icon: '✅', href: '/dermiq/product-approval', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
       { id: 'dq-inventory', label: 'Inventory', icon: '🗄️', href: '/dermiq/inventory', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_ops'] },
     ],
   },
@@ -184,6 +188,7 @@ const DERMIQ_NAV: NavSection[] = [
   {
     label: 'System',
     items: [
+      { id: 'dq-notifications', label: 'Notifications', icon: '🔔', href: '/dermiq/notifications', badge: 'New', badgeColor: '#EF4444' },
       { id: 'dq-setup', label: 'Setup Wizard', icon: '🚀', href: '/dermiq/setup', roles: ['founder', 'admin', 'dermiq_admin'] },
       { id: 'dq-team', label: 'Team & Access', icon: '🤝', href: '/dermiq/team', roles: ['founder', 'admin', 'dermiq_admin'] },
       { id: 'dq-settings', label: 'Settings', icon: '⚙️', href: '/dermiq/settings', roles: ['founder', 'admin', 'dermiq_admin'] },
