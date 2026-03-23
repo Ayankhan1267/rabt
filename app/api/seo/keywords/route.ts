@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient } from '@/lib/anthropic'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,6 +43,7 @@ Return in this format:
 
 Focus on Indian skincare/haircare market. Be specific with numbers.`
 
+    const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,

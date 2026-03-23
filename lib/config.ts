@@ -21,6 +21,8 @@ export interface AppConfig {
   // Endpoints
   NEXT_PUBLIC_MONGO_API_URL: string
   NEXT_PUBLIC_APP_URL: string
+  // MongoDB direct connection
+  MONGO_URI: string
   // Twilio
   TWILIO_ACCOUNT_SID: string
   TWILIO_AUTH_TOKEN: string
@@ -31,6 +33,14 @@ export interface AppConfig {
   // Shiprocket
   SHIPROCKET_EMAIL: string
   SHIPROCKET_PASSWORD: string
+  // Vapi (AI Phone Calling)
+  VAPI_API_KEY: string
+  VAPI_PHONE_NUMBER_ID: string
+  // ElevenLabs (Voice)
+  ELEVENLABS_VOICE_ID: string
+  // Razorpay (Payments)
+  RAZORPAY_KEY_ID: string
+  RAZORPAY_KEY_SECRET: string
 }
 
 let cache: AppConfig | null = null
@@ -59,6 +69,12 @@ export async function getConfig(): Promise<AppConfig> {
     OTP_METHOD:             (process.env.OTP_METHOD as AppConfig['OTP_METHOD']) || 'wa_bridge',
     SHIPROCKET_EMAIL:       process.env.SHIPROCKET_EMAIL    || '',
     SHIPROCKET_PASSWORD:    process.env.SHIPROCKET_PASSWORD || '',
+    MONGO_URI:              process.env.MONGO_URI           || '',
+    VAPI_API_KEY:           process.env.VAPI_API_KEY        || '',
+    VAPI_PHONE_NUMBER_ID:   process.env.VAPI_PHONE_NUMBER_ID || '',
+    ELEVENLABS_VOICE_ID:    process.env.ELEVENLABS_VOICE_ID || '',
+    RAZORPAY_KEY_ID:        process.env.RAZORPAY_KEY_ID     || '',
+    RAZORPAY_KEY_SECRET:    process.env.RAZORPAY_KEY_SECRET || '',
   }
 
   try {

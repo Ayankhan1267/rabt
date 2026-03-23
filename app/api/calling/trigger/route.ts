@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { getConfig } from '@/lib/config'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -122,7 +123,8 @@ export async function POST(req: NextRequest) {
       .single()
 
     // ── Trigger Vapi outbound call ────────────────────────────────────────
-    const vapiKey = process.env.VAPI_API_KEY
+    const cfg = await getConfig()
+    const vapiKey = cfg.VAPI_API_KEY
     let vapiCallId: string | null = null
 
     if (vapiKey) {
@@ -134,7 +136,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+            phoneNumberId: cfg.VAPI_PHONE_NUMBER_ID,
             customer: {
               number: toPhone,
               name: toName,
@@ -150,7 +152,7 @@ export async function POST(req: NextRequest) {
               },
               voice: {
                 provider: 'elevenlabs',
-                voiceId: process.env.ELEVENLABS_VOICE_ID || 'en-IN-NeerjaExpressiveNeural',
+                voiceId: cfg.ELEVENLABS_VOICE_ID || 'en-IN-NeerjaExpressiveNeural',
               },
               firstMessage: callType === 'specialist_alert'
                 ? `Namaste Dr. ${toName.split(' ').pop()}, main Riya bol rahi hoon Rabt Naturals HQ se. Kya aap abhi baat kar sakte hain?`

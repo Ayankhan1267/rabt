@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import toast from 'react-hot-toast'
 
 const C = {
@@ -33,12 +33,33 @@ const RISK_BG: Record<RiskLevel, string> = { critical: '#FEF2F2', high: '#FFF7ED
 export default function RetentionAgentPage() {
   const [tab, setTab] = useState<Tab>('customers')
   const [customers, setCustomers] = useState<AtRiskCustomer[]>(DEMO_CUSTOMERS)
+  const [loadingCustomers, setLoadingCustomers] = useState(false)
+  const [dataSource, setDataSource] = useState<'demo' | 'live'>('demo')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [generatingMsg, setGeneratingMsg] = useState<string | null>(null)
   const [generatedMessages, setGeneratedMessages] = useState<Record<string, string>>({})
   const [sendingBulk, setSendingBulk] = useState(false)
   const [filterRisk, setFilterRisk] = useState<string>('all')
   const [autoRetention, setAutoRetention] = useState(false)
+
+  useEffect(() => { loadRealCustomers() }, [])
+
+  async function loadRealCustomers() {
+    setLoadingCustomers(true)
+    try {
+      const res = await fetch('/api/retention/customers')
+      if (res.ok) {
+        const d = await res.json()
+        if (d.customers && d.customers.length > 0) {
+          setCustomers(d.customers)
+          setDataSource('live')
+          toast.success(`${d.customers.length} at-risk customers loaded from MongoDB`)
+        }
+        // If 0 results or error, keep demo data
+      }
+    } catch { /* keep demo data */ }
+    setLoadingCustomers(false)
+  }
 
   const filtered = customers.filter(c => filterRisk === 'all' || c.riskLevel === filterRisk)
   const allSelected = filtered.length > 0 && filtered.every(c => selected.has(c.id))
@@ -111,8 +132,14 @@ export default function RetentionAgentPage() {
             <p style={{ margin: 0, fontSize: 13, color: '#6B7280' }}>AI identifies churning customers aur personalized win-back campaigns bhejta hai</p>
           </div>
           <span style={{ background: C.orange, color: '#fff', fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>AI</span>
+          <span style={{ background: dataSource === 'live' ? '#D1FAE5' : '#FEF3C7', color: dataSource === 'live' ? C.green : C.gold, fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20 }}>
+            {loadingCustomers ? 'Loading...' : dataSource === 'live' ? '🟢 Live Data' : '🟡 Demo Data'}
+          </span>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={loadRealCustomers} disabled={loadingCustomers} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 8, padding: '7px 14px', fontSize: 12, cursor: 'pointer', color: '#6B7280' }}>
+            🔄 Refresh
+          </button>
           {selected.size > 0 && (
             <button onClick={sendBulkCampaign} disabled={sendingBulk} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 18px', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
               {sendingBulk ? 'Sending...' : `📱 Send to ${selected.size} customers`}
@@ -197,7 +224,7 @@ export default function RetentionAgentPage() {
                       {generatedMessages[c.id] && (
                         <button onClick={async () => {
                           try {
-                            await fetch('/api/whatsapp/send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: c.phone, message: generatedMessages[c.id] }) })
+                            await fetch('/api/send-whatsapp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone: c.phone, message: generatedMessages[c.id] }) })
                             toast.success(`Sent to ${c.name}!`)
                           } catch { toast.error('Send failed') }
                         }} style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: 'none', background: '#25D366', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>

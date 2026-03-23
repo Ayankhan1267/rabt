@@ -162,7 +162,7 @@ export default function AssistantAgentPage() {
     setSendingWA(true)
     try {
       const msg = `*📊 Rabt HQ — Daily Report*\n*${report.date}*\n\n${report.summary}\n\n*✅ Highlights:*\n${report.highlights.map(h => `• ${h}`).join('\n')}\n\n*⚠️ Concerns:*\n${report.concerns.map(c => `• ${c}`).join('\n')}\n\n*🎯 Recommendations:*\n${report.recommendations.map(r => `• ${r}`).join('\n')}\n\n_Rabt HQ Assistant Agent_`
-      const res = await fetch('/api/whatsapp/send', {
+      const res = await fetch('/api/send-whatsapp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, message: msg }),

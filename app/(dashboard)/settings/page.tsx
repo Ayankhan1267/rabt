@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
-type Tab = 'general' | 'whatsapp' | 'notifications' | 'crm' | 'integrations' | 'security' | 'apikeys'
+type Tab = 'general' | 'whatsapp' | 'notifications' | 'crm' | 'integrations' | 'security' | 'apikeys' | 'agents'
 
 const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'general',       icon: '🏢', label: 'General' },
@@ -13,6 +13,7 @@ const TABS: { id: Tab; icon: string; label: string }[] = [
   { id: 'integrations',  icon: '🔌', label: 'Integrations' },
   { id: 'security',      icon: '🔒', label: 'Security' },
   { id: 'apikeys',       icon: '🔑', label: 'API Keys' },
+  { id: 'agents',        icon: '🤖', label: 'Agent Status' },
 ]
 
 const CRM_STAGES = [
@@ -93,6 +94,7 @@ export default function SettingsPage() {
     STREAM_API_SECRET: '',
     RABT_JWT_SECRET: '',
     NEXT_PUBLIC_MONGO_API_URL: '',
+    MONGO_URI: '',
     NEXT_PUBLIC_APP_URL: '',
     TWILIO_ACCOUNT_SID: '',
     TWILIO_AUTH_TOKEN: '',
@@ -101,7 +103,16 @@ export default function SettingsPage() {
     OTP_METHOD: 'wa_bridge',
     SHIPROCKET_EMAIL: '',
     SHIPROCKET_PASSWORD: '',
+    // AI Agents
+    VAPI_API_KEY: '',
+    VAPI_PHONE_NUMBER_ID: '',
+    ELEVENLABS_VOICE_ID: '',
+    RAZORPAY_KEY_ID: '',
+    RAZORPAY_KEY_SECRET: '',
   })
+  // Agent status
+  const [agentStatus, setAgentStatus] = useState<any>(null)
+  const [loadingAgents, setLoadingAgents] = useState(false)
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
   const [savingKeys, setSavingKeys] = useState(false)
 
@@ -167,6 +178,15 @@ export default function SettingsPage() {
       }
     } catch { toast.error('Init failed') }
     setWaLoading(false)
+  }
+
+  async function loadAgentStatus() {
+    setLoadingAgents(true)
+    try {
+      const res = await fetch('/api/agents/status')
+      if (res.ok) setAgentStatus(await res.json())
+    } catch { /* skip */ }
+    setLoadingAgents(false)
   }
 
   async function saveApiKeys() {
@@ -265,7 +285,7 @@ export default function SettingsPage() {
       {/* Tab bar */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap', borderBottom: '1px solid var(--b1)', paddingBottom: 14 }}>
         {TABS.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); if (t.id === 'whatsapp') loadWaStatus() }}
+          <button key={t.id} onClick={() => { setTab(t.id as Tab); if (t.id === 'whatsapp') loadWaStatus(); if (t.id === 'agents') loadAgentStatus() }}
             style={{
               padding: '7px 16px', borderRadius: 8, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: 'Outfit',
               background: tab === t.id ? 'var(--gL)' : 'transparent',
@@ -562,6 +582,20 @@ export default function SettingsPage() {
                 { key: 'SHIPROCKET_EMAIL',    label: 'Shiprocket Email',    placeholder: 'you@email.com', hint: 'Shiprocket login email' },
                 { key: 'SHIPROCKET_PASSWORD', label: 'Shiprocket Password', placeholder: '••••••••',      hint: 'Shiprocket login password' },
               ]},
+              { group: '🗄️ MongoDB (rabtnaturals.com Data)', keys: [
+                { key: 'MONGO_URI', label: 'MongoDB URI (Direct)', placeholder: 'mongodb+srv://user:pass@cluster.mongodb.net/rabt', hint: 'Retention Agent, Orders, Customers — real data' },
+              ]},
+              { group: '📞 Vapi (AI Phone Calling)', keys: [
+                { key: 'VAPI_API_KEY',         label: 'Vapi API Key',         placeholder: 'vapi_...', hint: 'dashboard.vapi.ai → API Keys' },
+                { key: 'VAPI_PHONE_NUMBER_ID', label: 'Vapi Phone Number ID', placeholder: 'pn_...', hint: 'dashboard.vapi.ai → Phone Numbers' },
+              ]},
+              { group: '🎙️ ElevenLabs (AI Voice)', keys: [
+                { key: 'ELEVENLABS_VOICE_ID', label: 'ElevenLabs Voice ID', placeholder: '21m00Tcm...', hint: 'elevenlabs.io → Voice Lab — Hindi/Indian voice ID' },
+              ]},
+              { group: '💳 Razorpay (Payments)', keys: [
+                { key: 'RAZORPAY_KEY_ID',     label: 'Razorpay Key ID',     placeholder: 'rzp_live_...', hint: 'Razorpay Dashboard → API Keys' },
+                { key: 'RAZORPAY_KEY_SECRET', label: 'Razorpay Key Secret', placeholder: '••••••••',     hint: 'Razorpay secret key' },
+              ]},
             ] as { group: string; keys: { key: string; label: string; placeholder: string; hint: string }[] }[]).map(section => (
               <div key={section.group} style={{ marginBottom: 24 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12, paddingBottom: 6, borderBottom: '1px solid var(--b1)' }}>
@@ -704,6 +738,95 @@ export default function SettingsPage() {
               ))}
             </div>
           </>)}
+        </>
+      )}
+
+      {/* ── AGENT STATUS TAB ── */}
+      {tab === 'agents' && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--mu)' }}>Sabhi integrations ki live status — green = working, yellow = partial, red = setup needed</div>
+            <button onClick={loadAgentStatus} disabled={loadingAgents}
+              style={{ padding: '7px 16px', borderRadius: 8, border: '1px solid var(--b1)', background: 'var(--s2)', color: 'var(--tx)', fontSize: 12, cursor: 'pointer' }}>
+              {loadingAgents ? '🔄 Checking...' : '🔄 Check Status'}
+            </button>
+          </div>
+
+          {!agentStatus && !loadingAgents && (
+            <div style={{ textAlign: 'center', padding: '60px 20px', background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 14 }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🤖</div>
+              <div style={{ fontSize: 15, fontWeight: 600 }}>Click "Check Status" to test all integrations</div>
+              <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 6 }}>Will check Anthropic, WhatsApp, Vapi, MongoDB, Supabase, Razorpay</div>
+            </div>
+          )}
+
+          {agentStatus && (
+            <>
+              {/* Summary */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+                {[
+                  { label: 'Connected', value: agentStatus.summary?.connected, color: '#10B981', bg: '#D1FAE5' },
+                  { label: 'Partial', value: agentStatus.summary?.partial, color: '#F59E0B', bg: '#FEF3C7' },
+                  { label: 'Needs Setup', value: agentStatus.summary?.disconnected, color: '#EF4444', bg: '#FEE2E2' },
+                ].map((s, i) => (
+                  <div key={i} style={{ background: s.bg, borderRadius: 10, padding: '14px 20px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: s.color }}>{s.value ?? 0}</div>
+                    <div style={{ fontSize: 12, color: s.color, fontWeight: 600 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Agent Cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {(agentStatus.agents || []).map((agent: any) => (
+                  <div key={agent.id} style={{
+                    background: 'var(--s1)', border: '1px solid var(--b1)', borderRadius: 12, padding: '16px 20px',
+                    borderLeft: `4px solid ${agent.status === 'connected' ? '#10B981' : agent.status === 'partial' ? '#F59E0B' : '#EF4444'}`,
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <span style={{ fontSize: 22 }}>{agent.icon}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{agent.name}</div>
+                          <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>{agent.details}</div>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {agent.setupUrl && agent.status !== 'connected' && (
+                          <a href={agent.setupUrl} target="_blank" rel="noreferrer"
+                            style={{ fontSize: 11, padding: '3px 10px', borderRadius: 6, background: 'transparent', border: '1px solid var(--b2)', color: 'var(--mu2)', cursor: 'pointer', textDecoration: 'none' }}>
+                            Setup →
+                          </a>
+                        )}
+                        <span style={{
+                          fontSize: 11, padding: '3px 10px', borderRadius: 20, fontWeight: 700,
+                          background: agent.status === 'connected' ? '#D1FAE5' : agent.status === 'partial' ? '#FEF3C7' : '#FEE2E2',
+                          color: agent.status === 'connected' ? '#10B981' : agent.status === 'partial' ? '#F59E0B' : '#EF4444',
+                        }}>
+                          {agent.status === 'connected' ? '✅ Connected' : agent.status === 'partial' ? '⚠️ Partial' : '❌ Not Set'}
+                        </span>
+                      </div>
+                    </div>
+                    {agent.missingKeys?.length > 0 && (
+                      <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: 'var(--mu)', fontWeight: 600 }}>Missing keys:</span>
+                        {agent.missingKeys.map((k: string) => (
+                          <span key={k} style={{ fontSize: 11, background: '#FEE2E2', color: '#EF4444', padding: '2px 8px', borderRadius: 10, fontWeight: 600, cursor: 'pointer' }}
+                            onClick={() => setTab('apikeys')}>
+                            {k} →
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 16, padding: '12px 16px', background: 'rgba(212,168,83,0.08)', border: '1px solid rgba(212,168,83,0.2)', borderRadius: 10, fontSize: 12.5, color: 'var(--gold)' }}>
+                💡 Missing keys? Go to <button onClick={() => setTab('apikeys')} style={{ background: 'none', border: 'none', color: 'var(--gold)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 12.5, padding: 0 }}>API Keys tab</button> to configure them. Keys save hone ke baad yahan refresh karo.
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

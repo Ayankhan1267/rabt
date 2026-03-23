@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient } from '@/lib/anthropic'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
 
 const BRAND = `Rabt Naturals — Indian clean beauty brand (rabtnaturals.com). Founded in Indore. Products: natural skincare + haircare. USP: free skin analysis + specialist consultation. Tagline: "Apni skin ki baat samjho."`
 
@@ -53,6 +53,7 @@ Respond in JSON:
   "cta": "Call to action text"
 }`
 
+    const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1000,

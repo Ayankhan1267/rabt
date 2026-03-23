@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient } from '@/lib/anthropic'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +31,7 @@ Write a short, warm WhatsApp message (3-4 sentences) in Hinglish:
 
 Tone: Like a friend checking in, NOT desperate salesperson. Natural, warm, personal.`
 
+    const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,

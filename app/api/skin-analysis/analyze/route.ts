@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient } from '@/lib/anthropic'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
 
 const CATALOG: Record<string, { price: number; concern: string[] }> = {
   'Glow Serum 30ml':       { price: 899, concern: ['Dark Spots', 'Dullness', 'Pigmentation'] },
@@ -61,6 +61,7 @@ Based on this information, provide a skin analysis in JSON format:
 Match concerns to these catalog products: ${Object.keys(CATALOG).join(', ')}
 Recommend 3-4 products max. Be specific to Indian skin and climate context.`
 
+    const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 800,

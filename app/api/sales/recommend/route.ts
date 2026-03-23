@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { getAnthropicClient } from '@/lib/anthropic'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
 
 // Rabt product catalog with prices
 const CATALOG: Record<string, { price: number; concern: string[] }> = {
@@ -67,6 +67,7 @@ Write a SHORT, personalized WhatsApp-style sales pitch (3-4 sentences max) in Hi
 
 Keep it conversational, warm, like a friend recommending — not a salesperson.`
 
+    const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 200,

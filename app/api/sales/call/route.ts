@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { getConfig } from '@/lib/config'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(req: NextRequest) {
   try {
+    const cfg = await getConfig()
+    const anthropic = new Anthropic({ apiKey: cfg.ANTHROPIC_API_KEY })
     const { name, phone, skinType, concerns, recommendedProducts, aiPitch, outreachType, specialistRoutine } = await req.json()
 
     if (!phone) return NextResponse.json({ error: 'Phone number required' }, { status: 400 })
@@ -66,7 +68,7 @@ Rules:
     }).select().single()
 
     // Trigger Vapi call
-    const vapiKey = process.env.VAPI_API_KEY
+    const vapiKey = cfg.VAPI_API_KEY
     let vapiCallId: string | null = null
 
     if (vapiKey) {
@@ -75,7 +77,7 @@ Rules:
           method: 'POST',
           headers: { Authorization: `Bearer ${vapiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+            phoneNumberId: cfg.VAPI_PHONE_NUMBER_ID,
             customer: { number: phone, name },
             assistant: {
               name: 'Riya — Rabt Sales Agent',
@@ -88,7 +90,7 @@ Rules:
               },
               voice: {
                 provider: 'elevenlabs',
-                voiceId: process.env.ELEVENLABS_VOICE_ID || 'en-IN-NeerjaExpressiveNeural',
+                voiceId: cfg.ELEVENLABS_VOICE_ID || 'en-IN-NeerjaExpressiveNeural',
               },
               firstMessage,
               endCallMessage: 'Bahut shukriya! Rabt Naturals aapki skin ki care ke liye hamesha available hai. Take care!',
@@ -109,7 +111,7 @@ Rules:
       const waMsg = aiPitch || `Namaste ${name.split(' ')[0]} ji! 🌿\n\nAapki skin analysis ke baad humne aapke liye ${topProduct} recommend kiya hai — especially ${topConcern} ke liye.\n\n✨ 10% off aapke pehle order pe: *RABT10*\n\nOrder karo: rabtnaturals.com\n\nKoi bhi question ho toh reply karo! 😊`
       // WhatsApp sending via existing integration
       try {
-        await fetch('/api/whatsapp/send', {
+        await fetch('/api/send-whatsapp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ phone, message: waMsg }),
