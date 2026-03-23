@@ -159,6 +159,22 @@ const DERMIQ_NAV: NavSection[] = [
     ],
   },
   {
+    label: 'Growth',
+    items: [
+      { id: 'dq-funnels', label: 'Funnel Tracker', icon: '🎯', href: '/dermiq/funnels', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+      { id: 'dq-retention', label: 'Retention System', icon: '🔄', href: '/dermiq/retention', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+      { id: 'dq-revenue', label: 'Revenue Flow', icon: '💳', href: '/dermiq/revenue', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
+    ],
+  },
+  {
+    label: 'Operations',
+    items: [
+      { id: 'dq-automation', label: 'Marketing Automation', icon: '⚡', href: '/dermiq/automation', badge: 'Auto', badgeColor: '#F97316', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
+      { id: 'dq-seo', label: 'SEO Automation', icon: '🔍', href: '/dermiq/seo', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
+      { id: 'dq-quality', label: 'Quality Control', icon: '🛡️', href: '/dermiq/quality', roles: ['founder', 'admin', 'dermiq_admin'] },
+    ],
+  },
+  {
     label: 'AI System',
     items: [
       { id: 'dq-ai-control', label: 'AI Control Center', icon: '🤖', href: '/dermiq/ai-control', badge: 'Power', badgeColor: '#8B5CF6', roles: ['founder', 'admin', 'dermiq_admin'] },
@@ -167,6 +183,7 @@ const DERMIQ_NAV: NavSection[] = [
   {
     label: 'System',
     items: [
+      { id: 'dq-setup', label: 'Setup Wizard', icon: '🚀', href: '/dermiq/setup', roles: ['founder', 'admin', 'dermiq_admin'] },
       { id: 'dq-team', label: 'Team & Access', icon: '🤝', href: '/dermiq/team', roles: ['founder', 'admin', 'dermiq_admin'] },
       { id: 'dq-settings', label: 'Settings', icon: '⚙️', href: '/dermiq/settings', roles: ['founder', 'admin', 'dermiq_admin'] },
     ],
