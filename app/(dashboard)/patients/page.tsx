@@ -386,6 +386,65 @@ export default function PatientsPage() {
   )
 }
 
+function generateSkinPDF(p: any, sp: any) {
+  const w = window.open('', '_blank')
+  if (!w) return
+  const a = sp || {}
+  const scoreColor = (a.skinScore||0) >= 70 ? '#16A34A' : (a.skinScore||0) >= 50 ? '#D97706' : '#DC2626'
+  const step = (s: any, j: number, color: string) =>
+    `<div style="display:flex;gap:10px;padding:10px 12px;background:#f8fafa;border-radius:8px;margin-bottom:6px;border-left:3px solid ${color}">
+      <div style="width:22px;height:22px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:800;flex-shrink:0;line-height:22px;text-align:center">${j+1}</div>
+      <div><div style="font-size:13px;font-weight:700;color:#1a1a1a;margin-bottom:2px">${s.product||''}</div>
+      <div style="font-size:11px;color:#555;line-height:1.5">${s.instruction||''}</div>
+      ${s.time?`<div style="font-size:10px;color:${color};margin-top:2px;font-weight:600">⏱ ${s.time}</div>`:''}</div></div>`
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Skin Report — ${p.name}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:'Segoe UI',Arial,sans-serif;color:#1a1a1a;background:#fff;max-width:820px;margin:0 auto;padding:0}.page{padding:32px}.header{background:linear-gradient(135deg,#003D40,#005F6A);border-radius:16px;padding:28px 32px;margin-bottom:24px;color:#fff;display:flex;justify-content:space-between;align-items:flex-start;gap:20px}.score-box{text-align:center;background:rgba(255,255,255,0.1);border-radius:14px;padding:14px 20px;flex-shrink:0}.score-num{font-size:48px;font-weight:900;color:${scoreColor};line-height:1}.customer-box{background:linear-gradient(135deg,#f0fafa,#e8f7f7);border-radius:12px;padding:18px 20px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:center;gap:16px;border:1px solid rgba(1,151,166,0.15)}.tag{display:inline-block;background:rgba(1,151,166,0.12);color:#005F6A;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;margin:2px}.tag-red{background:rgba(220,38,38,0.08);color:#DC2626}.section-title{font-size:13px;font-weight:800;color:#005F6A;text-transform:uppercase;letter-spacing:0.08em;padding:10px 0 8px;border-bottom:2px solid #0097A7;margin-bottom:12px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.card{background:#f8fafa;border-radius:10px;padding:14px 16px;border:1px solid rgba(1,151,166,0.1)}.ing-good{color:#16A34A;font-size:11px;padding:2px 0}.ing-bad{color:#DC2626;font-size:11px;padding:2px 0}.diet-item{display:flex;gap:8px;padding:3px 0;font-size:11.5px;color:#333;line-height:1.5}.result-row{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #e5e7eb;align-items:flex-start}.result-week{background:rgba(1,151,166,0.1);color:#005F6A;font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;flex-shrink:0;margin-top:2px}.specialist-box{background:linear-gradient(135deg,rgba(1,151,166,0.08),rgba(0,63,64,0.05));border:1px solid rgba(1,151,166,0.25);border-radius:12px;padding:16px;text-align:center;margin-top:18px}.footer{text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#888;font-size:11px;line-height:1.8}@media print{body{padding:0}.page{padding:20px}}</style>
+  </head><body><div class="page">
+  <div class="header">
+    <div>
+      <div style="font-size:11px;font-weight:800;letter-spacing:0.15em;color:rgba(255,255,255,0.6);text-transform:uppercase;margin-bottom:6px">Personalized Skin Care Report</div>
+      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:1px;margin-bottom:2px">rabt naturals</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.7)">rabtnaturals.com · AI-Powered Skin Analysis</div>
+      <div style="margin-top:10px;font-size:12px;color:rgba(255,255,255,0.6)">${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'})}</div>
+    </div>
+    ${a.skinScore?`<div class="score-box"><div class="score-num">${a.skinScore}</div><div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:4px">/ 100 Skin Score</div></div>`:''}
+  </div>
+  <div class="customer-box">
+    <div>
+      <div style="font-size:20px;font-weight:800;color:#003D40;margin-bottom:4px">${p.name}</div>
+      <div style="font-size:12px;color:#666;margin-bottom:8px">${p.phone||''} · Age: ${p.age||'—'} · ${p.city||'—'}</div>
+      <div>${[a.skinType&&`<span class="tag">${a.skinType}</span>`,a.skinCategory&&`<span class="tag">${a.skinCategory}</span>`,...(a.skinConcerns||[]).map((c:string)=>`<span class="tag tag-red">${c}</span>`)].filter(Boolean).join('')}</div>
+    </div>
+    ${a.partnerName?`<div style="font-size:11px;color:#0097A7;font-weight:700">🤝 via ${a.partnerName}</div>`:''}
+  </div>
+  ${a.skinSummary?`<div class="section-title">🔬 Skin Assessment</div><p style="font-size:13px;line-height:1.75;color:#333;margin-bottom:14px;padding:12px 14px;background:#f0fafa;border-radius:8px;border-left:3px solid #0097A7">${a.skinSummary}</p>`:''}
+  <div class="grid2">
+    <div class="card">
+      <div style="font-size:11px;font-weight:800;color:#0097A7;text-transform:uppercase;margin-bottom:8px">🌿 Recommended Range</div>
+      <div style="font-size:20px;font-weight:800;color:#003D40;margin-bottom:6px">${a.recommendedRange||'—'}</div>
+      <div style="font-size:11.5px;color:#555;line-height:1.6">${a.rangeReason||''}</div>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;font-weight:800;color:#16A34A;text-transform:uppercase;margin-bottom:8px">Ingredients Guide</div>
+      <div style="font-size:10px;font-weight:700;color:#16A34A;margin-bottom:4px">✓ Use</div>
+      ${(a.ingredientsToLookFor||[]).map((i:string)=>`<div class="ing-good">• ${i}</div>`).join('')}
+      <div style="font-size:10px;font-weight:700;color:#DC2626;margin:8px 0 4px">✗ Avoid</div>
+      ${(a.ingredientsToAvoid||[]).map((i:string)=>`<div class="ing-bad">• ${i}</div>`).join('')}
+    </div>
+  </div>
+  ${(a.amRoutine?.length)?`<div class="section-title">🌅 Morning Routine</div><div style="margin-bottom:18px">${a.amRoutine.map((s:any,j:number)=>step(s,j,'#F59E0B')).join('')}</div>`:''}
+  ${(a.pmRoutine?.length)?`<div class="section-title">🌙 Night Routine</div><div style="margin-bottom:18px">${a.pmRoutine.map((s:any,j:number)=>step(s,j,'#818CF8')).join('')}</div>`:''}
+  ${a.weeklyTreatment?`<div class="section-title">📅 Weekly Treatment</div><p style="font-size:12.5px;color:#333;line-height:1.65;margin-bottom:18px;padding:10px 14px;background:#f8fafa;border-radius:8px">${a.weeklyTreatment}</p>`:''}
+  ${a.expectedResults?`<div class="section-title">📈 Expected Results Timeline</div><div style="margin-bottom:18px">${[['Week 4',a.expectedResults.week4],['Week 8',a.expectedResults.week8],['Week 12',a.expectedResults.week12]].filter(([,v])=>v).map(([l,v])=>`<div class="result-row"><span class="result-week">${l}</span><span style="font-size:12px;color:#333;line-height:1.5">${v}</span></div>`).join('')}</div>`:''}
+  ${(a.dietAdvice?.length||a.lifestyleAdvice?.length)?`<div class="section-title">🥗 Diet & Lifestyle</div><div class="card" style="margin-bottom:18px">${(a.dietAdvice||[]).map((d:string)=>`<div class="diet-item"><span style="color:#16A34A;font-weight:700">✓</span> ${d}</div>`).join('')}${(a.lifestyleAdvice||[]).map((d:string)=>`<div class="diet-item"><span style="color:#0097A7;font-weight:700">★</span> ${d}</div>`).join('')}</div>`:''}
+  ${a.specialistNote?`<div class="section-title">🩺 Specialist Note</div><div style="background:rgba(1,151,166,0.06);border:1px solid rgba(1,151,166,0.2);border-radius:10px;padding:14px 16px;margin-bottom:18px;font-size:12.5px;line-height:1.7;color:#333">${a.specialistNote}</div>`:''}
+  ${a.specialistAssigned?`<div class="specialist-box"><div style="font-size:11px;font-weight:800;color:#0097A7;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">Assigned Skin Specialist</div><div style="font-size:18px;font-weight:800;color:#003D40;margin-bottom:4px">👩‍⚕️ ${a.specialistAssigned}</div><div style="font-size:11px;color:#555">This specialist will guide the customer's skincare journey</div></div>`:''}
+  <div class="footer"><strong style="color:#003D40;font-size:13px">Rabt Naturals</strong><br>rabtnaturals.com · support@rabtnaturals.in<br>This report is AI-generated and personalized based on skin analysis.<br>For best results, follow the routine consistently for 12 weeks.</div>
+  <script>window.onload=()=>{window.print()}</script>
+  </div></body></html>`)
+  w.document.close()
+}
+
 function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
   const sp = p.skinProfiles?.[0]
   const isPartner = p.source === 'partner'
@@ -411,15 +470,19 @@ function DetailPanel({ p, onClose }: { p: any; onClose: () => void }) {
       </div>
 
       {/* Action buttons */}
-      {p.phone && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+        {p.phone && <>
           <a href={'https://wa.me/' + p.phone.replace(/[^0-9]/g, '') + '?text=' + encodeURIComponent('Hi ' + p.name + '! 🌿 Rabt Naturals ki taraf se. Aapki skin ke baare mein baat karein?')}
             target="_blank" rel="noopener noreferrer"
-            style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>💬 WhatsApp</a>
+            style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg,#25D366,#128C7E)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block', minWidth: 80 }}>💬 WA</a>
           <a href={'tel:' + p.phone.replace(/[^0-9+]/g, '')}
-            style={{ flex: 1, padding: '9px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block' }}>📞 Call</a>
-        </div>
-      )}
+            style={{ flex: 1, padding: '9px', background: 'var(--blL)', border: '1px solid rgba(59,130,246,0.3)', borderRadius: 9, color: 'var(--blue)', fontSize: 12, fontWeight: 700, textDecoration: 'none', textAlign: 'center', display: 'block', minWidth: 80 }}>📞 Call</a>
+        </>}
+        {isPartner && sp && (sp.skinScore || sp.skinCategory || sp.amRoutine?.length) && (
+          <button onClick={() => generateSkinPDF(p, sp)}
+            style={{ flex: 1, padding: '9px', background: 'linear-gradient(135deg,#003D40,#005F6A)', border: 'none', borderRadius: 9, color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Outfit', minWidth: 80 }}>📄 Skin PDF</button>
+        )}
+      </div>
 
       {/* Partner AI Skin Analysis — full card */}
       {isPartner && sp && (sp.skinScore || sp.skinCategory || sp.skinType || sp.skinSummary) && (
