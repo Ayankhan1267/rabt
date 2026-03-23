@@ -106,26 +106,62 @@ const NAV: NavSection[] = [
   },
 ]
 
-// ── DermIQ-extra nav sections ──────────────────────────────────────────────
-const DERMIQ_EXTRA: NavSection[] = [
+// ── DermIQ — completely independent nav (no Rabt data) ─────────────────────
+const DERMIQ_NAV: NavSection[] = [
   {
-    label: 'DermIQ Vendors',
-    roles: ['founder', 'admin', 'manager'],
+    label: 'Command',
     items: [
-      { id: 'dermiq-vendors', label: 'Vendor Manager', icon: '🏪', href: '/dermiq/vendors', roles: ['founder', 'admin', 'manager'] },
-      { id: 'dermiq-listings', label: 'Product Listings', icon: '📦', href: '/dermiq/listings', roles: ['founder', 'admin', 'manager'] },
-      { id: 'dermiq-payouts', label: 'Vendor Payouts', icon: '💸', href: '/dermiq/payouts', roles: ['founder', 'admin', 'finance'] },
-      { id: 'dermiq-kyc', label: 'KYC & Verification', icon: '✅', href: '/dermiq/kyc', roles: ['founder', 'admin'] },
+      { id: 'dq-dashboard', label: 'Dashboard', icon: '⚗️', href: '/dermiq/dashboard' },
+      { id: 'dq-specialists', label: 'Specialists', icon: '👩‍⚕️', href: '/dermiq/specialists', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
+      { id: 'dq-calendar', label: 'Calendar', icon: '📅', href: '/dermiq/calendar' },
     ],
   },
   {
-    label: 'DermIQ Marketplace',
-    roles: ['founder', 'admin', 'manager'],
+    label: 'Consultations',
     items: [
-      { id: 'dermiq-marketplace', label: 'Marketplace Overview', icon: '🛍️', href: '/dermiq/marketplace', roles: ['founder', 'admin', 'manager'] },
-      { id: 'dermiq-orders', label: 'All Orders', icon: '📋', href: '/dermiq/orders', roles: ['founder', 'admin', 'manager', 'ops'] },
-      { id: 'dermiq-analytics', label: 'Marketplace Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'manager'] },
-      { id: 'dermiq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'manager', 'marketing'] },
+      { id: 'dq-consultations', label: 'Consultations', icon: '🧴', href: '/dermiq/consultations', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_specialist_manager'] },
+      { id: 'dq-skinprofiles', label: 'Skin Profiles', icon: '🌿', href: '/dermiq/skinprofiles' },
+    ],
+  },
+  {
+    label: 'Marketplace',
+    items: [
+      { id: 'dq-marketplace', label: 'Marketplace Overview', icon: '🛍️', href: '/dermiq/marketplace', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+      { id: 'dq-vendors', label: 'Vendor Manager', icon: '🏪', href: '/dermiq/vendors', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+      { id: 'dq-listings', label: 'Product Listings', icon: '📦', href: '/dermiq/listings', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+      { id: 'dq-orders', label: 'Orders', icon: '📋', href: '/dermiq/orders', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_ops'] },
+      { id: 'dq-inventory', label: 'Inventory', icon: '🗄️', href: '/dermiq/inventory', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_ops'] },
+    ],
+  },
+  {
+    label: 'Customers',
+    items: [
+      { id: 'dq-customers', label: 'Customers', icon: '👥', href: '/dermiq/customers', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_support'] },
+      { id: 'dq-crm', label: 'CRM / Leads', icon: '💼', href: '/dermiq/crm', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_support'] },
+      { id: 'dq-support', label: 'Support', icon: '💬', href: '/dermiq/support', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_support'] },
+    ],
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { id: 'dq-marketing', label: 'Marketing', icon: '📢', href: '/dermiq/marketing', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_marketing'] },
+      { id: 'dq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
+      { id: 'dq-analytics', label: 'Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
+    ],
+  },
+  {
+    label: 'Finance',
+    items: [
+      { id: 'dq-finance', label: 'Finance', icon: '💰', href: '/dermiq/finance', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
+      { id: 'dq-payouts', label: 'Vendor Payouts', icon: '💸', href: '/dermiq/payouts', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_finance'] },
+      { id: 'dq-kyc', label: 'KYC & Verification', icon: '✅', href: '/dermiq/kyc', roles: ['founder', 'admin', 'dermiq_admin'] },
+    ],
+  },
+  {
+    label: 'System',
+    items: [
+      { id: 'dq-team', label: 'Team & Access', icon: '🤝', href: '/dermiq/team', roles: ['founder', 'admin', 'dermiq_admin'] },
+      { id: 'dq-settings', label: 'Settings', icon: '⚙️', href: '/dermiq/settings', roles: ['founder', 'admin', 'dermiq_admin'] },
     ],
   },
 ]
@@ -302,15 +338,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const roleConfig = profile ? ROLE_CONFIG[profile.role] : null
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  const dermiqRole: string | undefined = (profile as any)?.dermiq_role
+  // Show DermIQ switcher only to founders/admins OR users with a dermiq_role
+  const canSeeDermiq = profile && (['founder','admin'].includes(profile.role) || !!dermiqRole)
   const hasAccess = (item: NavItem | NavSection) => {
     if (!profile) return false
     if (['founder','admin'].includes(profile.role)) return true
     const roles = item.roles
     if (!roles) return true
+    // On DermIQ platform, also match dermiq_role values
+    if (platform === 'dermiq' && dermiqRole && roles.includes(dermiqRole)) return true
     return roles.includes(profile.role)
   }
-  // Active nav = base NAV + DermIQ extras when on dermiq platform
-  const activeNav = platform === 'dermiq' ? [...NAV, ...DERMIQ_EXTRA] : NAV
+  // Completely separate navs — DermIQ shows ONLY DERMIQ_NAV, Rabt shows only NAV
+  const activeNav = platform === 'dermiq' ? DERMIQ_NAV : NAV
   const currentTitle = activeNav.flatMap(s => s.items).find(i => isActive(i.href))?.label || 'Dashboard'
 
   // -- Sidebar Content (shared between desktop + mobile) --
@@ -340,28 +381,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </div>
 
-      {/* Platform Switcher */}
-      <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', background: 'var(--s2)', borderRadius: 8, padding: 3, gap: 2 }}>
-          {(['rabt', 'dermiq'] as const).map(p => (
-            <button key={p} onClick={() => switchPlatform(p)} style={{
-              flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-              fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
-              transition: 'all 0.15s',
-              background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
-              color: platform === p ? '#fff' : 'var(--mu)',
-              boxShadow: platform === p ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
-            }}>
-              {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
-            </button>
-          ))}
-        </div>
-        {platform === 'dermiq' && (
-          <div style={{ marginTop: 5, fontSize: 9, color: 'var(--teal)', fontWeight: 600, textAlign: 'center', letterSpacing: '0.05em' }}>
-            MULTIVENDOR MARKETPLACE
+      {/* Platform Switcher — only visible to those with DermIQ access */}
+      {canSeeDermiq && (
+        <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--b1)', flexShrink: 0 }}>
+          <div style={{ fontSize: 8.5, color: 'var(--mu)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 5, fontWeight: 600 }}>Platform</div>
+          <div style={{ display: 'flex', background: 'var(--s2)', borderRadius: 8, padding: 3, gap: 2 }}>
+            {(['rabt', 'dermiq'] as const).map(p => (
+              <button key={p} onClick={() => switchPlatform(p)} style={{
+                flex: 1, padding: '5px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+                fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+                transition: 'all 0.15s',
+                background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
+                color: platform === p ? '#fff' : 'var(--mu)',
+                boxShadow: platform === p ? '0 2px 8px rgba(0,0,0,0.15)' : 'none',
+              }}>
+                {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
+              </button>
+            ))}
           </div>
-        )}
-      </div>
+          {platform === 'dermiq' && (
+            <div style={{ marginTop: 5, fontSize: 9, color: '#2D5F5A', fontWeight: 600, textAlign: 'center', letterSpacing: '0.05em', background: 'rgba(45,95,90,0.08)', borderRadius: 5, padding: '3px 0' }}>
+              MULTIVENDOR MARKETPLACE
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Nav */}
       <nav style={{ flex: 1, padding: '9px', overflowY: 'auto' }}>
@@ -500,21 +544,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {!isMobile && <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, fontWeight: 800 }}>{currentTitle}</div>}
 
           <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-            {/* Platform switcher buttons — topbar */}
-            <div style={{ display: 'flex', background: 'rgba(26,155,160,0.06)', borderRadius: 8, padding: 2, gap: 2, border: '1px solid var(--b1)' }}>
-              {(['rabt', 'dermiq'] as const).map(p => (
-                <button key={p} onClick={() => switchPlatform(p)} style={{
-                  padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
-                  fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
-                  transition: 'all 0.15s',
-                  background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
-                  color: platform === p ? '#fff' : 'var(--mu)',
-                  boxShadow: platform === p ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
-                }}>
-                  {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
-                </button>
-              ))}
-            </div>
+            {/* Platform switcher — topbar (only for authorized users) */}
+            {canSeeDermiq && (
+              <div style={{ display: 'flex', background: 'rgba(26,155,160,0.06)', borderRadius: 8, padding: 2, gap: 2, border: '1px solid var(--b1)' }}>
+                {(['rabt', 'dermiq'] as const).map(p => (
+                  <button key={p} onClick={() => switchPlatform(p)} style={{
+                    padding: '4px 12px', borderRadius: 6, border: 'none', cursor: 'pointer',
+                    fontSize: 11, fontWeight: 700, fontFamily: 'DM Sans, sans-serif',
+                    transition: 'all 0.15s',
+                    background: platform === p ? (p === 'dermiq' ? 'linear-gradient(135deg,#2D5F5A,#3D7A74)' : 'var(--teal)') : 'transparent',
+                    color: platform === p ? '#fff' : 'var(--mu)',
+                    boxShadow: platform === p ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
+                  }}>
+                    {p === 'rabt' ? '🌿 Rabt' : '⚗️ DermIQ'}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Notification Bell */}
             <div style={{ position: 'relative' }}>
