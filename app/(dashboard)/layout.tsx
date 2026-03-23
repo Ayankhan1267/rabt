@@ -145,6 +145,7 @@ const DERMIQ_NAV: NavSection[] = [
     label: 'Marketing',
     items: [
       { id: 'dq-marketing', label: 'Marketing', icon: '📢', href: '/dermiq/marketing', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager', 'dermiq_marketing'] },
+      { id: 'dq-content', label: 'Content Manager', icon: '🎨', href: '/dermiq/content', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing', 'dermiq_manager'] },
       { id: 'dq-coupons', label: 'Coupons & Offers', icon: '🎁', href: '/dermiq/coupons', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_marketing'] },
       { id: 'dq-analytics', label: 'Analytics', icon: '📊', href: '/dermiq/analytics', roles: ['founder', 'admin', 'dermiq_admin', 'dermiq_manager'] },
     ],
