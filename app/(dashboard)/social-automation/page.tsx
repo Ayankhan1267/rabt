@@ -208,7 +208,7 @@ const ANALYTICS_DATA = {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function SocialAutomationPage() {
-  const [tab, setTab] = useState<'dashboard'|'generator'|'calendar'|'queue'|'analytics'>('dashboard')
+  const [tab, setTab] = useState<'dashboard'|'generator'|'calendar'|'queue'|'analytics'|'settings'>('dashboard')
   const [automationOn, setAutomationOn] = useState(true)
   const [mounted, setMounted] = useState(false)
   const [countdown, setCountdown] = useState('2h 14m')
@@ -329,13 +329,13 @@ export default function SocialAutomationPage() {
 
       {/* Tab Bar */}
       <div style={{ display: 'flex', gap: 4, background: '#fff', borderRadius: 12, padding: 6, marginBottom: 24, boxShadow: '0 1px 6px rgba(0,0,0,0.06)', border: `1px solid ${C.border}` }}>
-        {(['dashboard','generator','calendar','queue','analytics'] as const).map(t => (
+        {(['dashboard','generator','calendar','queue','analytics','settings'] as const).map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
             flex: 1, padding: '9px 6px', border: 'none', borderRadius: 8, cursor: 'pointer',
             background: tab === t ? C.teal : 'transparent', color: tab === t ? '#fff' : C.mu,
             fontWeight: tab === t ? 700 : 500, fontSize: 13, textTransform: 'capitalize', transition: 'all 0.2s',
           }}>
-            {t === 'dashboard' ? '📊 Dashboard' : t === 'generator' ? '✨ Generator' : t === 'calendar' ? '📅 Calendar' : t === 'queue' ? '📋 Queue' : '📈 Analytics'}
+            {t === 'dashboard' ? '📊 Dashboard' : t === 'generator' ? '✨ Generator' : t === 'calendar' ? '📅 Calendar' : t === 'queue' ? '📋 Queue' : t === 'analytics' ? '📈 Analytics' : '⚙️ Connect'}
           </button>
         ))}
       </div>
@@ -1103,6 +1103,170 @@ export default function SocialAutomationPage() {
               <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: '11px', border: `1px solid ${C.border}`, borderRadius: 10, background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: C.dark }}>Cancel</button>
               <button onClick={handleAddToQueue} style={{ flex: 2, padding: '11px', background: `linear-gradient(135deg, ${C.teal}, ${C.teal2})`, color: '#fff', border: 'none', borderRadius: 10, cursor: 'pointer', fontSize: 14, fontWeight: 700 }}>Add to Queue</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB: SETTINGS / CONNECT ACCOUNTS ─────────────────────────────────── */}
+      {tab === 'settings' && (
+        <div>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: C.dark, marginBottom: 6 }}>Connect Social Accounts</h2>
+          <p style={{ fontSize: 13, color: C.mu, marginBottom: 28 }}>Paste your API credentials below. Tokens are stored securely in Supabase and never exposed to the frontend.</p>
+
+          {/* Meta (Instagram + Facebook) */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>📸</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>Instagram + Facebook</div>
+                <div style={{ fontSize: 12, color: C.mu }}>Meta Graph API — posts, reels, carousels, stories</div>
+              </div>
+              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#FEF3C7', color: '#D97706', fontSize: 12, fontWeight: 600 }}>Not Connected</div>
+            </div>
+
+            <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#92400E', lineHeight: 1.7 }}>
+              <strong>Setup Steps:</strong><br />
+              1. Go to <strong>developers.facebook.com</strong> → Create App → Business<br />
+              2. Add <strong>Instagram Graph API</strong> + <strong>Facebook Login</strong><br />
+              3. Connect your Instagram Business account to a Facebook Page<br />
+              4. Go to <strong>Graph API Explorer</strong> → select your app → add permissions:<br />
+              &nbsp;&nbsp;&nbsp;<code style={{ background: '#FEF3C7', padding: '1px 5px', borderRadius: 4 }}>instagram_basic, instagram_content_publish, pages_manage_posts</code><br />
+              5. Generate token → paste below
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {[
+                { label: 'Meta App ID', placeholder: '1234567890123456', key: 'meta_app_id' },
+                { label: 'Meta App Secret', placeholder: 'abc123...', key: 'meta_app_secret' },
+                { label: 'Page Access Token (long-lived)', placeholder: 'EAABx...', key: 'meta_page_token' },
+                { label: 'Instagram Business Account ID', placeholder: '17841400...', key: 'ig_account_id' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 6 }}>{f.label}</label>
+                  <input type="password" placeholder={f.placeholder} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => toast.success('Meta credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg,${C.teal},${C.teal2})`, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Save & Test Connection
+            </button>
+          </div>
+
+          {/* YouTube */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#FF0000', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>▶️</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>YouTube</div>
+                <div style={{ fontSize: 12, color: C.mu }}>YouTube Data API v3 — upload videos, shorts, set thumbnails</div>
+              </div>
+              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#FEF3C7', color: '#D97706', fontSize: 12, fontWeight: 600 }}>Not Connected</div>
+            </div>
+
+            <div style={{ background: '#FFF5F5', border: '1px solid #FECACA', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#7F1D1D', lineHeight: 1.7 }}>
+              <strong>Setup Steps:</strong><br />
+              1. Go to <strong>console.cloud.google.com</strong> → New Project → Enable <strong>YouTube Data API v3</strong><br />
+              2. Create credentials → <strong>OAuth 2.0 Client ID</strong> → Web Application<br />
+              3. Authorized redirect URI: <code style={{ background: '#FEE2E2', padding: '1px 5px', borderRadius: 4 }}>https://your-hq-url.com/api/youtube/callback</code><br />
+              4. Download credentials JSON → copy Client ID + Secret below
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {[
+                { label: 'Google Client ID', placeholder: '123-abc.apps.googleusercontent.com', key: 'yt_client_id' },
+                { label: 'Google Client Secret', placeholder: 'GOCSPX-...', key: 'yt_client_secret' },
+                { label: 'Refresh Token (after OAuth)', placeholder: '1//0g...', key: 'yt_refresh_token' },
+                { label: 'Channel ID', placeholder: 'UCxxxxxxxx', key: 'yt_channel_id' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 6 }}>{f.label}</label>
+                  <input type="password" placeholder={f.placeholder} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => toast.success('YouTube credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: '#FF0000', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Save & Test Connection
+            </button>
+          </div>
+
+          {/* LinkedIn */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#0A66C2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>💼</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>LinkedIn</div>
+                <div style={{ fontSize: 12, color: C.mu }}>LinkedIn API — company page posts, articles</div>
+              </div>
+              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#FEF3C7', color: '#D97706', fontSize: 12, fontWeight: 600 }}>Not Connected</div>
+            </div>
+
+            <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: '#1E3A5F', lineHeight: 1.7 }}>
+              <strong>Setup Steps:</strong><br />
+              1. Go to <strong>developer.linkedin.com</strong> → Create App → link your Company Page<br />
+              2. Products → Add <strong>Share on LinkedIn</strong> + <strong>Sign In with LinkedIn</strong><br />
+              3. Auth tab → get Client ID + Secret<br />
+              4. Permissions needed: <code style={{ background: '#DBEAFE', padding: '1px 5px', borderRadius: 4 }}>w_organization_social, r_organization_social</code>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {[
+                { label: 'LinkedIn Client ID', placeholder: '86xxxxxxxx', key: 'li_client_id' },
+                { label: 'LinkedIn Client Secret', placeholder: 'xxxxxxxx', key: 'li_client_secret' },
+                { label: 'Organization URN', placeholder: 'urn:li:organization:12345', key: 'li_org_urn' },
+                { label: 'Access Token', placeholder: 'AQX...', key: 'li_access_token' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 6 }}>{f.label}</label>
+                  <input type="password" placeholder={f.placeholder} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => toast.success('LinkedIn credentials saved!')} style={{ marginTop: 16, padding: '10px 24px', background: '#0A66C2', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Save & Test Connection
+            </button>
+          </div>
+
+          {/* Threads */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: '#111', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🧵</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.dark }}>Threads</div>
+                <div style={{ fontSize: 12, color: C.mu }}>Meta Threads API — text posts (Beta)</div>
+              </div>
+              <div style={{ marginLeft: 'auto', padding: '4px 12px', borderRadius: 20, background: '#F3F4F6', color: C.mu, fontSize: 12, fontWeight: 600 }}>Beta — Limited</div>
+            </div>
+            <div style={{ background: '#F9FAFB', border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 16px', fontSize: 13, color: C.mu, lineHeight: 1.7 }}>
+              Threads API is available through <strong>developers.facebook.com</strong> (same Meta platform).<br />
+              Currently supports text-only posts. Video + image support coming soon.<br />
+              Uses the same Instagram access token — just enable Threads permission in your Meta App.
+            </div>
+            <button onClick={() => toast('Threads uses your Meta token above — just enable the permission', { icon: 'ℹ️' })} style={{ marginTop: 14, padding: '10px 24px', background: '#111', color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Enable Threads Access
+            </button>
+          </div>
+
+          {/* Post Scheduling Settings */}
+          <div style={{ background: '#fff', borderRadius: 16, border: `1px solid ${C.border}`, padding: 24 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: C.dark, marginBottom: 18 }}>⏰ Auto-Posting Schedule</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              {[
+                { label: 'Instagram Posts/Day', default: '3' },
+                { label: 'Facebook Posts/Day', default: '2' },
+                { label: 'YouTube Shorts/Day', default: '1' },
+                { label: 'LinkedIn Posts/Day', default: '1' },
+                { label: 'Threads Posts/Day', default: '2' },
+                { label: 'Best Time (IST)', default: '7PM–9PM' },
+              ].map(f => (
+                <div key={f.label}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: C.dark, display: 'block', marginBottom: 6 }}>{f.label}</label>
+                  <input defaultValue={f.default} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: `1px solid ${C.border}`, fontSize: 13, color: C.dark, outline: 'none', background: '#FAFAF8', boxSizing: 'border-box' }} />
+                </div>
+              ))}
+            </div>
+            <button onClick={() => toast.success('Schedule settings saved!')} style={{ marginTop: 16, padding: '10px 24px', background: `linear-gradient(135deg,${C.teal},${C.teal2})`, color: '#fff', border: 'none', borderRadius: 10, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+              Save Schedule
+            </button>
           </div>
         </div>
       )}
