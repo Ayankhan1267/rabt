@@ -813,15 +813,48 @@ export default function AssistantAgentPage() {
                 </div>
               </div>
 
+              {/* Department Scores */}
+              {autoBrain.departmentScores && Object.keys(autoBrain.departmentScores).length > 0 && (
+                <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, padding: '14px 18px', marginBottom: 16 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: C.dark, marginBottom: 12 }}>🏢 Department Health Check</div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {Object.entries(autoBrain.departmentScores).map(([dept, score]: [string, any], i) => (
+                      <div key={i} style={{
+                        padding: '6px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        background: score === 'good' ? C.green + '15' : score === 'warning' ? C.gold + '15' : C.red + '15',
+                        color: score === 'good' ? C.green : score === 'warning' ? C.gold : C.red,
+                        border: `1px solid ${score === 'good' ? C.green + '30' : score === 'warning' ? C.gold + '30' : C.red + '30'}`,
+                      }}>
+                        {score === 'good' ? '✅' : score === 'warning' ? '⚠️' : '🚨'} {dept}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Data Snapshot Row */}
               {autoBrain.dataSnapshot?.mongo && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 12, marginBottom: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 16 }}>
                   {[
                     { label: 'Orders Today', value: autoBrain.dataSnapshot.mongo.todayOrders ?? '—', color: C.teal },
-                    { label: 'Orders This Month', value: autoBrain.dataSnapshot.mongo.monthOrders ?? '—', color: C.green },
-                    { label: 'Month Revenue', value: autoBrain.dataSnapshot.mongo.monthRevenue ? `₹${(autoBrain.dataSnapshot.mongo.monthRevenue/100000).toFixed(1)}L` : '—', color: C.gold },
-                    { label: 'Pending Consults', value: autoBrain.dataSnapshot.mongo.pendingConsultations ?? '—', color: autoBrain.dataSnapshot.mongo.pendingConsultations > 0 ? C.red : C.green },
-                    { label: 'At-Risk Customers', value: autoBrain.dataSnapshot.mongo.atRiskCustomers ?? '—', color: autoBrain.dataSnapshot.mongo.atRiskCustomers > 5 ? C.orange : C.green },
+                    { label: 'Month Revenue', value: autoBrain.dataSnapshot.mongo.monthRevenue ? `₹${(autoBrain.dataSnapshot.mongo.monthRevenue/100000).toFixed(2)}L` : '—', color: C.gold },
+                    { label: 'Pending Consults', value: autoBrain.dataSnapshot.mongo.pendingConsultations ?? '—', color: (autoBrain.dataSnapshot.mongo.pendingConsultations || 0) > 0 ? C.red : C.green },
+                    { label: 'At-Risk Customers', value: autoBrain.dataSnapshot.mongo.atRiskCustomers ?? '—', color: (autoBrain.dataSnapshot.mongo.atRiskCustomers || 0) > 5 ? C.orange : C.green },
+                  ].map((k, i) => (
+                    <div key={i} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: k.color, fontFamily: 'Syne, sans-serif' }}>{k.value}</div>
+                      <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 3 }}>{k.label}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {autoBrain.dataSnapshot && (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: 'Pending Dispatch', value: autoBrain.dataSnapshot.mongo?.pendingDispatch ?? '—', color: (autoBrain.dataSnapshot.mongo?.pendingDispatch || 0) > 0 ? C.red : C.green },
+                    { label: 'Calls This Week', value: autoBrain.dataSnapshot.calls?.total ?? '—', color: C.blue },
+                    { label: 'Call Connect Rate', value: autoBrain.dataSnapshot.callConnectionRate != null ? autoBrain.dataSnapshot.callConnectionRate + '%' : '—', color: (autoBrain.dataSnapshot.callConnectionRate || 0) >= 50 ? C.green : C.orange },
+                    { label: 'AI Agents Online', value: `${autoBrain.dataSnapshot.connectedAgents}/${autoBrain.dataSnapshot.totalAgents}`, color: autoBrain.dataSnapshot.disconnectedCount > 0 ? C.red : C.green },
                   ].map((k, i) => (
                     <div key={i} style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', textAlign: 'center' }}>
                       <div style={{ fontSize: 22, fontWeight: 800, color: k.color, fontFamily: 'Syne, sans-serif' }}>{k.value}</div>
