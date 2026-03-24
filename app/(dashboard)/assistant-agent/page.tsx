@@ -669,12 +669,17 @@ export default function AssistantAgentPage() {
                   </div>
                   <button
                     onClick={async () => {
-                      const res = await fetch('/api/assistant/schedule', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ enabled: true, time: scheduleTime, phones: [schedulePhone, schedulePhone2].filter(Boolean) }),
+                      // Save to Supabase hq_settings so cron endpoint reads it
+                      const { error } = await supabase.from('hq_settings').upsert({
+                        key: 'auto_schedule',
+                        value: {
+                          enabled: true,
+                          time: scheduleTime,
+                          phones: [schedulePhone, schedulePhone2].filter(Boolean),
+                        },
+                        updated_at: new Date().toISOString(),
                       })
-                      if (res.ok) toast.success(`Scheduled! Daily report at ${scheduleTime}`)
+                      if (!error) toast.success(`Schedule saved! Daily report at ${scheduleTime}`)
                       else toast.error('Failed to save schedule')
                     }}
                     style={{ background: C.teal, color: '#fff', border: 'none', borderRadius: 10, padding: '12px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer', width: '100%' }}
@@ -896,6 +901,49 @@ export default function AssistantAgentPage() {
                 </div>
               </div>
 
+              {/* Per-Specialist / Per-Person Monitoring */}
+              {autoBrain.perPersonSummary?.length > 0 && (
+                <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
+                  <div style={{ padding: '14px 18px', borderBottom: `1px solid ${C.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: C.dark }}>👥 Per Person — AI Monitoring</div>
+                    <span style={{ fontSize: 11, color: '#9CA3AF' }}>AI ne har person ka kaam check kiya</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12, padding: 16 }}>
+                    {autoBrain.perPersonSummary.map((p: any, i: number) => (
+                      <div key={i} style={{
+                        padding: '14px 16px', borderRadius: 12,
+                        background: p.status === 'critical' ? '#FEF2F2' : p.status === 'needs_attention' ? '#FFFBEB' : '#F0FDF4',
+                        border: `1px solid ${p.status === 'critical' ? C.red + '40' : p.status === 'needs_attention' ? C.gold + '40' : C.green + '40'}`,
+                        borderLeft: `4px solid ${p.status === 'critical' ? C.red : p.status === 'needs_attention' ? C.gold : C.green}`,
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 30, height: 30, borderRadius: '50%', background: C.teal, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                              {(p.name || '?')[0].toUpperCase()}
+                            </div>
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 13, color: C.dark }}>{p.name}</div>
+                              <div style={{ fontSize: 11, color: '#9CA3AF' }}>{p.role}</div>
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                            background: p.status === 'critical' ? C.red : p.status === 'needs_attention' ? C.gold : C.green,
+                            color: '#fff',
+                          }}>
+                            {p.status === 'critical' ? '🚨 Critical' : p.status === 'needs_attention' ? '⚠️ Attention' : '✅ On Track'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#374151', lineHeight: 1.5 }}>{p.whatTheyNeedToDo}</div>
+                        {p.pendingCount > 0 && (
+                          <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 6 }}>{p.pendingCount} pending tasks</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* WhatsApp Report Preview */}
               {autoBrain.whatsappReport && (
                 <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 14, overflow: 'hidden' }}>
@@ -933,6 +981,89 @@ export default function AssistantAgentPage() {
               )}
             </div>
           )}
+          {/* ── Activation Guide ────────────────────────────────────── */}
+          <div style={{ background: '#fff', border: `1px solid ${C.border}`, borderRadius: 16, padding: 28, marginTop: 24 }}>
+            <div style={{ fontWeight: 700, fontSize: 16, color: C.dark, marginBottom: 4 }}>⚡ Agent Ko Activate Kaise Karein</div>
+            <div style={{ fontSize: 13, color: '#6B7280', marginBottom: 20 }}>3 tarike hain — manual se lekar fully automatic tak</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+              {/* Method 1 */}
+              <div style={{ padding: '16px 20px', background: C.teal + '08', border: `1px solid ${C.teal}25`, borderRadius: 12, borderLeft: `4px solid ${C.teal}` }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, marginBottom: 6 }}>1️⃣ Manual — Abhi Chalao (Already Working)</div>
+                <div style={{ fontSize: 13, color: '#374151' }}>
+                  Upar "▶ Run Auto Brain" button dabao → AI saara data read karega → Tasks banayega → WhatsApp report dega.<br />
+                  <span style={{ color: '#9CA3AF' }}>Jab bhi chahein chalao — no setup needed.</span>
+                </div>
+              </div>
+
+              {/* Method 2 */}
+              <div style={{ padding: '16px 20px', background: C.gold + '08', border: `1px solid ${C.gold}25`, borderRadius: 12, borderLeft: `4px solid ${C.gold}` }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, marginBottom: 6 }}>2️⃣ Auto Schedule — Daily Report (Auto Schedule Tab Mein Set Karo)</div>
+                <div style={{ fontSize: 13, color: '#374151', marginBottom: 10 }}>
+                  Auto Schedule tab mein jao → Time set karo (e.g. 9:00 AM) → Phone numbers dalo → Save karo.<br />
+                  <span style={{ color: '#9CA3AF' }}>Phones save hote hain Supabase mein (hq_settings → auto_schedule).</span>
+                </div>
+              </div>
+
+              {/* Method 3 — Render Cron */}
+              <div style={{ padding: '16px 20px', background: C.purple + '08', border: `1px solid ${C.purple}25`, borderRadius: 12, borderLeft: `4px solid ${C.purple}` }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: C.dark, marginBottom: 6 }}>3️⃣ Render Cron Job — Fully Automatic (Best for Production)</div>
+                <div style={{ fontSize: 13, color: '#374151', marginBottom: 12 }}>
+                  Ye agent khud roz subah run ho jata hai bina kuch kiye.
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[
+                    { step: '1', text: 'Render Dashboard → Add env var: CRON_SECRET=koi_bhi_secret_string (e.g. rabt2024secure)' },
+                    { step: '2', text: 'Render Dashboard → Cron Jobs → New Cron Job' },
+                    { step: '3', text: 'Schedule: 0 4 * * * (9 AM IST = 4 AM UTC, roz subah)' },
+                    { step: '4', text: 'Command: curl "https://YOUR_RENDER_URL/api/cron/assistant?secret=rabt2024secure"' },
+                    { step: '5', text: 'Auto Schedule tab mein phones save karo jahan report bhejni hai' },
+                  ].map((s, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ width: 22, height: 22, borderRadius: '50%', background: C.purple, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{s.step}</span>
+                      <span style={{ fontSize: 12, color: '#374151', paddingTop: 2 }}>{s.text}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 12, padding: '10px 14px', background: '#1A2E2B', borderRadius: 8 }}>
+                  <div style={{ fontSize: 11, color: '#9CA3AF', marginBottom: 4 }}>Cron Endpoint URL:</div>
+                  <code style={{ fontSize: 12, color: '#10B981' }}>
+                    GET /api/cron/assistant?secret=YOUR_CRON_SECRET
+                  </code>
+                </div>
+              </div>
+
+              {/* Alternative: cron-job.org */}
+              <div style={{ padding: '14px 18px', background: '#F8FAFC', border: `1px solid ${C.border}`, borderRadius: 12 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: C.dark, marginBottom: 4 }}>💡 Free Alternative: cron-job.org</div>
+                <div style={{ fontSize: 12, color: '#6B7280' }}>
+                  cron-job.org pe free account banao → New Cronjob → URL: https://YOUR_SITE/api/cron/assistant?secret=YOUR_SECRET → Schedule: Daily 9 AM
+                </div>
+              </div>
+
+              {/* What happens when it runs */}
+              <div style={{ padding: '14px 18px', background: C.green + '08', border: `1px solid ${C.green}25`, borderRadius: 12 }}>
+                <div style={{ fontWeight: 600, fontSize: 13, color: C.dark, marginBottom: 8 }}>🔄 Jab Bhi Chale (Manual ya Auto) — Ye Hoga:</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                  {[
+                    '📦 MongoDB se orders + consultations read karega',
+                    '👥 Har specialist ka pending kaam dekhega',
+                    '✅ Supabase tasks check karega (blocked, overdue)',
+                    '📞 Call logs review karega',
+                    '🎯 Goals track karega',
+                    '🤖 AI tasks auto-create karega Supabase mein',
+                    '📱 WhatsApp report founder/manager ko bhejega',
+                    '💾 Last run result save karega',
+                  ].map((item, i) => (
+                    <div key={i} style={{ fontSize: 12, color: '#374151', display: 'flex', gap: 6 }}>
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
