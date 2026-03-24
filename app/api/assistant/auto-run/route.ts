@@ -1,11 +1,14 @@
 /**
  * /api/assistant/auto-run
+ * COMPLETE 360° BUSINESS BRAIN — monitors every section of Rabt HQ
  *
- * THE COMPLETE BUSINESS BRAIN for Rabt Naturals HQ.
- * Monitors EVERY area: Sales, Finance, Consultations, AI Agents, Operations,
- * Marketing, CRM, Team, Content, Calling, Retention, Goals, HR — everything.
- *
- * Data Sources: MongoDB (rabtnaturals.com) + Supabase (HQ) + All AI Agent statuses
+ * Covers ALL 50 sidebar sections:
+ * Dashboard, All AI Agents, Specialist Panel, Admin, Kanban, Calendar, Team Hub,
+ * Partner Portal, Vendor, Website Analytics, Customers, CRM/Leads, Orders,
+ * Inventory, Consultations, Skin Profiles, Specialists, Support, Communications,
+ * Reminders, Marketing, SEO, Social, Video, Content, Ads, Finance,
+ * Funnel Tracker, Revenue Flow, Product Lab, Goals & OKR, Reports, HR, Team,
+ * Automation, AI Agents Status, Knowledge Base, Settings
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,161 +21,208 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Safe Supabase query — returns data or [] without throwing
+async function sq(table: string, query: (q: any) => any): Promise<any[]> {
+  try {
+    const { data } = await query(supabase.from(table))
+    return data || []
+  } catch { return [] }
+}
+
+// Safe count
+async function sc(table: string, query?: (q: any) => any): Promise<number> {
+  try {
+    const q = supabase.from(table).select('id', { count: 'exact', head: true })
+    const { count } = await (query ? query(q) : q)
+    return count || 0
+  } catch { return 0 }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { createTasks = true, sendReport = false, phone, phones } = await req.json().catch(() => ({}))
 
-    const now = new Date()
-    const todayStart   = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const weekStart    = new Date(now.getTime() - 7  * 86400000)
-    const monthStart   = new Date(now.getFullYear(), now.getMonth(), 1)
+    const now           = new Date()
+    const todayStart    = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const weekStart     = new Date(now.getTime() - 7  * 86400000)
+    const monthStart    = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000)
-    const sevenDaysAgo  = new Date(now.getTime() - 7  * 86400000)
-    const todayISO = now.toISOString().split('T')[0]
-    const dateStr = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    const todayISO      = now.toISOString().split('T')[0]
+    const dateStr       = now.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
     // ══════════════════════════════════════════════════════════════════════
-    // 1. SUPABASE — Full HQ Data
+    // SUPABASE — fetch all HQ tables in parallel
     // ══════════════════════════════════════════════════════════════════════
     const [
-      { data: allTasks },
-      { data: allProfiles },
-      { data: allCalls },
-      { data: goalsRow },
-      { data: scheduleRow },
-      { data: lastRunRow },
+      allTasks, allProfiles, allCalls, goalsRow, scheduleRow, lastRunRow,
+      // Goals & OKR
+      sbGoals, sbKeyResults,
+      // HR
+      hrLeaves, hrPayroll,
+      // CRM
+      crmLeads,
+      // Finance
+      financeExpenses, partnerWithdrawals,
+      // Partners
+      salesPartners,
+      // Reminders / WhatsApp logs
+      whatsappLogs, remindersPending,
+      // Support
+      supportOpen,
     ] = await Promise.all([
-      supabase.from('rabt_tasks').select('*').order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('rabt_call_logs').select('*').gte('created_at', weekStart.toISOString()).order('created_at', { ascending: false }),
-      supabase.from('hq_settings').select('value').eq('key', 'business_goals').single(),
-      supabase.from('hq_settings').select('value').eq('key', 'auto_schedule').single(),
-      supabase.from('hq_settings').select('value').eq('key', 'last_auto_run').single(),
+      sq('rabt_tasks',    q => q.select('*').order('created_at', { ascending: false })),
+      sq('profiles',      q => q.select('*')),
+      sq('rabt_call_logs',q => q.select('*').gte('created_at', weekStart.toISOString()).order('created_at', { ascending: false })),
+      supabase.from('hq_settings').select('value').eq('key', 'business_goals').single().then(r => r.data?.value || null),
+      supabase.from('hq_settings').select('value').eq('key', 'auto_schedule').single().then(r => r.data?.value || {}),
+      supabase.from('hq_settings').select('value').eq('key', 'last_auto_run').single().then(r => r.data?.value || null),
+
+      sq('goals',            q => q.select('*').order('created_at', { ascending: false })),
+      sq('goal_key_results', q => q.select('*')),
+
+      sq('hr_leaves',    q => q.select('*').eq('status', 'pending')),
+      sq('hr_payroll',   q => q.select('*').gte('created_at', monthStart.toISOString())),
+
+      sq('leads',        q => q.select('*').order('created_at', { ascending: false }).limit(50)),
+
+      sq('finance_expenses', q => q.select('*').gte('created_at', monthStart.toISOString())),
+      sq('partner_withdrawal_requests', q => q.select('*').eq('status', 'pending')),
+
+      sq('sales_partners', q => q.select('id, name, status, commission_rate, total_sales').order('total_sales', { ascending: false }).limit(10)),
+
+      sq('whatsapp_logs',  q => q.select('*').gte('created_at', weekStart.toISOString()).order('created_at', { ascending: false }).limit(20)),
+      sq('leads',          q => q.select('id, status, created_at').eq('status', 'new').limit(30)),
+
+      sq('support_tickets',q => q.select('id, status, priority, created_at').in('status', ['open', 'pending']).limit(20)),
     ])
 
-    const tasks     = allTasks    || []
-    const profiles  = allProfiles || []
-    const calls     = allCalls    || []
-    const goals     = goalsRow?.value || 'Reach ₹5L monthly revenue, 70%+ task completion rate, 50%+ call connection rate, <20 at-risk customers, >60% consultation completion rate'
-    const schedule  = scheduleRow?.value || {}
-    const lastRun   = lastRunRow?.value || null
+    const tasks    = allTasks
+    const profiles = allProfiles
+    const calls    = allCalls
+    const goals    = goalsRow || 'Reach ₹5L monthly revenue, 70%+ task completion rate, 50%+ call connection rate, <20 at-risk customers, >60% consultation completion rate'
+    const schedule = scheduleRow || {}
+    const lastRun  = lastRunRow
 
-    // — Task breakdown by area —
-    const AREAS = ['Sales', 'Marketing', 'Operations', 'Specialist', 'Support', 'Finance', 'Tech', 'HR', 'Content', 'CRM']
+    // — Task breakdown by all areas —
+    const AREAS = ['Sales', 'Marketing', 'Operations', 'Specialist', 'Support', 'Finance', 'Tech', 'HR', 'Content', 'CRM', 'Partner', 'Product']
     const tasksByArea = AREAS.reduce((acc, area) => {
-      const areaT = tasks.filter((t: any) => t.area === area)
+      const t = tasks.filter((x: any) => x.area === area)
       acc[area] = {
-        total:      areaT.length,
-        done:       areaT.filter((t: any) => t.status === 'done').length,
-        pending:    areaT.filter((t: any) => t.status === 'pending').length,
-        inProgress: areaT.filter((t: any) => t.status === 'in_progress').length,
-        blocked:    areaT.filter((t: any) => t.status === 'blocked').length,
-        urgent:     areaT.filter((t: any) => t.priority === 'urgent' && t.status !== 'done').length,
-        overdue:    areaT.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now).length,
+        total: t.length, done: t.filter((x: any) => x.status === 'done').length,
+        pending: t.filter((x: any) => x.status === 'pending').length,
+        blocked: t.filter((x: any) => x.status === 'blocked').length,
+        urgent:  t.filter((x: any) => x.priority === 'urgent' && x.status !== 'done').length,
+        overdue: t.filter((x: any) => x.due_date && x.status !== 'done' && new Date(x.due_date) < now).length,
       }
       return acc
     }, {} as Record<string, any>)
 
-    // — Overall task stats —
     const taskStats = {
-      total:      tasks.length,
-      done:       tasks.filter((t: any) => t.status === 'done').length,
+      total: tasks.length,
+      done: tasks.filter((t: any) => t.status === 'done').length,
       inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
-      blocked:    tasks.filter((t: any) => t.status === 'blocked').length,
-      urgent:     tasks.filter((t: any) => t.priority === 'urgent' && t.status !== 'done').length,
-      overdue:    tasks.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now).length,
+      blocked: tasks.filter((t: any) => t.status === 'blocked').length,
+      urgent: tasks.filter((t: any) => t.priority === 'urgent' && t.status !== 'done').length,
+      overdue: tasks.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now).length,
       completionRate: tasks.length > 0 ? Math.round((tasks.filter((t: any) => t.status === 'done').length / tasks.length) * 100) : 0,
     }
 
     // — Per-person workload —
-    const perPersonWork = profiles.map((p: any) => {
-      const myTasks = tasks.filter((t: any) => t.assigned_to === p.id || t.assigned_role === p.role)
-      const pending  = myTasks.filter((t: any) => t.status === 'pending')
-      const overdue  = myTasks.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now)
-      const urgent   = myTasks.filter((t: any) => t.priority === 'urgent' && t.status !== 'done')
-      const blocked  = myTasks.filter((t: any) => t.status === 'blocked')
+    const perPersonWork = profiles.slice(0, 15).map((p: any) => {
+      const myT     = tasks.filter((t: any) => t.assigned_to === p.id || t.assigned_role === p.role)
+      const pending  = myT.filter((t: any) => t.status === 'pending')
+      const overdue  = myT.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now)
+      const urgent   = myT.filter((t: any) => t.priority === 'urgent' && t.status !== 'done')
       return {
-        name:          p.name || p.email || 'Unknown',
-        role:          p.role,
-        email:         p.email,
-        pending:       pending.length,
-        overdue:       overdue.length,
-        urgent:        urgent.length,
-        blocked:       blocked.length,
-        done:          myTasks.filter((t: any) => t.status === 'done').length,
-        total:         myTasks.length,
-        urgentTasks:   urgent.slice(0, 3).map((t: any) => t.title),
-        overdueTasks:  overdue.slice(0, 2).map((t: any) => `${t.title} (due: ${t.due_date})`),
-        pendingTasks:  pending.slice(0, 3).map((t: any) => t.title),
+        name: p.name || p.email || 'Unknown', role: p.role,
+        pending: pending.length, overdue: overdue.length,
+        urgent: urgent.length, done: myT.filter((t: any) => t.status === 'done').length, total: myT.length,
+        urgentTasks:  urgent.slice(0, 2).map((t: any) => t.title),
+        overdueTasks: overdue.slice(0, 2).map((t: any) => `${t.title} (due:${t.due_date})`),
+        pendingTasks: pending.slice(0, 3).map((t: any) => t.title),
       }
     })
 
     // — Call stats —
     const callStats = {
-      total:       calls.length,
-      today:       calls.filter((c: any) => new Date(c.created_at) >= todayStart).length,
-      connected:   calls.filter((c: any) => ['connected', 'completed', 'interested', 'follow_up'].includes(c.outcome || c.status || '')).length,
-      failed:      calls.filter((c: any) => ['no_answer', 'failed', 'busy'].includes(c.outcome || '')).length,
+      total: calls.length, today: calls.filter((c: any) => new Date(c.created_at) >= todayStart).length,
+      connected: calls.filter((c: any) => ['connected', 'completed', 'interested', 'follow_up'].includes(c.outcome || c.status || '')).length,
+      failed:    calls.filter((c: any) => ['no_answer', 'failed', 'busy'].includes(c.outcome || '')).length,
       noCallToday: calls.filter((c: any) => new Date(c.created_at) >= todayStart).length === 0,
     }
-    const callConnectionRate = calls.length > 0 ? Math.round((callStats.connected / calls.length) * 100) : 0
+    const callRate = calls.length > 0 ? Math.round((callStats.connected / calls.length) * 100) : 0
 
-    // — Blocked & Overdue details —
-    const blockedTaskList = tasks.filter((t: any) => t.status === 'blocked')
-      .slice(0, 5).map((t: any) => `[${t.area}] ${t.title} → ${t.assigned_role || 'unassigned'}`)
-    const overdueTaskList = tasks.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now)
-      .slice(0, 5).map((t: any) => `[${t.area}] ${t.title} — due: ${t.due_date} — ${t.assigned_role || 'unassigned'}`)
-    const urgentTaskList  = tasks.filter((t: any) => t.priority === 'urgent' && t.status !== 'done')
-      .slice(0, 5).map((t: any) => `[${t.area}] ${t.title} → ${t.assigned_role || 'unassigned'}`)
+    // — Goals & OKR —
+    const goalsOKR = sbGoals.slice(0, 6).map((g: any) => {
+      const krs = sbKeyResults.filter((k: any) => k.goal_id === g.id)
+      const doneKRs = krs.filter((k: any) => k.status === 'completed' || (k.current_value >= k.target_value))
+      return `${g.title} [${g.status || 'active'}] — ${doneKRs.length}/${krs.length} KRs done — ${g.progress || 0}% progress`
+    })
+
+    // — HR summary —
+    const hrSummary = {
+      pendingLeaves: hrLeaves.length,
+      pendingPayroll: hrPayroll.filter((p: any) => p.status === 'pending').length,
+      teamCount: profiles.length,
+      specialistCount: profiles.filter((p: any) => p.role === 'specialist').length,
+    }
+
+    // — CRM Leads —
+    const crmSummary = {
+      total: crmLeads.length,
+      newToday: crmLeads.filter((l: any) => new Date(l.created_at) >= todayStart).length,
+      newThisWeek: crmLeads.filter((l: any) => new Date(l.created_at) >= weekStart).length,
+      open: crmLeads.filter((l: any) => l.status === 'new' || l.status === 'contacted').length,
+      converted: crmLeads.filter((l: any) => l.status === 'converted').length,
+    }
+
+    // — Finance —
+    const totalExpenses = financeExpenses.reduce((s: number, e: any) => s + (e.amount || 0), 0)
+
+    // — Partners —
+    const partnerSummary = {
+      total: salesPartners.length,
+      pendingWithdrawals: partnerWithdrawals.length,
+      topPartner: salesPartners[0]?.name || 'None',
+    }
+
+    // — WhatsApp Activity —
+    const waSummary = {
+      sent: whatsappLogs.length,
+      todaySent: whatsappLogs.filter((l: any) => new Date(l.created_at) >= todayStart).length,
+    }
 
     // ══════════════════════════════════════════════════════════════════════
-    // 2. MONGODB — Full rabtnaturals.com Data
+    // MONGODB — complete rabtnaturals.com data
     // ══════════════════════════════════════════════════════════════════════
     let mongo: any = {}
     try {
       const db = await getMongoDb()
 
       const [
-        // Sales & Revenue
         todayOrdersPaid, weekOrdersPaid, monthOrdersPaid,
-        monthRevArr, lastMonthRevArr, allTimePaidOrders,
-        pendingDispatch, returnedOrders,
-        ordersByStatusArr, ordersBySourceArr,
-
-        // Consultations
+        monthRevArr, lastMonthRevArr,
+        pendingDispatch, returnedOrders, ordersByStatusArr, ordersBySourceArr,
         pendingConsultsArr, todayConsults, completedConsults, totalConsults,
         consultsBySpecArr, overdueConsultsArr,
-
-        // Customers
-        totalUsers, newUsersToday, newUsersWeek,
-        atRiskArr,
-
-        // Products (top sellers)
-        topProductsArr,
-
-        // Skin profiles
-        totalProfiles, todayProfiles,
+        totalUsers, newUsersToday, newUsersWeek, atRiskArr,
+        topProductsArr, totalProducts, lowStockArr,
+        totalSpecialists, totalSkinProfiles, todayProfiles,
       ] = await Promise.all([
-
-        // ── Orders ──
         db.collection('orders').countDocuments({ createdAt: { $gte: todayStart }, 'payment.status': 'paid' }),
         db.collection('orders').countDocuments({ createdAt: { $gte: weekStart },  'payment.status': 'paid' }),
         db.collection('orders').countDocuments({ createdAt: { $gte: monthStart }, 'payment.status': 'paid' }),
-
         db.collection('orders').aggregate([
           { $match: { createdAt: { $gte: monthStart }, 'payment.status': 'paid' } },
-          { $group: { _id: null, total: { $sum: '$pricing.total' }, avg: { $avg: '$pricing.total' }, count: { $sum: 1 } } },
+          { $group: { _id: null, total: { $sum: '$pricing.total' }, avg: { $avg: '$pricing.total' } } },
         ]).toArray(),
         db.collection('orders').aggregate([
           { $match: { createdAt: { $gte: lastMonthStart, $lt: monthStart }, 'payment.status': 'paid' } },
-          { $group: { _id: null, total: { $sum: '$pricing.total' }, count: { $sum: 1 } } },
+          { $group: { _id: null, total: { $sum: '$pricing.total' } } },
         ]).toArray(),
-        db.collection('orders').countDocuments({ 'payment.status': 'paid' }),
-
         db.collection('orders').countDocuments({ status: { $in: ['pending', 'confirmed', 'processing'] } }),
         db.collection('orders').countDocuments({ status: 'returned', createdAt: { $gte: monthStart } }),
-
         db.collection('orders').aggregate([
           { $match: { createdAt: { $gte: monthStart } } },
           { $group: { _id: '$status', count: { $sum: 1 } } },
@@ -183,18 +233,15 @@ export async function POST(req: NextRequest) {
           { $sort: { revenue: -1 } },
         ]).toArray(),
 
-        // ── Consultations ──
         db.collection('consultations').find({ status: 'pending' }).sort({ createdAt: 1 }).limit(8).toArray(),
         db.collection('consultations').countDocuments({ createdAt: { $gte: todayStart } }),
         db.collection('consultations').countDocuments({ status: 'completed' }),
         db.collection('consultations').countDocuments({}),
-
         db.collection('consultations').aggregate([
           { $match: { status: 'pending' } },
           { $group: { _id: '$assignedTo', count: { $sum: 1 }, oldest: { $min: '$createdAt' } } },
           { $sort: { count: -1 } },
         ]).toArray(),
-        // Consultations pending > 48 hours (overdue follow-up)
         db.collection('consultations').aggregate([
           { $match: { status: 'pending', createdAt: { $lt: new Date(now.getTime() - 2 * 86400000) } } },
           { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'user' } },
@@ -202,12 +249,9 @@ export async function POST(req: NextRequest) {
           { $project: { createdAt: 1, skinConcern: 1, assignedTo: 1, 'user.name': 1, 'user.phone': 1 } },
         ]).toArray(),
 
-        // ── Customers ──
         db.collection('users').countDocuments({}),
         db.collection('users').countDocuments({ createdAt: { $gte: todayStart } }),
         db.collection('users').countDocuments({ createdAt: { $gte: weekStart } }),
-
-        // At-risk: paid orders but last one > 30 days ago
         db.collection('orders').aggregate([
           { $match: { 'payment.status': 'paid' } },
           { $group: { _id: '$userId', lastOrder: { $max: '$createdAt' }, total: { $sum: 1 } } },
@@ -215,16 +259,16 @@ export async function POST(req: NextRequest) {
           { $count: 'count' },
         ]).toArray(),
 
-        // ── Top Products ──
         db.collection('orders').aggregate([
           { $match: { createdAt: { $gte: monthStart }, 'payment.status': 'paid' } },
           { $unwind: '$items' },
           { $group: { _id: '$items.productSnapshot.name', units: { $sum: '$items.quantity' }, revenue: { $sum: { $multiply: ['$items.price.final', '$items.quantity'] } } } },
-          { $sort: { revenue: -1 } },
-          { $limit: 5 },
+          { $sort: { revenue: -1 } }, { $limit: 5 },
         ]).toArray(),
+        db.collection('products').countDocuments({}).catch(() => 0),
+        db.collection('products').find({ $or: [{ stock: { $lt: 10 } }, { stock: { $exists: false } }] }).limit(5).project({ name: 1, stock: 1 }).toArray().catch(() => []),
 
-        // ── Skin Profiles ──
+        db.collection('specialists').countDocuments({}).catch(() => 0),
         db.collection('skinprofiles').countDocuments({}).catch(() => 0),
         db.collection('skinprofiles').countDocuments({ createdAt: { $gte: todayStart } }).catch(() => 0),
       ])
@@ -232,75 +276,43 @@ export async function POST(req: NextRequest) {
       const monthRev     = monthRevArr[0]?.total || 0
       const lastMonthRev = lastMonthRevArr[0]?.total || 0
       const revGrowth    = lastMonthRev > 0 ? Math.round(((monthRev - lastMonthRev) / lastMonthRev) * 100) : 0
-      const avgOrderVal  = monthRevArr[0]?.avg || 0
       const consultCompRate = totalConsults > 0 ? Math.round((completedConsults / totalConsults) * 100) : 0
-      const atRisk       = atRiskArr[0]?.count || 0
-
-      // Status breakdown
+      const atRisk = atRiskArr[0]?.count || 0
       const statusMap: Record<string, number> = {}
       ordersByStatusArr.forEach((s: any) => { statusMap[s._id] = s.count })
 
-      // Pending consultations formatted
       const pendingConsultDetails = pendingConsultsArr.map((c: any) => {
-        const daysPending = Math.round((now.getTime() - new Date(c.createdAt).getTime()) / 86400000)
-        return `${c.userId || 'Customer'} — ${c.skinConcern || 'skin consultation'} — ${daysPending}d pending — assigned: ${c.assignedTo || 'nobody'}`
+        const days = Math.round((now.getTime() - new Date(c.createdAt).getTime()) / 86400000)
+        return `${c.userId || 'Customer'} — ${c.skinConcern || 'skin consultation'} — ${days}d pending — assigned: ${c.assignedTo || 'nobody'}`
       })
-
-      // Overdue consultations
       const overdueConsultDetails = overdueConsultsArr.map((c: any) => {
-        const daysPending = Math.round((now.getTime() - new Date(c.createdAt).getTime()) / 86400000)
-        return `${c.user?.[0]?.name || 'Customer'} (${c.user?.[0]?.phone || ''}) — ${c.skinConcern || 'consult'} — ${daysPending} days waiting`
+        const days = Math.round((now.getTime() - new Date(c.createdAt).getTime()) / 86400000)
+        return `${c.user?.[0]?.name || 'Customer'} (${c.user?.[0]?.phone || ''}) — ${c.skinConcern || 'consult'} — ${days} days waiting`
       })
-
-      // Revenue by source
-      const revBySource = ordersBySourceArr.slice(0, 4).map((s: any) =>
-        `${s._id || 'Direct'}: ${s.count} orders, ₹${Math.round(s.revenue || 0).toLocaleString('en-IN')}`)
 
       mongo = {
-        // Sales
-        todayOrders:       todayOrdersPaid,
-        weekOrders:        weekOrdersPaid,
-        monthOrders:       monthOrdersPaid,
-        monthRevenue:      Math.round(monthRev),
-        lastMonthRevenue:  Math.round(lastMonthRev),
-        revGrowth,
-        avgOrderValue:     Math.round(avgOrderVal),
-        allTimePaidOrders,
-        pendingDispatch,
-        returnedThisMonth: returnedOrders,
-        returnRate:        monthOrdersPaid > 0 ? Math.round((returnedOrders / monthOrdersPaid) * 100) : 0,
-        orderStatusMap:    statusMap,
-        revBySource,
-
-        // Consultations
-        pendingConsultations:  pendingConsultsArr.length,
-        pendingConsultDetails,
-        overdueConsultDetails,
-        todayConsultations:    todayConsults,
-        completedConsultations: completedConsults,
-        totalConsultations:    totalConsults,
-        consultCompRate,
-        consultsBySpecialist:  consultsBySpecArr,
-
-        // Customers
-        totalUsers,
-        newUsersToday,
-        newUsersWeek,
-        atRiskCustomers: atRisk,
-
-        // Products
-        topProducts: topProductsArr.filter((p: any) => p._id).map((p: any) => `${p._id}: ${p.units} units, ₹${Math.round(p.revenue || 0).toLocaleString('en-IN')}`),
-
-        // Skin profiles
-        totalProfiles,
-        todayProfiles,
+        todayOrders: todayOrdersPaid, weekOrders: weekOrdersPaid, monthOrders: monthOrdersPaid,
+        monthRevenue: Math.round(monthRev), lastMonthRevenue: Math.round(lastMonthRev),
+        revGrowth, avgOrderValue: Math.round(monthRevArr[0]?.avg || 0),
+        pendingDispatch, returnedThisMonth: returnedOrders,
+        returnRate: monthOrdersPaid > 0 ? Math.round((returnedOrders / monthOrdersPaid) * 100) : 0,
+        orderStatusMap: statusMap,
+        revBySource: ordersBySourceArr.slice(0, 4).map((s: any) => `${s._id || 'Direct'}: ${s.count} orders ₹${Math.round(s.revenue || 0).toLocaleString('en-IN')}`),
+        pendingConsultations: pendingConsultsArr.length, pendingConsultDetails,
+        overdueConsultDetails, todayConsultations: todayConsults,
+        completedConsultations: completedConsults, totalConsultations: totalConsults,
+        consultCompRate, consultsBySpecialist: consultsBySpecArr,
+        totalUsers, newUsersToday, newUsersWeek, atRiskCustomers: atRisk,
+        topProducts: topProductsArr.filter((p: any) => p._id).map((p: any) => `${p._id}: ${p.units} units ₹${Math.round(p.revenue || 0).toLocaleString('en-IN')}`),
+        totalProducts, lowStockProducts: lowStockArr.map((p: any) => `${p.name} (stock: ${p.stock ?? 'unknown'})`),
+        totalSpecialists, totalSkinProfiles, todaySkinProfiles: todayProfiles,
       }
-    } catch (mongoErr: any) {
-      console.warn('MongoDB:', mongoErr.message)
+    } catch (e: any) {
+      console.warn('MongoDB:', e.message)
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    // 3. AGENT STATUS
+    // AI AGENT STATUS
     // ══════════════════════════════════════════════════════════════════════
     let agentsData: any = null
     try {
@@ -310,198 +322,181 @@ export async function POST(req: NextRequest) {
       if (r.ok) agentsData = await r.json()
     } catch { /* skip */ }
 
-    const allAgents       = agentsData?.agents || []
-    const disconnected    = allAgents.filter((a: any) => a.status === 'disconnected').map((a: any) => `${a.name} — ${a.details}`)
-    const partial         = allAgents.filter((a: any) => a.status === 'partial').map((a: any) => `${a.name} — ${a.details}`)
-    const connected       = allAgents.filter((a: any) => a.status === 'connected').map((a: any) => a.name)
-    const missingKeys     = allAgents.flatMap((a: any) => (a.missingKeys || []).map((k: string) => `${a.name}: missing ${k}`))
+    const allAgents    = agentsData?.agents || []
+    const disconnected = allAgents.filter((a: any) => a.status === 'disconnected').map((a: any) => `${a.name}: ${a.details}`)
+    const partial      = allAgents.filter((a: any) => a.status === 'partial').map((a: any) => `${a.name}: ${a.details}`)
+    const connected    = allAgents.filter((a: any) => a.status === 'connected').map((a: any) => a.name)
+    const missingKeys  = allAgents.flatMap((a: any) => (a.missingKeys || []).map((k: string) => `${a.name} needs ${k}`))
 
     // ══════════════════════════════════════════════════════════════════════
-    // 4. BUILD THE MEGA-PROMPT
+    // BUILD THE COMPLETE PROMPT
     // ══════════════════════════════════════════════════════════════════════
     const taskAreaLines = Object.entries(tasksByArea)
-      .filter(([, v]: [string, any]) => v.total > 0)
-      .map(([area, v]: [string, any]) => `  ${area}: ${v.total} total | ${v.done} done | ${v.pending} pending | ${v.blocked} blocked | ${v.urgent} urgent | ${v.overdue} overdue`)
+      .filter(([, v]: any) => v.total > 0)
+      .map(([area, v]: any) => `  ${area}: ${v.total} total | ${v.done} done | ${v.pending} pending | ${v.blocked} blocked | ${v.urgent} urgent | ${v.overdue} overdue`)
       .join('\n')
 
     const personLines = perPersonWork
-      .filter(p => p.total > 0 || ['specialist', 'ops', 'manager', 'founder'].includes(p.role))
-      .slice(0, 12)
-      .map(p => `  • ${p.name} (${p.role}): ${p.pending} pending | ${p.urgent} urgent | ${p.overdue} overdue | ${p.done}/${p.total} done
-      Pending: ${p.pendingTasks.join('; ') || 'none'}
-      Urgent: ${p.urgentTasks.join('; ') || 'none'}`)
+      .filter(p => p.total > 0 || ['specialist', 'ops', 'manager', 'founder', 'admin'].includes(p.role))
+      .map(p => `  • ${p.name} (${p.role}): pending=${p.pending} urgent=${p.urgent} overdue=${p.overdue} done=${p.done}/${p.total}
+    Urgent: ${p.urgentTasks.join('; ') || 'none'} | Overdue: ${p.overdueTasks.join('; ') || 'none'}`)
       .join('\n')
 
-    const prompt = `You are the COMPLETE AUTONOMOUS OPERATIONS BRAIN for Rabt Naturals — Indian skincare D2C brand.
-You now have access to EVERY business metric across ALL departments.
-Think exactly like the smartest founder + COO + CFO combined.
+    const prompt = `You are the COMPLETE AUTONOMOUS OPERATIONS BRAIN for Rabt Naturals HQ.
+You monitor EVERY single section of the admin panel. Think like founder + COO + CFO + CTO combined.
 
-DATE: ${dateStr}
-LAST RUN: ${lastRun ? `${lastRun.runAt?.slice(0,10)} — Situation: ${lastRun.situation}, Tasks created: ${lastRun.tasksCreated}` : 'First run'}
+DATE: ${dateStr} | LAST RUN: ${lastRun ? `${lastRun.runAt?.slice(0,10)}, situation=${lastRun.situation}, tasks=${lastRun.tasksCreated}` : 'First run'}
 
-══════════════════════════════════
-📦 SALES & REVENUE (MongoDB — rabtnaturals.com)
-══════════════════════════════════
-Today's paid orders: ${mongo.todayOrders ?? 'N/A'}
-This week paid orders: ${mongo.weekOrders ?? 'N/A'}
-This month paid orders: ${mongo.monthOrders ?? 'N/A'}
-This month revenue: ₹${mongo.monthRevenue ? mongo.monthRevenue.toLocaleString('en-IN') : 'N/A'}
-Last month revenue: ₹${mongo.lastMonthRevenue ? mongo.lastMonthRevenue.toLocaleString('en-IN') : 'N/A'}
-Revenue growth MoM: ${mongo.revGrowth !== undefined ? mongo.revGrowth + '%' : 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 SALES & REVENUE (MongoDB)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Orders today: ${mongo.todayOrders ?? 'N/A'} | This week: ${mongo.weekOrders ?? 'N/A'} | This month: ${mongo.monthOrders ?? 'N/A'}
+Month revenue: ₹${mongo.monthRevenue?.toLocaleString('en-IN') ?? 'N/A'} | Last month: ₹${mongo.lastMonthRevenue?.toLocaleString('en-IN') ?? 'N/A'} | Growth: ${mongo.revGrowth ?? 0}%
 Avg order value: ₹${mongo.avgOrderValue ?? 'N/A'}
-All-time paid orders: ${mongo.allTimePaidOrders ?? 'N/A'}
 Revenue by channel: ${mongo.revBySource?.join(' | ') || 'N/A'}
+TOP PRODUCTS: ${mongo.topProducts?.join(' | ') || 'N/A'}
 
-📦 OPERATIONS
-Pending dispatch (not shipped yet): ${mongo.pendingDispatch ?? 0} orders — URGENT if > 0
-Returned orders this month: ${mongo.returnedThisMonth ?? 0} (return rate: ${mongo.returnRate ?? 0}%)
-Order status breakdown: ${JSON.stringify(mongo.orderStatusMap || {})}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚚 OPERATIONS & ORDERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pending dispatch (not shipped): ${mongo.pendingDispatch ?? 0} — URGENT if > 0
+Returns this month: ${mongo.returnedThisMonth ?? 0} (return rate: ${mongo.returnRate ?? 0}%)
+Order status: ${JSON.stringify(mongo.orderStatusMap || {})}
 
-══════════════════════════════════
-🌿 CONSULTATIONS & SPECIALISTS (MongoDB)
-══════════════════════════════════
-Total pending consultations: ${mongo.pendingConsultations ?? 'N/A'} — each one is a LEAD
-Overdue (48h+, never followed up): ${mongo.overdueConsultDetails?.length ?? 0}
-Today's new consultations: ${mongo.todayConsultations ?? 'N/A'}
-Consultation completion rate: ${mongo.consultCompRate ?? 0}%
-Total completed: ${mongo.completedConsultations ?? 'N/A'} of ${mongo.totalConsultations ?? 'N/A'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧴 INVENTORY / PRODUCT LAB
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total products: ${mongo.totalProducts ?? 'N/A'}
+LOW STOCK (urgent!): ${mongo.lowStockProducts?.join(', ') || 'None'}
 
-PENDING CONSULTATIONS (oldest first — most urgent):
-${mongo.pendingConsultDetails?.join('\n') || '  None pending'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌿 CONSULTATIONS & SPECIALISTS (Key Revenue Driver)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PENDING (unattended leads!): ${mongo.pendingConsultations ?? 'N/A'}
+Overdue 48h+ (CRITICAL — customer waiting): ${mongo.overdueConsultDetails?.length ?? 0}
+  ${mongo.overdueConsultDetails?.join('\n  ') || 'None'}
+Pending list (oldest first):
+  ${mongo.pendingConsultDetails?.join('\n  ') || 'None'}
+New consultations today: ${mongo.todayConsultations ?? 0}
+Completion rate: ${mongo.consultCompRate ?? 0}% (${mongo.completedConsultations} of ${mongo.totalConsultations})
+Total specialists: ${mongo.totalSpecialists ?? 'N/A'}
+Skin profiles today: ${mongo.todaySkinProfiles ?? 0} | Total: ${mongo.totalSkinProfiles ?? 0}
 
-OVERDUE CONSULTATIONS (48h+ no follow-up — CRITICAL):
-${mongo.overdueConsultDetails?.join('\n') || '  None overdue'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 CRM / LEADS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total leads: ${crmSummary.total} | New today: ${crmSummary.newToday} | This week: ${crmSummary.newThisWeek}
+Open leads (need follow-up): ${crmSummary.open} | Converted: ${crmSummary.converted}
 
-Skin profiles created today: ${mongo.todayProfiles ?? 0} | Total: ${mongo.totalProfiles ?? 0}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 CUSTOMERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total users: ${mongo.totalUsers ?? 'N/A'} | New today: ${mongo.newUsersToday ?? 0} | New this week: ${mongo.newUsersWeek ?? 0}
+AT-RISK (30+ days no reorder): ${mongo.atRiskCustomers ?? 0} — need retention campaign!
 
-══════════════════════════════════
-🛒 CRM & CUSTOMERS (MongoDB)
-══════════════════════════════════
-Total registered users: ${mongo.totalUsers ?? 'N/A'}
-New users today: ${mongo.newUsersToday ?? 0}
-New users this week: ${mongo.newUsersWeek ?? 0}
-AT-RISK customers (30+ days no reorder): ${mongo.atRiskCustomers ?? 0} — need retention campaign
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📞 CALLING AGENT & COMMUNICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Calls this week: ${callStats.total} | Today: ${callStats.today}${callStats.noCallToday ? ' ⚠️ NO CALLS TODAY' : ''}
+Connected: ${callStats.connected} | Failed: ${callStats.failed} | Connection rate: ${callRate}%
+WhatsApp messages sent (week): ${waSummary.sent} | Today: ${waSummary.todaySent}
 
-TOP PRODUCTS this month:
-${mongo.topProducts?.join('\n') || '  No product data'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💰 FINANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Expenses this month: ₹${totalExpenses.toLocaleString('en-IN')}
+Pending partner withdrawals: ${partnerSummary.pendingWithdrawals} — need approval!
+Return/refund amount this month: ${mongo.returnedThisMonth ?? 0} orders
 
-══════════════════════════════════
-📞 CALLING AGENT (Supabase call logs)
-══════════════════════════════════
-Calls this week: ${callStats.total}
-Calls today: ${callStats.today}${callStats.noCallToday ? ' ⚠️ NO CALLS MADE TODAY' : ''}
-Connected: ${callStats.connected} | Failed: ${callStats.failed}
-Connection rate: ${callConnectionRate}%
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤝 PARTNERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Active partners: ${partnerSummary.total}
+Pending withdrawal requests: ${partnerSummary.pendingWithdrawals}
+Top partner: ${partnerSummary.topPartner}
 
-══════════════════════════════════
-✅ TASKS — ALL DEPARTMENTS (Supabase)
-══════════════════════════════════
-OVERALL: ${taskStats.total} total | ${taskStats.done} done (${taskStats.completionRate}%) | ${taskStats.blocked} BLOCKED | ${taskStats.urgent} URGENT | ${taskStats.overdue} OVERDUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 GOALS & OKR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Business goals setting: ${typeof goals === 'string' ? goals : JSON.stringify(goals)}
+Goals from Goals page:
+${goalsOKR.join('\n') || '  No goals set in Goals page yet'}
 
-BY DEPARTMENT:
-${taskAreaLines || '  No tasks'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 HR & TEAM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Total team: ${hrSummary.teamCount} | Specialists: ${hrSummary.specialistCount}
+Pending leave requests: ${hrSummary.pendingLeaves} — needs manager approval
+Pending payroll this month: ${hrSummary.pendingPayroll}
 
-BLOCKED TASKS (must unblock):
-${blockedTaskList.join('\n') || '  None'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 SUPPORT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Open support tickets: ${supportOpen.length}
 
-OVERDUE TASKS (deadline passed):
-${overdueTaskList.join('\n') || '  None'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ALL TASKS — BY DEPARTMENT (Supabase)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${taskAreaLines || '  No tasks yet'}
+BLOCKED: ${tasks.filter((t: any) => t.status === 'blocked').slice(0,5).map((t: any) => `[${t.area}] ${t.title} → ${t.assigned_role}`).join(' | ') || 'None'}
+OVERDUE: ${tasks.filter((t: any) => t.due_date && t.status !== 'done' && new Date(t.due_date) < now).slice(0,5).map((t: any) => `[${t.area}] ${t.title} due:${t.due_date}`).join(' | ') || 'None'}
+URGENT:  ${tasks.filter((t: any) => t.priority === 'urgent' && t.status !== 'done').slice(0,5).map((t: any) => `[${t.area}] ${t.title} → ${t.assigned_role}`).join(' | ') || 'None'}
 
-URGENT TASKS (need same-day action):
-${urgentTaskList.join('\n') || '  None'}
-
-══════════════════════════════════
-👥 TEAM — PER PERSON (Supabase)
-══════════════════════════════════
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👥 TEAM — PER PERSON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${personLines || '  No team data'}
 
-══════════════════════════════════
-🤖 AI AGENTS STATUS
-══════════════════════════════════
-Connected (working): ${connected.join(', ') || 'None'}
-DISCONNECTED (broken): ${disconnected.join('; ') || 'None — all good!'}
-Partial/warning: ${partial.join('; ') || 'None'}
-Missing API keys: ${missingKeys.slice(0, 6).join(', ') || 'None'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 AI AGENTS (8 agents)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Connected: ${connected.join(', ') || 'None'}
+DISCONNECTED: ${disconnected.join(' | ') || 'None — all good!'}
+Partial: ${partial.join(' | ') || 'None'}
+Missing keys: ${missingKeys.slice(0,6).join(', ') || 'None'}
 
-══════════════════════════════════
-🎯 BUSINESS GOALS
-══════════════════════════════════
-${typeof goals === 'string' ? goals : JSON.stringify(goals)}
-
-══════════════════════════════════
-🧠 YOUR COMPLETE JOB
-══════════════════════════════════
-Analyze EVERY section above. Create specific tasks for EACH area that needs attention:
-
-SALES: If orders low today → task to run promotion/call
-OPERATIONS: If pendingDispatch > 0 → urgent ops task to ship immediately
-CONSULTATIONS: For EACH overdue/pending consult → specific specialist follow-up task
-CUSTOMERS: If atRisk > 0 → retention campaign task for marketing
-CALLING: If no calls today → task for calling agent team
-TASKS: For each blocked/overdue task → create unblock/escalation task
-AGENTS: For each disconnected agent → setup task for tech
-FINANCE: If return rate high or revenue down → analysis task for manager
-GOALS: Assess each goal → create tasks to stay on track
-
-ASSIGNMENT RULES:
-- Specialist consultation follow-up → assigned_role: "specialist"
-- Orders to dispatch → assigned_role: "ops"
-- Blocked task escalation → assigned_role: "manager"
-- At-risk customer campaign → assigned_role: "marketing"
-- Calling activity → assigned_role: "sales"
-- Agent setup → assigned_role: "tech"
-- Revenue analysis → assigned_role: "finance"
-- Team management → assigned_role: "manager"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 SECTIONS TO MONITOR (check each one)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Dashboard | Calling Agent | Sales Agent | WhatsApp Agent | Retention Agent | Skin Analysis AI | Content Agent | Marketing AI | Specialist Panel | My Patients | Admin | Kanban | Calendar | Team Hub | Partner Portal | Vendor | Website Analytics | Customers | CRM/Leads | Orders | Inventory | Consultations | Skin Profiles | Specialists | Support | Communications | Reminders | Marketing | SEO | Social Automation | Video Studio | Content Studio | Ads Manager | Finance | Funnel Tracker | Revenue Flow | Product Lab | Goals & OKR | Reports | HR | Team | Automation | AI Agents | Knowledge Base | Settings
 
 TODAY: ${todayISO}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR ACTION RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✦ Pending consultations → urgent specialist follow-up task (mention customer wait time)
+✦ pendingDispatch > 0 → urgent ops dispatch task
+✦ At-risk customers > 0 → marketing retention campaign task
+✦ No calls today → urgent sales calling task
+✦ Low stock products → ops/procurement task
+✦ Pending partner withdrawals → finance task to process
+✦ Pending HR leaves → manager approval task
+✦ Open CRM leads → sales follow-up task
+✦ Open support tickets → support resolution task
+✦ Disconnected AI agents → tech setup task
+✦ Blocked tasks → manager unblock task
+✦ Revenue down MoM → strategy task for manager
+✦ Low consultation completion rate → specialist improvement task
 
 Respond ONLY with valid JSON:
 {
   "situation": "good|warning|critical",
-  "analysis": "4-5 sentence sharp executive analysis covering ALL areas — sales, consultations, ops, team, agents",
-  "areasMonitored": ["Sales", "Operations", "Consultations", "Calling", "Marketing", "Finance", "Team", "AI Agents", "CRM", "Goals"],
+  "analysis": "5 sentence analysis covering ALL major areas — use specific numbers and names",
+  "areasMonitored": ["list all areas checked"],
   "perPersonSummary": [
-    {
-      "name": "person name",
-      "role": "role",
-      "status": "on_track|needs_attention|critical",
-      "whatTheyNeedToDo": "specific 1-2 sentence instruction for this person TODAY",
-      "pendingCount": 0
-    }
+    { "name": "name", "role": "role", "status": "on_track|needs_attention|critical", "whatTheyNeedToDo": "specific instruction", "pendingCount": 0 }
   ],
   "tasksToCreate": [
-    {
-      "title": "very specific actionable task",
-      "description": "detailed: what, why, how, customer name if relevant",
-      "assigned_role": "specialist|ops|manager|marketing|sales|tech|finance",
-      "area": "Sales|Marketing|Operations|Specialist|Support|Finance|Tech|CRM|Content|HR",
-      "priority": "urgent|high|medium|low",
-      "due_date": "YYYY-MM-DD",
-      "ai_reason": "exact data point that triggered this task (with numbers)"
-    }
+    { "title": "specific task", "description": "detailed with reason + customer name if relevant", "assigned_role": "specialist|ops|manager|marketing|sales|tech|finance|hr|support", "area": "Sales|Marketing|Operations|Specialist|Support|Finance|Tech|CRM|Content|HR|Partner|Product", "priority": "urgent|high|medium|low", "due_date": "YYYY-MM-DD", "ai_reason": "exact metric that triggered this" }
   ],
-  "agentAlerts": [
-    { "agent": "agent name", "severity": "critical|warning", "action": "specific fix step" }
-  ],
-  "goalProgress": [
-    { "goal": "goal text", "status": "on_track|behind|ahead|unknown", "insight": "data-backed specific comment" }
-  ],
-  "departmentScores": {
-    "Sales": "good|warning|critical",
-    "Operations": "good|warning|critical",
-    "Consultations": "good|warning|critical",
-    "Marketing": "good|warning|critical",
-    "Finance": "good|warning|critical",
-    "Team": "good|warning|critical",
-    "Agents": "good|warning|critical"
-  },
-  "whatsappReport": "Complete WhatsApp report with *bold* and emojis. Sections: 📊 Overview | 🌿 Consultations pending | 📦 Orders & dispatch | 👥 Team work pending | 🤖 Agents | 🎯 Goals. Name specific people and numbers. End with today's top 3 action items.",
-  "focusForToday": "The single most critical action with specific reason and data"
+  "agentAlerts": [{ "agent": "name", "severity": "critical|warning", "action": "fix step" }],
+  "goalProgress": [{ "goal": "text", "status": "on_track|behind|ahead|unknown", "insight": "data comment" }],
+  "departmentScores": { "Sales": "good|warning|critical", "Operations": "good|warning|critical", "Consultations": "good|warning|critical", "Marketing": "good|warning|critical", "Finance": "good|warning|critical", "Team": "good|warning|critical", "Agents": "good|warning|critical", "HR": "good|warning|critical", "Partners": "good|warning|critical", "CRM": "good|warning|critical" },
+  "whatsappReport": "Complete WhatsApp report with *bold*, emojis, and sections for each major area. Name people. End with top 3 action items for today.",
+  "focusForToday": "Most critical single action with reason and data"
 }`
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 5. CLAUDE ANALYSIS
-    // ══════════════════════════════════════════════════════════════════════
     const anthropic = await getAnthropicClient()
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -512,51 +507,36 @@ Respond ONLY with valid JSON:
     const text = msg.content[0].type === 'text' ? msg.content[0].text : '{}'
     const jsonMatch = text.match(/\{[\s\S]*\}/)
     let brain: any = null
-    if (jsonMatch) {
-      try { brain = JSON.parse(jsonMatch[0]) } catch { /* fallback */ }
-    }
+    if (jsonMatch) { try { brain = JSON.parse(jsonMatch[0]) } catch { } }
 
     if (!brain) {
       brain = {
-        situation: 'warning',
-        analysis: text.slice(0, 500),
-        areasMonitored: [],
-        perPersonSummary: [],
-        tasksToCreate: [],
-        agentAlerts: [],
-        goalProgress: [],
-        departmentScores: {},
+        situation: 'warning', analysis: text.slice(0, 500),
+        areasMonitored: [], perPersonSummary: [], tasksToCreate: [],
+        agentAlerts: [], goalProgress: [], departmentScores: {},
         whatsappReport: text.slice(0, 600),
-        focusForToday: 'Review system — data analysis incomplete',
+        focusForToday: 'Review system — incomplete data',
       }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 6. AUTO-CREATE TASKS IN SUPABASE
-    // ══════════════════════════════════════════════════════════════════════
+    // AUTO-CREATE TASKS
     const createdTasks: any[] = []
     if (createTasks && brain.tasksToCreate?.length > 0) {
       for (const task of brain.tasksToCreate.slice(0, 12)) {
         const { data, error } = await supabase.from('rabt_tasks').insert({
           title: task.title,
-          description: `${task.description}\n\n━━━━━━━━━━━━━━━━\n🤖 AI Auto-Created by Assistant Brain\n📊 Data trigger: ${task.ai_reason}\n🕐 Created: ${now.toLocaleString('en-IN')}`,
-          assigned_role: task.assigned_role,
-          area: task.area,
-          priority: task.priority,
-          due_date: task.due_date || null,
-          status: 'pending',
-          created_at: now.toISOString(),
+          description: `${task.description}\n\n━━━━━━━━━━━━━━━━\n🤖 AI Auto-Created — ${now.toLocaleString('en-IN')}\n📊 Reason: ${task.ai_reason}`,
+          assigned_role: task.assigned_role, area: task.area,
+          priority: task.priority, due_date: task.due_date || null,
+          status: 'pending', created_at: now.toISOString(),
         }).select().single()
         if (!error && data) createdTasks.push(data)
       }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 7. SEND WHATSAPP REPORTS TO FOUNDERS/MANAGERS
-    // ══════════════════════════════════════════════════════════════════════
+    // SEND WHATSAPP REPORTS
     const reportPhones = [
-      ...(phones || []),
-      ...(phone ? [phone] : []),
+      ...(phones || []), ...(phone ? [phone] : []),
       ...(Array.isArray(schedule?.phones) ? schedule.phones : []),
     ].filter(Boolean).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i)
 
@@ -566,46 +546,30 @@ Respond ONLY with valid JSON:
       for (const p of reportPhones) {
         try {
           await fetch(`${base}/api/send-whatsapp`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ phone: p, message: brain.whatsappReport }),
           })
           whatsappSent++
-        } catch { /* skip */ }
+        } catch { }
       }
     }
 
-    // ══════════════════════════════════════════════════════════════════════
-    // 8. SAVE RUN LOG TO SUPABASE
-    // ══════════════════════════════════════════════════════════════════════
+    // SAVE RUN LOG
     await supabase.from('hq_settings').upsert({
       key: 'last_auto_run',
-      value: {
-        runAt:         now.toISOString(),
-        situation:     brain.situation,
-        tasksCreated:  createdTasks.length,
-        whatsappSent,
-        focusForToday: brain.focusForToday,
-        analysis:      brain.analysis,
-        departmentScores: brain.departmentScores || {},
-        areasMonitored:   brain.areasMonitored || [],
-      },
+      value: { runAt: now.toISOString(), situation: brain.situation, tasksCreated: createdTasks.length, whatsappSent, focusForToday: brain.focusForToday, analysis: brain.analysis, departmentScores: brain.departmentScores || {}, areasMonitored: brain.areasMonitored || [] },
       updated_at: now.toISOString(),
     }).catch(() => {})
 
     return NextResponse.json({
-      ...brain,
-      createdTasks,
-      whatsappSent,
+      ...brain, createdTasks, whatsappSent,
       dataSnapshot: {
-        tasks:            taskStats,
-        tasksByArea,
-        calls:            callStats,
-        callConnectionRate,
-        mongo,
-        connectedAgents:  agentsData?.summary?.connected || 0,
-        totalAgents:      agentsData?.summary?.total || 0,
-        disconnectedCount: disconnected.length,
+        tasks: taskStats, tasksByArea, calls: callStats, callConnectionRate: callRate,
+        mongo, connectedAgents: agentsData?.summary?.connected || 0,
+        totalAgents: agentsData?.summary?.total || 0, disconnectedCount: disconnected.length,
+        crmLeads: crmSummary, hrSummary, partnerSummary,
+        financeExpenses: Math.round(totalExpenses),
+        goalsCount: sbGoals.length, supportOpen: supportOpen.length,
       },
       runAt: now.toISOString(),
     })
